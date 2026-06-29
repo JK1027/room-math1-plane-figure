@@ -342,6 +342,7 @@
             height: 100%;
             border-radius: 8px;
             background: rgba(5, 8, 16, 0.8);
+            transition: background 0.3s ease;
         }
         canvas#drawing-canvas {
             pointer-events: none;
@@ -657,39 +658,73 @@
 
         /* COORDINATE SVG GRAPHICS */
         .axis-line {
-            stroke: rgba(255, 255, 255, 0.5);
+            stroke: rgba(255, 255, 255, 0.8);
             stroke-width: 2;
         }
         .grid-line {
-            stroke: rgba(0, 240, 255, 0.07);
+            stroke: rgba(0, 240, 255, 0.16);
             stroke-width: 1;
         }
         .grid-line-major {
-            stroke: rgba(0, 240, 255, 0.15);
-            stroke-width: 1;
+            stroke: rgba(0, 240, 255, 0.3);
+            stroke-width: 1.2;
         }
         .axis-arrow {
-            fill: rgba(255, 255, 255, 0.7);
+            fill: rgba(255, 255, 255, 0.9);
         }
         .tick-mark {
-            stroke: rgba(255, 255, 255, 0.5);
+            stroke: rgba(255, 255, 255, 0.85);
             stroke-width: 1.5;
         }
         .tick-label {
-            fill: rgba(255, 255, 255, 0.5);
+            fill: rgba(255, 255, 255, 0.85);
             font-family: var(--font-mono);
             font-size: 10px;
             text-anchor: middle;
             dominant-baseline: middle;
         }
         .quadrant-label {
-            fill: rgba(255, 255, 255, 0.12);
+            fill: rgba(255, 255, 255, 0.16);
             font-family: var(--font-cyber);
             font-size: 20px;
             font-weight: 700;
             text-anchor: middle;
             dominant-baseline: middle;
             pointer-events: none;
+        }
+
+        /* COORDINATE PLANE LIGHT THEME OVERRIDES */
+        svg#coordinate-svg.light-theme, canvas#drawing-canvas.light-theme {
+            background: #f8fafc !important; /* Crisp off-white/slate-50 background */
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.06);
+        }
+        svg#coordinate-svg.light-theme .axis-line {
+            stroke: #0f172a !important; /* Dark slate-900 */
+            stroke-width: 2.5;
+        }
+        svg#coordinate-svg.light-theme .axis-arrow {
+            fill: #0f172a !important;
+        }
+        svg#coordinate-svg.light-theme .grid-line {
+            stroke: rgba(100, 116, 139, 0.35) !important; /* Slate-500 with clear opacity */
+            stroke-width: 1.2;
+        }
+        svg#coordinate-svg.light-theme .grid-line-major {
+            stroke: rgba(71, 85, 105, 0.5) !important; /* Slate-600 */
+        }
+        svg#coordinate-svg.light-theme .tick-mark {
+            stroke: #0f172a !important;
+            stroke-width: 2;
+        }
+        svg#coordinate-svg.light-theme .tick-label {
+            fill: #334155 !important; /* Slate-700 */
+            font-weight: 600;
+        }
+        svg#coordinate-svg.light-theme .quadrant-label {
+            fill: rgba(15, 23, 42, 0.07) !important; /* Slate-900 very faint watermark */
+        }
+        svg#coordinate-svg.light-theme .tick-label[style*="fill: #00f0ff"] {
+            fill: #0284c7 !important; /* Sky-600 for Origin letter 'O' */
         }
         .interactive-dot {
             fill: var(--neon-cyan);
@@ -720,6 +755,7 @@
             stroke: #fff;
             stroke-width: 2;
             filter: drop-shadow(0 0 6px var(--neon-green));
+            pointer-events: none;
         }
 
         .antenna-draggable {
@@ -824,6 +860,8 @@
                 <!-- LEFT: COORDINATE PLANE VIEWPORT -->
                 <div id="plane-panel" class="glass-panel">
                     <div class="plane-wrapper">
+                        <!-- Floating Theme Toggle Button -->
+                        <button class="icon-btn" id="coord-theme-btn" title="좌표평면 테마 전환" style="position: absolute; top: 10px; right: 10px; z-index: 20; background: rgba(5, 8, 16, 0.6); border-color: rgba(0, 240, 255, 0.4);">🌓</button>
                         <!-- Main Interactive Grid -->
                         <svg id="coordinate-svg" viewBox="0 0 500 500">
                             <!-- Background elements will be created by JS dynamically -->
@@ -1520,6 +1558,7 @@
                 this.failCount = 0;
                 this.isGameActive = false;
                 this.timerInterval = null;
+                this.coordTheme = 'dark'; // 'dark' or 'light'
 
                 // Mission dynamic data
                 this.currentMissionData = null;
@@ -1546,6 +1585,7 @@
                         this.achievements = parsed.achievements || [];
                         this.timeElapsed = parsed.timeElapsed || 0;
                         this.failCount = parsed.failCount || 0;
+                        this.coordTheme = parsed.coordTheme || 'dark';
                         
                         // Sync inputs in Modal UI
                         document.getElementById('setting-difficulty').value = this.difficulty;
@@ -1559,6 +1599,7 @@
                 }
                 this.updateTimerDisplay();
                 this.updateInventoryUI();
+                this.applyCoordTheme();
             }
 
             saveSettings() {
@@ -1572,9 +1613,24 @@
                     inventory: this.inventory,
                     achievements: this.achievements,
                     timeElapsed: this.timeElapsed,
-                    failCount: this.failCount
+                    failCount: this.failCount,
+                    coordTheme: this.coordTheme
                 };
                 localStorage.setItem('ai_lab_escape_save', JSON.stringify(data));
+            }
+
+            applyCoordTheme() {
+                const svg = document.getElementById('coordinate-svg');
+                const canvas = document.getElementById('drawing-canvas');
+                if (svg && canvas) {
+                    if (this.coordTheme === 'light') {
+                        svg.classList.add('light-theme');
+                        canvas.classList.add('light-theme');
+                    } else {
+                        svg.classList.remove('light-theme');
+                        canvas.classList.remove('light-theme');
+                    }
+                }
             }
 
             resetGameData() {
@@ -1589,6 +1645,14 @@
             }
 
             bindEvents() {
+                // Coordinate Theme Toggle
+                document.getElementById('coord-theme-btn').addEventListener('click', () => {
+                    this.audio.playSFX('click');
+                    this.coordTheme = this.coordTheme === 'dark' ? 'light' : 'dark';
+                    this.saveSettings();
+                    this.applyCoordTheme();
+                });
+
                 // UI Audio click triggers
                 document.getElementById('audio-toggle-btn').addEventListener('click', () => {
                     const isMuted = this.audio.toggleMute();
@@ -1809,6 +1873,7 @@
             initCoordinatePlane() {
                 const svg = document.getElementById('coordinate-svg');
                 svg.innerHTML = ''; // Clear SVG
+                this.applyCoordTheme();
                 
                 const width = 500;
                 const height = 500;
@@ -2015,9 +2080,16 @@
 
             // NPC Dialogue Typing controller
             speak(npcName, avatarStr, dialogs, onComplete) {
+                if (this.typingTimeout) clearTimeout(this.typingTimeout);
+
                 const nameLabel = document.getElementById('npc-name-label');
-                const dialogText = document.getElementById('console-dialog-text');
+                let dialogText = document.getElementById('console-dialog-text');
                 const avatarBox = document.getElementById('npc-avatar-box');
+
+                // Clone element to clear all previous click listeners
+                const newDialogText = dialogText.cloneNode(true);
+                dialogText.parentNode.replaceChild(newDialogText, dialogText);
+                dialogText = newDialogText;
 
                 nameLabel.innerText = npcName;
                 avatarBox.innerHTML = `<span style="font-size: 1.8rem;">${avatarStr}</span>`;
@@ -2311,6 +2383,7 @@
                     guide.setAttribute("stroke-width", "1.5");
                     guide.setAttribute("stroke-dasharray", "4 2");
                     guide.setAttribute("id", `m1-guide-${idx}`);
+                    guide.setAttribute("style", "pointer-events: none;");
                     svg.appendChild(guide);
                 });
 
@@ -2411,6 +2484,7 @@
 
                     // Group for character rendering
                     const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                    group.setAttribute("style", "pointer-events: none;");
                     
                     // Small neon background box for character legibility
                     const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
@@ -2642,6 +2716,7 @@
                         html += `
                             <button class="neon-btn ${btnTheme} ${activeClass}" id="btn-${chip.id}" style="font-size: 0.8rem; padding: 6px 8px; flex-direction: column; text-align: left; align-items: flex-start; gap: 2px;">
                                 <strong>${chip.name}</strong>
+                                <span style="font-size: 0.65rem; opacity: 0.7; color: var(--neon-yellow);">${chip.desc}</span>
                                 <span style="font-size: 0.7rem; opacity: 0.8;">위치: ${placeStr}</span>
                             </button>
                         `;
@@ -2677,6 +2752,7 @@
                         if (coord && chip) {
                             const markerGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
                             markerGroup.setAttribute("class", "antenna-marker");
+                            markerGroup.setAttribute("style", "pointer-events: none;");
 
                             const pin = document.createElementNS("http://www.w3.org/2000/svg", "circle");
                             pin.setAttribute("cx", center + coord.x * step);
@@ -2809,7 +2885,7 @@
                     node.setAttribute("stroke", "var(--neon-cyan)");
                     node.setAttribute("stroke-width", "1.5");
                     node.setAttribute("id", `m4-node-${idx}`);
-                    node.setAttribute("style", "cursor: pointer; filter: drop-shadow(0 0 3px var(--neon-cyan));");
+                    node.setAttribute("style", "cursor: pointer; filter: drop-shadow(0 0 3px var(--neon-cyan)); pointer-events: none;");
                     svg.appendChild(node);
 
                     // Add node text index
@@ -2817,7 +2893,7 @@
                     label.setAttribute("x", tx);
                     label.setAttribute("y", ty - 12);
                     label.setAttribute("class", "tick-label");
-                    label.setAttribute("style", "font-size: 8px; fill: rgba(255,255,255,0.7); font-weight: bold;");
+                    label.setAttribute("style", "font-size: 8px; fill: rgba(255,255,255,0.7); font-weight: bold; pointer-events: none;");
                     label.setAttribute("text-anchor", "middle");
                     label.textContent = idx + 1;
                     svg.appendChild(label);
@@ -2835,7 +2911,7 @@
                     line.setAttribute("y2", center - p2.y * step);
                     line.setAttribute("stroke", "var(--neon-green)");
                     line.setAttribute("stroke-width", "3");
-                    line.setAttribute("style", "filter: drop-shadow(0 0 4px var(--neon-green)); stroke-linecap: round;");
+                    line.setAttribute("style", "filter: drop-shadow(0 0 4px var(--neon-green)); stroke-linecap: round; pointer-events: none;");
                     line.setAttribute("class", "m4-connector-line");
                     svg.appendChild(line);
                 };
@@ -2929,6 +3005,7 @@
                 
                 // Overlay "AUTHORIZED PERSONNEL ONLY" text inside SVG
                 const txtGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                txtGroup.setAttribute("style", "pointer-events: none;");
                 const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
                 bg.setAttribute("x", 50);
                 bg.setAttribute("y", 180);
@@ -2955,7 +3032,7 @@
                 alertText2.setAttribute("class", "tick-label");
                 alertText2.setAttribute("style", "font-size: 11px; fill: #fff; opacity: 0.8;");
                 alertText2.setAttribute("text-anchor", "middle");
-                alertText2.textContent = "최종 비밀번호: [보안 구역 암호 단어] + [칩 개수]";
+                alertText2.textContent = "최종 비밀번호: [보안 구역 암호 단어] + [복구된 구역 수 (5)]";
                 txtGroup.appendChild(alertText2);
 
                 const alertText3 = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -2977,7 +3054,7 @@
                 uiArea.innerHTML = `
                     <div style="background: rgba(255,0,127,0.05); border: 1px solid var(--neon-magenta); border-radius: 8px; padding: 12px; font-size: 0.85rem; line-height: 1.5;">
                         <span class="neon-text-magenta" style="font-weight: bold; font-family: var(--font-cyber);">NOVA 비상 통신:</span><br>
-                        "연구실 보안 기록에 따르면 최종 탈출 암호의 구조는 <strong>[보안 비밀단어]</strong> 뒤에 <strong>[총 복구 완료된 시스템 칩의 개수(숫자)]</strong>를 합성한 형태입니다. 서두르세요!"
+                        "연구실 보안 기록에 따르면 최종 탈출 암호의 구조는 <strong>[보안 비밀단어]</strong> 뒤에 <strong>[복구된 구역 수 (5)]</strong>를 합성한 형태입니다. 서두르세요!"
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
                         <input type="text" id="final-passwd-input" placeholder="PASSCODE 입력" style="background: rgba(0,0,0,0.6); border: 1px solid var(--neon-magenta); border-radius: 6px; padding: 10px; color: var(--neon-magenta); font-family: var(--font-mono); text-shadow: var(--glow-magenta); text-align: center; font-size: 1.4rem; text-transform: uppercase;">
