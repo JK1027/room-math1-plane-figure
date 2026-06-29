@@ -658,35 +658,36 @@
 
         /* COORDINATE SVG GRAPHICS */
         .axis-line {
-            stroke: rgba(255, 255, 255, 0.8);
-            stroke-width: 2;
+            stroke: #ffffff !important;
+            stroke-width: 3.5px !important;
         }
         .grid-line {
-            stroke: rgba(0, 240, 255, 0.16);
-            stroke-width: 1;
+            stroke: rgba(0, 240, 255, 0.25) !important;
+            stroke-width: 1.2px !important;
         }
         .grid-line-major {
-            stroke: rgba(0, 240, 255, 0.3);
-            stroke-width: 1.2;
+            stroke: rgba(0, 240, 255, 0.45) !important;
+            stroke-width: 1.5px !important;
         }
         .axis-arrow {
-            fill: rgba(255, 255, 255, 0.9);
+            fill: #ffffff !important;
         }
         .tick-mark {
-            stroke: rgba(255, 255, 255, 0.85);
-            stroke-width: 1.5;
+            stroke: #ffffff !important;
+            stroke-width: 2px !important;
         }
         .tick-label {
-            fill: rgba(255, 255, 255, 0.85);
+            fill: #ffffff !important;
             font-family: var(--font-mono);
-            font-size: 10px;
+            font-size: 11px;
+            font-weight: bold;
             text-anchor: middle;
             dominant-baseline: middle;
         }
         .quadrant-label {
-            fill: rgba(255, 255, 255, 0.16);
+            fill: rgba(0, 240, 255, 0.15) !important;
             font-family: var(--font-cyber);
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 700;
             text-anchor: middle;
             dominant-baseline: middle;
@@ -695,36 +696,36 @@
 
         /* COORDINATE PLANE LIGHT THEME OVERRIDES */
         svg#coordinate-svg.light-theme, canvas#drawing-canvas.light-theme {
-            background: #f8fafc !important; /* Crisp off-white/slate-50 background */
-            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.06);
+            background: #ffffff !important;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.08);
         }
         svg#coordinate-svg.light-theme .axis-line {
-            stroke: #0f172a !important; /* Dark slate-900 */
-            stroke-width: 2.5;
+            stroke: #0f172a !important;
+            stroke-width: 3.5px !important;
         }
         svg#coordinate-svg.light-theme .axis-arrow {
             fill: #0f172a !important;
         }
         svg#coordinate-svg.light-theme .grid-line {
-            stroke: rgba(100, 116, 139, 0.35) !important; /* Slate-500 with clear opacity */
-            stroke-width: 1.2;
+            stroke: rgba(15, 23, 42, 0.18) !important;
+            stroke-width: 1.2px !important;
         }
         svg#coordinate-svg.light-theme .grid-line-major {
-            stroke: rgba(71, 85, 105, 0.5) !important; /* Slate-600 */
+            stroke: rgba(15, 23, 42, 0.3) !important;
         }
         svg#coordinate-svg.light-theme .tick-mark {
             stroke: #0f172a !important;
-            stroke-width: 2;
+            stroke-width: 2px !important;
         }
         svg#coordinate-svg.light-theme .tick-label {
-            fill: #334155 !important; /* Slate-700 */
-            font-weight: 600;
+            fill: #0f172a !important;
+            font-weight: bold;
         }
         svg#coordinate-svg.light-theme .quadrant-label {
-            fill: rgba(15, 23, 42, 0.07) !important; /* Slate-900 very faint watermark */
+            fill: rgba(15, 23, 42, 0.08) !important;
         }
         svg#coordinate-svg.light-theme .tick-label[style*="fill: #00f0ff"] {
-            fill: #0284c7 !important; /* Sky-600 for Origin letter 'O' */
+            fill: #0284c7 !important;
         }
         .interactive-dot {
             fill: var(--neon-cyan);
