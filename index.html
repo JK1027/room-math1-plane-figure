@@ -2307,6 +2307,14 @@
 
             onMissionSuccess() {
                 this.audio.playSFX('success');
+                
+                if (this.currentMissionIndex === 5) {
+                    // Final gate pass success -> Trigger Ending!
+                    this.addAchievement("🏆 연구소 탈출 완료");
+                    this.showEndingScreen();
+                    return;
+                }
+
                 const m = MISSION_CONFIG[this.currentMissionIndex];
                 
                 // Add item rewards & accomplishments
