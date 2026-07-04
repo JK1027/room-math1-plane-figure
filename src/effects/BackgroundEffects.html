@@ -1,0 +1,87 @@
+<style>
+/* ============================================================
+   BackgroundEffects.html
+   전역 배경 연출: 별 파티클 3레이어 + 황금 안개
+   ============================================================ */
+
+/* 별 파티클 공통 베이스 */
+.stars-small,
+.stars-medium,
+.stars-large {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: transparent;
+}
+
+/* ── 소형 별 (50개, 빠른 반짝임) ── */
+.stars-small {
+  box-shadow:
+    12px  84px 1px 0px #fff, 240px  33px 1px 0px #fff,  85px 176px 1px 0px #fff,
+   347px  62px 1px 0px #fff, 512px 290px 1px 0px #fff, 178px  45px 1px 0px #fff,
+   423px 130px 1px 0px #fff,  67px 310px 1px 0px #fff, 290px 205px 1px 0px #fff,
+   550px  18px 1px 0px #fff,  33px 420px 1px 0px #fff, 460px 380px 1px 0px #fff,
+   195px 490px 1px 0px #fff, 380px  92px 1px 0px #fff, 135px 560px 1px 0px #fff,
+   490px 450px 1px 0px #fff,  22px 240px 1px 0px #fff, 318px 335px 1px 0px #fff,
+   575px 155px 1px 0px #fff,  98px  12px 1px 0px #fff, 440px 255px 1px 0px #fff,
+   210px 100px 1px 0px #fff, 530px  72px 1px 0px #fff, 158px 380px 1px 0px #fff,
+   365px 480px 1px 0px #fff,  48px 135px 1px 0px #fff, 285px 510px 1px 0px #fff,
+   500px 190px 1px 0px #fff,  73px 390px 1px 0px #fff, 410px  50px 1px 0px #fff,
+   125px 270px 1px 0px #fff, 475px 340px 1px 0px #fff, 230px 430px 1px 0px #fff,
+   560px 100px 1px 0px #fff,  18px  55px 1px 0px #fff, 340px 175px 1px 0px #fff,
+   105px 490px 1px 0px #fff, 395px 285px 1px 0px #fff, 545px 420px 1px 0px #fff,
+   170px 165px 1px 0px #fff, 455px 130px 1px 0px #fff,  42px 530px 1px 0px #fff,
+   300px  28px 1px 0px #fff, 520px 320px 1px 0px #fff, 200px 350px 1px 0px #fff,
+   375px 440px 1px 0px #fff,  90px 210px 1px 0px #fff, 430px 510px 1px 0px #fff,
+   258px  80px 1px 0px #fff, 148px 320px 1px 0px #fff;
+  animation: starTwinkle 20s ease-in-out infinite;
+}
+
+/* ── 중형 별 (30개, 중간 반짝임) ── */
+.stars-medium {
+  box-shadow:
+    155px 280px 2px 0px rgba(255,255,255,0.85), 470px 110px 2px 0px rgba(255,255,255,0.85),
+     60px 450px 2px 0px rgba(255,255,255,0.85), 320px  40px 2px 0px rgba(255,255,255,0.85),
+    540px 370px 2px 0px rgba(255,255,255,0.85),  15px 190px 2px 0px rgba(255,255,255,0.85),
+    240px 500px 2px 0px rgba(255,255,255,0.85), 405px 230px 2px 0px rgba(255,255,255,0.85),
+    110px  75px 2px 0px rgba(255,255,255,0.85), 575px 480px 2px 0px rgba(255,255,255,0.85),
+    350px 155px 2px 0px rgba(255,255,255,0.85),  80px 340px 2px 0px rgba(255,255,255,0.85),
+    495px  25px 2px 0px rgba(255,255,255,0.85), 185px 415px 2px 0px rgba(255,255,255,0.85),
+    435px 295px 2px 0px rgba(255,255,255,0.85),  30px  95px 2px 0px rgba(255,255,255,0.85),
+    270px 360px 2px 0px rgba(255,255,255,0.85), 515px 180px 2px 0px rgba(255,255,255,0.85),
+    125px 540px 2px 0px rgba(255,255,255,0.85), 390px  60px 2px 0px rgba(255,255,255,0.85),
+    555px 430px 2px 0px rgba(255,255,255,0.85), 205px 200px 2px 0px rgba(255,255,255,0.85),
+     45px 475px 2px 0px rgba(255,255,255,0.85), 460px 390px 2px 0px rgba(255,255,255,0.85),
+    310px 255px 2px 0px rgba(255,255,255,0.85),  95px 145px 2px 0px rgba(255,255,255,0.85),
+    530px  85px 2px 0px rgba(255,255,255,0.85), 175px 330px 2px 0px rgba(255,255,255,0.85),
+    415px 510px 2px 0px rgba(255,255,255,0.85), 285px 110px 2px 0px rgba(255,255,255,0.85);
+  animation: starTwinkle 50s ease-in-out infinite reverse;
+}
+
+/* ── 대형 별 (15개, 황금빛, 느린 반짝임) ── */
+.stars-large {
+  box-shadow:
+    190px 150px 3px 1px rgba(212,175,55,0.7), 430px  70px 3px 1px rgba(212,175,55,0.7),
+     70px 380px 3px 1px rgba(212,175,55,0.7), 510px 280px 3px 1px rgba(212,175,55,0.7),
+    260px  30px 3px 1px rgba(212,175,55,0.7), 345px 450px 3px 1px rgba(212,175,55,0.7),
+    100px 510px 3px 1px rgba(212,175,55,0.7), 480px 160px 3px 1px rgba(212,175,55,0.7),
+    150px 220px 3px 1px rgba(212,175,55,0.7), 395px 330px 3px 1px rgba(212,175,55,0.7),
+     35px  60px 3px 1px rgba(212,175,55,0.7), 560px 490px 3px 1px rgba(212,175,55,0.7),
+    225px 400px 3px 1px rgba(212,175,55,0.7), 465px 545px 3px 1px rgba(212,175,55,0.7),
+    310px 195px 3px 1px rgba(212,175,55,0.7);
+  animation: starTwinkle 100s ease-in-out infinite;
+}
+
+/* 황금 안개 레이어 */
+.bg-fog {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 50% at 30% 70%, rgba(212,175,55,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 70% 30%, rgba(100,160,255,0.04) 0%, transparent 60%);
+  animation: fogDrift 15s ease-in-out infinite alternate;
+}
+</style>

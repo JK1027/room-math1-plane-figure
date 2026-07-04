@@ -1,0 +1,121 @@
+<script>
+/* ============================================================
+   AchievementManager.html
+   업적 시스템. EventBus 구독 방식으로 기존 코드에 침투하지 않음.
+   ============================================================ */
+const AchievementManager = (function() {
+  "use strict";
+
+  /* 업적 정의 */
+  const ACHIEVEMENTS = [
+    {
+      id: "first_clear",
+      icon: "🏅",
+      title: "첫 탈출",
+      desc: "처음으로 성을 탈출했습니다.",
+      check: function(state) {
+        return state.game && state.game.cleared === true;
+      }
+    },
+    {
+      id: "no_wrong",
+      icon: "🎯",
+      title: "무오답 도전",
+      desc: "한 번도 틀리지 않고 탈출했습니다.",
+      check: function(state) {
+        return state.puzzle && state.puzzle.wrongCount === 0 && state.game && state.game.cleared;
+      }
+    },
+    {
+      id: "no_hint",
+      icon: "💡",
+      title: "힌트 거부",
+      desc: "힌트 없이 탈출했습니다.",
+      check: function(state) {
+        return state.puzzle && state.puzzle.hintCount === 0 && state.game && state.game.cleared;
+      }
+    },
+    {
+      id: "speed_run",
+      icon: "⚡",
+      title: "번개 탈출",
+      desc: "5분 이내에 탈출했습니다.",
+      check: function(state) {
+        if (!state.game || !state.game.cleared) return false;
+        if (!state.game.startTime || !state.game.endTime) return false;
+        const elapsed = (new Date(state.game.endTime) - new Date(state.game.startTime)) / 1000;
+        return elapsed <= 300; // 5분 = 300초
+      }
+    },
+    {
+      id: "perfect",
+      icon: "🔥",
+      title: "완벽한 탈출",
+      desc: "오답도, 힌트도 없이 탈출했습니다.",
+      check: function(state) {
+        return state.puzzle &&
+               state.puzzle.wrongCount === 0 &&
+               state.puzzle.hintCount === 0 &&
+               state.game && state.game.cleared;
+      }
+    }
+  ];
+
+  /* 이미 보여준 업적 ID 추적 (중복 방지) */
+  const _shown = {};
+
+  /* 현재 상태 스냅샷 수집 */
+  function _collectState() {
+    return {
+      game:   (typeof GameState   !== "undefined") ? GameState   : null,
+      puzzle: (typeof PuzzleState !== "undefined") ? PuzzleState : null
+    };
+  }
+
+  /* 업적 확인 및 표시 */
+  function _evaluate() {
+    const state = _collectState();
+    ACHIEVEMENTS.forEach(function(ach) {
+      if (_shown[ach.id]) return;
+      try {
+        if (ach.check(state)) {
+          _shown[ach.id] = true;
+          if (typeof AnimationManager !== "undefined") {
+            AnimationManager.playAchievement(ach.icon, ach.title);
+          }
+        }
+      } catch (e) {
+        /* 안전하게 무시 */
+      }
+    });
+  }
+
+  return {
+    init: function() {
+      /* EventBus 구독 — 상태 변경마다 업적 평가 */
+      if (typeof EventBus !== "undefined") {
+        EventBus.subscribe("stateChange:game",   _evaluate);
+        EventBus.subscribe("stateChange:puzzle", _evaluate);
+      }
+      console.log("[AchievementManager] 초기화 완료. 업적:", ACHIEVEMENTS.length + "개");
+    },
+
+    /* 외부 강제 평가 (테스트용) */
+    evaluate: function() {
+      _evaluate();
+    }
+  };
+})();
+
+/* 자동 초기화 */
+(function() {
+  function tryInit() {
+    if (typeof EventBus !== "undefined" && typeof AnimationManager !== "undefined") {
+      AchievementManager.init();
+    } else {
+      setTimeout(tryInit, 100);
+    }
+  }
+  tryInit();
+})();
+</script>

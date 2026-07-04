@@ -10,6 +10,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+KR:wght@300;400;700&display=swap");
 
 :root {
+  /* 기존 */
   --bg-color: #080f1a;
   --panel-bg: rgba(13, 27, 42, 0.75);
   --gold-primary: #d4af37;
@@ -20,6 +21,26 @@
   --border-gold: rgba(212, 175, 55, 0.3);
   --font-title: "Outfit", "Noto Sans KR", sans-serif;
   --font-body: "Noto Sans KR", sans-serif;
+
+  /* 신규: 확장 색상 변수 */
+  --gold-light: #fff0a0;
+  --gold-dim: rgba(212, 175, 55, 0.15);
+  --navy-deep: #040a14;
+  --fog-color: rgba(100, 160, 255, 0.04);
+  --rune-color: rgba(120, 200, 255, 0.12);
+  --rune-glow: rgba(100, 180, 255, 0.4);
+
+  /* 신규: 스테이지별 배경 변수 */
+  --stage1-from: #001a0a;  /* 거울의 숲: 어두운 초록 */
+  --stage1-to:   #0b131f;
+  --stage2-from: #0a0014;  /* 신전: 어두운 보라 */
+  --stage2-to:   #1b1040;
+  --stage3-from: #001030;  /* 빛의 신전: 어두운 파랑 */
+  --stage3-to:   #0a2060;
+  --stage4-from: #200000;  /* 제단: 어두운 빨강 */
+  --stage4-to:   #0b131f;
+  --stage5-from: #1a000a;  /* 알현실: 어두운 자주 */
+  --stage5-to:   #200010;
 }
 
 * {
@@ -95,7 +116,10 @@ h1 {
   font-size: 2.8rem;
   font-weight: 800;
   color: var(--gold-primary);
-  text-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+  text-shadow:
+    0 0 10px rgba(212, 175, 55, 0.5),
+    0 0 30px rgba(212, 175, 55, 0.25),
+    0 0 60px rgba(212, 175, 55, 0.12);
   letter-spacing: 1px;
 }
 
@@ -115,7 +139,7 @@ h1 {
   margin-bottom: 30px;
 }
 
-/* 버튼 모션 디자인 */
+/* 버튼 3상태 디자인 (Idle / Hover / Active) */
 .btn {
   background: linear-gradient(135deg, var(--gold-primary), #b8860b);
   border: none;
@@ -129,16 +153,26 @@ h1 {
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   width: 100%;
   letter-spacing: 1px;
+  position: relative;
+  overflow: hidden;
+  /* Idle: 황금빛 맥동 */
+  animation: btnIdle 3s ease-in-out infinite;
 }
 
+/* Hover: 위로 뜨며 외광 강화 */
 .btn:hover {
   background: linear-gradient(135deg, var(--gold-hover), var(--gold-primary));
-  box-shadow: 0 6px 22px rgba(212, 175, 55, 0.5), 0 0 10px var(--gold-hover);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(212, 175, 55, 0.6), 0 0 16px var(--gold-light);
+  transform: translateY(-3px);
+  animation: none;
 }
 
+/* Active(클릭): 눌리는 느낌 + 내광 순간 점화 */
 .btn:active {
-  transform: translateY(0);
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 20px var(--gold-light);
+  transition: all 0.08s;
+  animation: none;
 }
 
 .btn:disabled {
@@ -148,6 +182,12 @@ h1 {
   cursor: not-allowed;
   transform: none;
   border: 1px solid rgba(255, 255, 255, 0.05);
+  animation: none;
+}
+
+@keyframes btnIdle {
+  0%, 100% { box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3); }
+  50%       { box-shadow: 0 4px 22px rgba(212, 175, 55, 0.55), 0 0 8px rgba(212, 175, 55, 0.2); }
 }
 
 .btn-secondary {
@@ -233,6 +273,31 @@ h1 {
   font-weight: bold;
   letter-spacing: 1px;
   animation: bounce 1.5s infinite;
+  transition: opacity 0.3s ease;
+}
+
+/* 타이핑 중일 때 인디케이터 숨김 */
+.story-box.typing .tap-indicator {
+  opacity: 0;
+}
+
+/* Pulse Border: outline + box-shadow 동시 사용 */
+.story-box.typing {
+  outline: 1px solid transparent;
+  animation: pulseBorder 0.8s ease-in-out infinite;
+}
+
+@keyframes pulseBorder {
+  0%, 100% {
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.7), 0 0 8px rgba(212, 175, 55, 0.15);
+    outline-color: transparent;
+    border-color: var(--gold-primary);
+  }
+  50% {
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.7), 0 0 22px rgba(212, 175, 55, 0.5);
+    outline-color: rgba(212, 175, 55, 0.25);
+    border-color: var(--gold-hover);
+  }
 }
 
 /* 퍼즐 컨테이너 */
@@ -324,6 +389,353 @@ h1 {
   100% { left: 100%; }
 }
 
+/* 룬 링 회전 */
+@keyframes runeRotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* 룬 링 역방향 회전 (내부 링) */
+@keyframes runeRotateReverse {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+
+/* 페이드인 등장 */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 마법진 등장 */
+@keyframes magicCircleIn {
+  from { opacity: 0; transform: scale(0.3) rotate(-30deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+/* 빛 번쩍 */
+@keyframes flashWhite {
+  0%   { filter: brightness(1); }
+  30%  { filter: brightness(2.5) saturate(0.5); }
+  100% { filter: brightness(1); }
+}
+
+/* 텍스트 위로 소멸 */
+@keyframes floatUp {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-30px); }
+}
+
+/* 성문 왼쪽 열림 */
+@keyframes gateOpenLeft {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-52%); }
+}
+
+/* 성문 오른쪽 열림 */
+@keyframes gateOpenRight {
+  from { transform: translateX(0); }
+  to   { transform: translateX(52%); }
+}
+
+/* 성문 빛 넘침 */
+@keyframes gateGlow {
+  from { opacity: 0; transform: scaleX(0.1); }
+  to   { opacity: 1; transform: scaleX(1); }
+}
+
+/* 컨페티 낙하 */
+@keyframes confettiFall {
+  from { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  to   { transform: translateY(420px) rotate(720deg); opacity: 0; }
+}
+
+/* 안개 표류 */
+@keyframes fogDrift {
+  from { transform: translateX(-5%) translateY(0); }
+  to   { transform: translateX(5%) translateY(-3%); }
+}
+
+/* 별 반짝임 */
+@keyframes starTwinkle {
+  0%, 100% { opacity: 0.75; }
+  50%       { opacity: 0.35; }
+}
+
+/* 별 이동 (느린 흐름) */
+@keyframes starDrift {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-30px); }
+}
+
+/* 인트로 룬 링 진동 */
+@keyframes runeRingPulse {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 0.9; }
+}
+
+/* 업적 토스트 슬라이드인 */
+@keyframes toastSlideIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes toastSlideOut {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(120%); opacity: 0; }
+}
+
+/* 바운스 팝 (업적, 정답 텍스트) */
+@keyframes popIn {
+  0%   { transform: scale(0); opacity: 0; }
+  70%  { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* 인트로 룬 링 래퍼 */
+.rune-ring-wrapper {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 16px;
+}
+
+.rune-ring-svg {
+  width: 100%;
+  height: 100%;
+  animation: runeRotate 20s linear infinite;
+}
+
+.rune-ring-svg .inner-ring {
+  animation: runeRotateReverse 12s linear infinite;
+  transform-origin: center;
+}
+
+.rune-ring-svg .outer-ring {
+  animation: runeRingPulse 4s ease-in-out infinite;
+}
+
+/* 업적 토스트 */
+.achievement-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(13, 27, 42, 0.95);
+  border: 1px solid var(--gold-primary);
+  border-radius: 12px;
+  padding: 14px 18px;
+  z-index: 9999;
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 220px;
+  animation: toastSlideIn 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+  backdrop-filter: blur(10px);
+}
+
+.achievement-toast.hiding {
+  animation: toastSlideOut 0.4s ease-in forwards;
+}
+
+.achievement-toast .toast-icon {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+
+.achievement-toast .toast-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.achievement-toast .toast-label {
+  font-size: 0.72rem;
+  color: var(--gold-primary);
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.achievement-toast .toast-title {
+  font-size: 0.95rem;
+  color: var(--text-light);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* 스토리 씬 레이어 구조 */
+.story-layer-container {
+  position: relative;
+  width: 100%;
+  min-height: 320px;
+}
+
+.story-bg-layer {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  z-index: 0;
+  transition: background 1s ease;
+}
+
+.story-fog-layer {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(ellipse 80% 60% at 50% 80%,
+    var(--fog-color) 0%, transparent 70%);
+  animation: fogDrift 12s ease-in-out infinite alternate;
+}
+
+.story-rune-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.story-rune-layer .rune-svg {
+  width: 90%;
+  max-width: 340px;
+  animation: runeRotate 40s linear infinite;
+}
+
+.story-content-layer {
+  position: relative;
+  z-index: 2;
+  padding: 8px;
+}
+
+.story-speaker-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 6px 14px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 8px;
+  border-left: 3px solid var(--gold-primary);
+  width: fit-content;
+}
+
+.story-speaker-bar .speaker-icon {
+  font-size: 1.1rem;
+}
+
+#story-speaker-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--gold-primary);
+  letter-spacing: 1px;
+}
+
+/* 마법진 오버레이 */
+.magic-circle-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  pointer-events: none;
+  border-radius: 12px;
+}
+
+.magic-circle-svg {
+  width: 80%;
+  max-width: 280px;
+  animation: magicCircleIn 0.2s ease-out forwards;
+}
+
+.puzzle-wrapper {
+  position: relative;
+}
+
+/* 정답 연출 텍스트 */
+.solved-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 25;
+  font-family: var(--font-title);
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--gold-light);
+  text-shadow: 0 0 20px var(--gold-primary), 0 0 40px rgba(212, 175, 55, 0.5);
+  pointer-events: none;
+  white-space: nowrap;
+  animation: popIn 0.3s ease-out forwards;
+}
+
+.solved-text.floating-away {
+  animation: floatUp 0.4s ease-in forwards;
+}
+
+/* 빛 번쩍 클래스 */
+.flash-white {
+  animation: flashWhite 0.3s ease-out forwards;
+}
+
+/* 성문 컨테이너 */
+.gate-container {
+  position: relative;
+  width: 180px;
+  height: 160px;
+  margin: 0 auto 20px;
+  overflow: hidden;
+}
+
+.gate-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.gate-left, .gate-right {
+  transition: none;
+}
+
+.gate-left.open {
+  animation: gateOpenLeft 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.5s forwards;
+}
+
+.gate-right.open {
+  animation: gateOpenRight 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.5s forwards;
+}
+
+.gate-glow {
+  position: absolute;
+  top: 10%;
+  left: 10%;
+  width: 80%;
+  height: 80%;
+  background: radial-gradient(ellipse, rgba(255, 220, 80, 0.7) 0%, transparent 70%);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.gate-glow.open {
+  animation: gateGlow 0.6s ease-out 1.1s forwards;
+}
+
+/* 컨페티 조각 */
+.confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  top: 0;
+  pointer-events: none;
+  animation: confettiFall var(--duration, 2s) var(--delay, 0s) ease-in forwards;
+}
+
 /* 모바일 쿼리 */
 @media (max-width: 480px) {
   .card {
@@ -352,11 +764,31 @@ h1 {
 
   </head>
   <body>
+    <!-- 전역 배경 레이어: 별 3개 + 안개 -->
+    <div class="stars-small"></div>
+    <div class="stars-medium"></div>
+    <div class="stars-large"></div>
+    <div class="bg-fog"></div>
+
     <div id="game-container">
       
       <!-- 1. Intro Scene -->
       <div id="scene-intro" class="scene active">
         <div class="card">
+          <!-- 룬 링 SVG -->
+          <div class="rune-ring-wrapper">
+            <svg class="rune-ring-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <!-- 외부 링 (느린 회전 + 맥동) -->
+              <polygon class="outer-ring" points="60,4 114,32 114,88 60,116 6,88 6,32"
+                       fill="none" stroke="rgba(212,175,55,0.45)" stroke-width="1.5"/>
+              <!-- 내부 링 (역방향 회전) -->
+              <polygon class="inner-ring" points="60,18 102,42 102,78 60,102 18,78 18,42"
+                       fill="none" stroke="rgba(120,200,255,0.3)" stroke-width="1"/>
+              <!-- 중앙 룬 심볼 -->
+              <text x="60" y="66" text-anchor="middle" dominant-baseline="middle"
+                    font-size="22" fill="rgba(212,175,55,0.6)" font-family="serif">✦</text>
+            </svg>
+          </div>
           <h1>Geometry Escape</h1>
           <h2 class="sub-title">기하의 성</h2>
           <p class="description">수학의 봉인을 풀고 마도사의 성을 탈출하세요.</p>
@@ -384,9 +816,33 @@ h1 {
 
       <!-- 3. Story Scene -->
       <div id="scene-story" class="scene">
-        <div id="story-click-area" class="story-box">
-          <div id="story-dialog-text" class="dialog-text">스토리가 로딩 중입니다...</div>
-          <div class="tap-indicator">▼ 클릭하여 계속</div>
+        <div class="story-layer-container">
+          <!-- Layer 1: 스테이지별 배경 그라데이션 -->
+          <div id="story-bg-layer" class="story-bg-layer" data-stage="1"></div>
+          <!-- Layer 2: 안개 -->
+          <div class="story-fog-layer"></div>
+          <!-- Layer 3: 룬 문양 SVG -->
+          <div class="story-rune-layer">
+            <svg class="rune-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+              <polygon points="100,8 188,55 188,145 100,192 12,145 12,55"
+                       fill="none" stroke="rgba(120,200,255,0.15)" stroke-width="1.2"/>
+              <polygon points="100,30 170,70 170,130 100,170 30,130 30,70"
+                       fill="none" stroke="rgba(212,175,55,0.1)" stroke-width="0.8"/>
+            </svg>
+          </div>
+          <!-- Layer 4: 화자 정보 + 대사창 -->
+          <div class="story-content-layer">
+            <!-- 화자 네임박스 -->
+            <div class="story-speaker-bar">
+              <span class="speaker-icon">🔮</span>
+              <span id="story-speaker-name">마도사</span>
+            </div>
+            <!-- Layer 5: 대사창 -->
+            <div id="story-click-area" class="story-box">
+              <div id="story-dialog-text" class="dialog-text">스토리가 로딩 중입니다...</div>
+              <div class="tap-indicator">▼ 클릭하여 계속</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -409,10 +865,14 @@ h1 {
       <!-- 5. Ending Scene -->
       <div id="scene-ending" class="scene">
         <div class="card">
-          <h2>빛의 영역으로</h2>
-          <p class="description">마도사의 성을 무사히 탈출했습니다!</p>
-          <div id="ending-record" class="record-box"></div>
-          <button id="ending-submit-btn" class="btn">기록 및 랭킹 등록</button>
+          <!-- 성문 SVG는 AnimationManager.playGateOpen()이 동적으로 삽입 -->
+          <div class="ending-card-content">
+            <h2>빛의 영역으로</h2>
+            <p class="description">마도사의 성을 무사히 탈출했습니다!</p>
+            <!-- 랭크 표시는 AnimationManager가 삽입 -->
+            <div id="ending-record" class="record-box"></div>
+            <button id="ending-submit-btn" class="btn">기록 및 랭킹 등록</button>
+          </div>
         </div>
       </div>
 
@@ -439,6 +899,703 @@ h1 {
       </div>
 
     </div>
+
+    <!-- Effects Layer (CSS 먼저 적용) -->
+    <style>
+/* ============================================================
+   BackgroundEffects.html
+   전역 배경 연출: 별 파티클 3레이어 + 황금 안개
+   ============================================================ */
+
+/* 별 파티클 공통 베이스 */
+.stars-small,
+.stars-medium,
+.stars-large {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: transparent;
+}
+
+/* ── 소형 별 (50개, 빠른 반짝임) ── */
+.stars-small {
+  box-shadow:
+    12px  84px 1px 0px #fff, 240px  33px 1px 0px #fff,  85px 176px 1px 0px #fff,
+   347px  62px 1px 0px #fff, 512px 290px 1px 0px #fff, 178px  45px 1px 0px #fff,
+   423px 130px 1px 0px #fff,  67px 310px 1px 0px #fff, 290px 205px 1px 0px #fff,
+   550px  18px 1px 0px #fff,  33px 420px 1px 0px #fff, 460px 380px 1px 0px #fff,
+   195px 490px 1px 0px #fff, 380px  92px 1px 0px #fff, 135px 560px 1px 0px #fff,
+   490px 450px 1px 0px #fff,  22px 240px 1px 0px #fff, 318px 335px 1px 0px #fff,
+   575px 155px 1px 0px #fff,  98px  12px 1px 0px #fff, 440px 255px 1px 0px #fff,
+   210px 100px 1px 0px #fff, 530px  72px 1px 0px #fff, 158px 380px 1px 0px #fff,
+   365px 480px 1px 0px #fff,  48px 135px 1px 0px #fff, 285px 510px 1px 0px #fff,
+   500px 190px 1px 0px #fff,  73px 390px 1px 0px #fff, 410px  50px 1px 0px #fff,
+   125px 270px 1px 0px #fff, 475px 340px 1px 0px #fff, 230px 430px 1px 0px #fff,
+   560px 100px 1px 0px #fff,  18px  55px 1px 0px #fff, 340px 175px 1px 0px #fff,
+   105px 490px 1px 0px #fff, 395px 285px 1px 0px #fff, 545px 420px 1px 0px #fff,
+   170px 165px 1px 0px #fff, 455px 130px 1px 0px #fff,  42px 530px 1px 0px #fff,
+   300px  28px 1px 0px #fff, 520px 320px 1px 0px #fff, 200px 350px 1px 0px #fff,
+   375px 440px 1px 0px #fff,  90px 210px 1px 0px #fff, 430px 510px 1px 0px #fff,
+   258px  80px 1px 0px #fff, 148px 320px 1px 0px #fff;
+  animation: starTwinkle 20s ease-in-out infinite;
+}
+
+/* ── 중형 별 (30개, 중간 반짝임) ── */
+.stars-medium {
+  box-shadow:
+    155px 280px 2px 0px rgba(255,255,255,0.85), 470px 110px 2px 0px rgba(255,255,255,0.85),
+     60px 450px 2px 0px rgba(255,255,255,0.85), 320px  40px 2px 0px rgba(255,255,255,0.85),
+    540px 370px 2px 0px rgba(255,255,255,0.85),  15px 190px 2px 0px rgba(255,255,255,0.85),
+    240px 500px 2px 0px rgba(255,255,255,0.85), 405px 230px 2px 0px rgba(255,255,255,0.85),
+    110px  75px 2px 0px rgba(255,255,255,0.85), 575px 480px 2px 0px rgba(255,255,255,0.85),
+    350px 155px 2px 0px rgba(255,255,255,0.85),  80px 340px 2px 0px rgba(255,255,255,0.85),
+    495px  25px 2px 0px rgba(255,255,255,0.85), 185px 415px 2px 0px rgba(255,255,255,0.85),
+    435px 295px 2px 0px rgba(255,255,255,0.85),  30px  95px 2px 0px rgba(255,255,255,0.85),
+    270px 360px 2px 0px rgba(255,255,255,0.85), 515px 180px 2px 0px rgba(255,255,255,0.85),
+    125px 540px 2px 0px rgba(255,255,255,0.85), 390px  60px 2px 0px rgba(255,255,255,0.85),
+    555px 430px 2px 0px rgba(255,255,255,0.85), 205px 200px 2px 0px rgba(255,255,255,0.85),
+     45px 475px 2px 0px rgba(255,255,255,0.85), 460px 390px 2px 0px rgba(255,255,255,0.85),
+    310px 255px 2px 0px rgba(255,255,255,0.85),  95px 145px 2px 0px rgba(255,255,255,0.85),
+    530px  85px 2px 0px rgba(255,255,255,0.85), 175px 330px 2px 0px rgba(255,255,255,0.85),
+    415px 510px 2px 0px rgba(255,255,255,0.85), 285px 110px 2px 0px rgba(255,255,255,0.85);
+  animation: starTwinkle 50s ease-in-out infinite reverse;
+}
+
+/* ── 대형 별 (15개, 황금빛, 느린 반짝임) ── */
+.stars-large {
+  box-shadow:
+    190px 150px 3px 1px rgba(212,175,55,0.7), 430px  70px 3px 1px rgba(212,175,55,0.7),
+     70px 380px 3px 1px rgba(212,175,55,0.7), 510px 280px 3px 1px rgba(212,175,55,0.7),
+    260px  30px 3px 1px rgba(212,175,55,0.7), 345px 450px 3px 1px rgba(212,175,55,0.7),
+    100px 510px 3px 1px rgba(212,175,55,0.7), 480px 160px 3px 1px rgba(212,175,55,0.7),
+    150px 220px 3px 1px rgba(212,175,55,0.7), 395px 330px 3px 1px rgba(212,175,55,0.7),
+     35px  60px 3px 1px rgba(212,175,55,0.7), 560px 490px 3px 1px rgba(212,175,55,0.7),
+    225px 400px 3px 1px rgba(212,175,55,0.7), 465px 545px 3px 1px rgba(212,175,55,0.7),
+    310px 195px 3px 1px rgba(212,175,55,0.7);
+  animation: starTwinkle 100s ease-in-out infinite;
+}
+
+/* 황금 안개 레이어 */
+.bg-fog {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 50% at 30% 70%, rgba(212,175,55,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 70% 30%, rgba(100,160,255,0.04) 0%, transparent 60%);
+  animation: fogDrift 15s ease-in-out infinite alternate;
+}
+</style>
+
+    <style>
+/* ============================================================
+   SceneEffects.html
+   스테이지별 배경 레이어 CSS (CSS + SVG 완전 순수, 이미지 없음)
+   ============================================================ */
+
+/* ── 공통 배경 레이어 의사 요소 기반 ── */
+.story-bg-layer::before,
+.story-bg-layer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ============================
+   Stage 1: 거울의 숲
+   초록 안개 + 위로 떠오르는 빛 입자
+   ============================ */
+.story-bg-layer[data-stage="1"] {
+  background: radial-gradient(ellipse at bottom,
+    var(--stage1-from) 0%, var(--stage1-to) 100%);
+}
+.story-bg-layer[data-stage="1"]::before {
+  background:
+    radial-gradient(circle 120px at 20% 80%, rgba(0,180,60,0.1) 0%, transparent 70%),
+    radial-gradient(circle 80px  at 75% 60%, rgba(0,220,80,0.07) 0%, transparent 60%);
+  animation: fogDrift 8s ease-in-out infinite alternate;
+}
+.story-bg-layer[data-stage="1"]::after {
+  background:
+    radial-gradient(circle 40px at 40% 90%, rgba(80,255,120,0.08) 0%, transparent 60%),
+    radial-gradient(circle 25px at 65% 95%, rgba(60,255,100,0.06) 0%, transparent 50%);
+  animation: floatUp 5s ease-in-out infinite;
+  opacity: 0.6;
+}
+
+/* ============================
+   Stage 2: 신전의 회랑
+   기둥 실루엣 + 보랏빛 광원
+   ============================ */
+.story-bg-layer[data-stage="2"] {
+  background: radial-gradient(ellipse at top,
+    var(--stage2-from) 0%, var(--stage2-to) 100%);
+}
+.story-bg-layer[data-stage="2"]::before {
+  /* 수직 기둥 실루엣 (CSS repeating gradient) */
+  background:
+    repeating-linear-gradient(
+      to right,
+      rgba(40,0,80,0.4) 0px, rgba(40,0,80,0.4) 6px,
+      transparent 6px, transparent 48px
+    ),
+    linear-gradient(to top, rgba(80,0,140,0.2) 0%, transparent 60%);
+}
+.story-bg-layer[data-stage="2"]::after {
+  background: radial-gradient(ellipse 50% 30% at 50% 0%,
+    rgba(140,60,255,0.18) 0%, transparent 70%);
+  animation: runeRingPulse 4s ease-in-out infinite;
+}
+
+/* ============================
+   Stage 3: 빛의 신전
+   레이저 빔 + 푸른 광원
+   ============================ */
+.story-bg-layer[data-stage="3"] {
+  background: radial-gradient(ellipse at center,
+    var(--stage3-from) 0%, var(--stage3-to) 100%);
+}
+.story-bg-layer[data-stage="3"]::before {
+  background:
+    repeating-linear-gradient(
+      75deg,
+      transparent 0px, transparent 38px,
+      rgba(80,160,255,0.05) 38px, rgba(80,160,255,0.05) 40px,
+      transparent 40px, transparent 78px
+    );
+  animation: fogDrift 10s linear infinite;
+}
+.story-bg-layer[data-stage="3"]::after {
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 10%, rgba(80,180,255,0.2) 0%, transparent 70%),
+    radial-gradient(ellipse 30% 20% at 30% 80%, rgba(60,120,255,0.12) 0%, transparent 60%);
+  animation: runeRingPulse 3s ease-in-out infinite alternate;
+}
+
+/* ============================
+   Stage 4: 마도사의 제단
+   붉은 불꽃 맥동 + 어두운 그림자
+   ============================ */
+.story-bg-layer[data-stage="4"] {
+  background: radial-gradient(ellipse at bottom,
+    var(--stage4-from) 0%, var(--stage4-to) 100%);
+}
+.story-bg-layer[data-stage="4"]::before {
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 100%,
+      rgba(255,60,0,0.18) 0%, transparent 60%);
+  animation: flamePulse 2s ease-in-out infinite alternate;
+}
+.story-bg-layer[data-stage="4"]::after {
+  background:
+    radial-gradient(circle 30px at 25% 85%, rgba(255,100,0,0.12) 0%, transparent 60%),
+    radial-gradient(circle 20px at 70% 90%, rgba(255,80,0,0.1) 0%, transparent 50%);
+  animation: floatUp 3s ease-in-out infinite;
+}
+
+/* ============================
+   Stage 5: 마도사 알현실 (보스)
+   자주빛 별빛 + 신비로운 광원
+   ============================ */
+.story-bg-layer[data-stage="5"] {
+  background: radial-gradient(ellipse at top,
+    var(--stage5-from) 0%, var(--stage5-to) 100%);
+}
+.story-bg-layer[data-stage="5"]::before {
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%,
+      rgba(180,0,100,0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 80% 70%,
+      rgba(120,0,160,0.12) 0%, transparent 50%);
+  animation: runeRingPulse 5s ease-in-out infinite;
+}
+.story-bg-layer[data-stage="5"]::after {
+  background:
+    repeating-linear-gradient(
+      45deg,
+      transparent 0px, transparent 50px,
+      rgba(180,60,255,0.03) 50px, rgba(180,60,255,0.03) 52px
+    );
+}
+
+/* 불꽃 맥동 키프레임 (Stage4 전용) */
+@keyframes flamePulse {
+  from {
+    opacity: 0.6;
+    background: radial-gradient(ellipse 80% 40% at 50% 100%, rgba(255,60,0,0.18) 0%, transparent 60%);
+  }
+  to {
+    opacity: 1;
+    background: radial-gradient(ellipse 80% 50% at 50% 100%, rgba(255,100,0,0.28) 0%, transparent 65%);
+  }
+}
+</style>
+
+    <style>
+/* ============================================================
+   GlowEffects.html
+   SVG Ripple + 마법진 정답 연출 CSS
+   ============================================================ */
+
+/* SVG Ripple 컨테이너 (JS가 동적 생성) */
+.svg-ripple-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* 황금 외광 버튼 강화 (btn-secondary) */
+.btn-secondary:hover {
+  background: rgba(212, 175, 55, 0.15);
+  color: var(--gold-hover);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.4), 0 0 20px rgba(212, 175, 55, 0.15);
+}
+
+/* 퍼즐 정답 시 컨테이너 글로우 */
+.puzzle-canvas-area.solved {
+  animation: flashWhite 0.3s ease-out forwards;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  box-shadow: 0 0 30px rgba(212, 175, 55, 0.5), inset 0 0 20px rgba(212, 175, 55, 0.1);
+}
+
+/* 룬 문자 표시 (정답 연출 3단계) */
+.rune-chars {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 22;
+  font-size: 1.6rem;
+  letter-spacing: 8px;
+  color: var(--rune-glow);
+  text-shadow: 0 0 12px var(--rune-glow);
+  pointer-events: none;
+  opacity: 0;
+  white-space: nowrap;
+}
+
+.rune-chars.visible {
+  animation: popIn 0.2s ease-out forwards;
+}
+
+.rune-chars.fading {
+  animation: floatUp 0.3s ease-in forwards;
+}
+</style>
+
+<script>
+/* ============================================================
+   GlowEffects.html
+   SVG Ripple 생성 함수
+   AnimationManager에서 호출됨
+   ============================================================ */
+function createSVGRipple(x, y, container) {
+  if (!container) return;
+
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.style.cssText = [
+    "position:absolute",
+    "left:" + x + "px",
+    "top:" + y + "px",
+    "width:0",
+    "height:0",
+    "overflow:visible",
+    "pointer-events:none",
+    "z-index:10"
+  ].join(";");
+
+  const circle = document.createElementNS(ns, "circle");
+  circle.setAttribute("cx", "0");
+  circle.setAttribute("cy", "0");
+  circle.setAttribute("r", "5");
+  circle.setAttribute("fill", "none");
+  circle.setAttribute("stroke", "rgba(212,175,55,0.7)");
+  circle.setAttribute("stroke-width", "2");
+
+  svg.appendChild(circle);
+  container.appendChild(svg);
+
+  let start = null;
+  const DURATION = 600; // ms
+
+  function animateRipple(timestamp) {
+    if (!start) start = timestamp;
+    const progress = Math.min((timestamp - start) / DURATION, 1);
+    const r = 5 + progress * 65;
+    const opacity = 1 - progress;
+
+    circle.setAttribute("r", r);
+    circle.setAttribute("opacity", opacity);
+    circle.setAttribute("stroke-width", 2 - progress * 1.5);
+
+    if (progress < 1) {
+      requestAnimationFrame(animateRipple);
+    } else {
+      svg.remove();
+    }
+  }
+
+  requestAnimationFrame(animateRipple);
+}
+</script>
+
+    <style>
+/* ============================================================
+   ParticleEffects.html
+   CSS 전용 컨페티 + 성문 개방 연출
+   ============================================================ */
+
+/* 컨페티 컨테이너 */
+.confetti-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: 20px;
+  z-index: 5;
+}
+
+/* 컨페티 삼각형 */
+.confetti-triangle {
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  background: var(--gold-primary);
+}
+
+/* 컨페티 사각형 */
+.confetti-square {
+  border-radius: 1px;
+  background: var(--gold-hover);
+}
+
+/* 컨페티 육각형 */
+.confetti-hex {
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  background: rgba(212, 175, 55, 0.8);
+}
+
+/* 엔딩 카드 상단 여백 */
+.ending-card-content {
+  animation: fadeInUp 0.5s ease-out 1.5s both;
+}
+
+/* 랭크 텍스트 */
+.rank-display {
+  font-family: var(--font-title);
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  animation: popIn 0.4s ease-out 2s both;
+}
+
+.rank-s  { color: var(--gold-primary); text-shadow: 0 0 20px rgba(212,175,55,0.6); }
+.rank-a  { color: var(--text-light); }
+.rank-b  { color: var(--text-muted); }
+</style>
+
+<script>
+/* ============================================================
+   ParticleEffects.html
+   CSS 컨페티 생성 함수 (Canvas 없음)
+   AnimationManager.playGateOpen()에서 호출됨
+   ============================================================ */
+function createCSSConfetti(container) {
+  if (!container) return;
+
+  // 기존 컨페티 제거
+  const existing = container.querySelector(".confetti-container");
+  if (existing) existing.remove();
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "confetti-container";
+
+  const shapes  = ["confetti-triangle", "confetti-square", "confetti-hex"];
+  const TOTAL   = 22;
+  const WIDTH   = container.offsetWidth || 400;
+
+  for (let i = 0; i < TOTAL; i++) {
+    const el = document.createElement("div");
+    const shape = shapes[i % shapes.length];
+    el.className = "confetti-piece " + shape;
+
+    const left      = Math.random() * 90 + 5;       // 5%~95%
+    const duration  = (1.4 + Math.random() * 1.2).toFixed(2); // 1.4s~2.6s
+    const delay     = (Math.random() * 0.8).toFixed(2);       // 0s~0.8s
+    const size      = Math.floor(6 + Math.random() * 7);       // 6px~12px
+
+    el.style.cssText = [
+      "left:" + left + "%",
+      "--duration:" + duration + "s",
+      "--delay:" + delay + "s",
+      "width:" + size + "px",
+      "height:" + size + "px"
+    ].join(";");
+
+    wrapper.appendChild(el);
+  }
+
+  container.appendChild(wrapper);
+
+  // 3초 후 컨페티 제거
+  setTimeout(function() {
+    if (wrapper.parentNode) wrapper.remove();
+  }, 3500);
+}
+</script>
+
+    <script>
+/* ============================================================
+   AnimationManager.html
+   모든 연출을 지휘하는 중앙 매니저.
+   각 씬은 이 객체의 메서드만 호출합니다.
+   ============================================================ */
+const AnimationManager = (function() {
+  "use strict";
+
+  /* 내부 상태 플래그 (중복 호출 방어) */
+  let _solvedPlaying = false;
+  let _gateOpenPlaying = false;
+
+  /* 화자 이름 매핑 */
+  const SPEAKER_MAP = {
+    1: { icon: "🌲", name: "숲의 정령" },
+    2: { icon: "🏛️", name: "신전 수호자" },
+    3: { icon: "✨", name: "빛의 현자" },
+    4: { icon: "🔥", name: "제단의 영혼" },
+    5: { icon: "🔮", name: "마도사" }
+  };
+
+  return {
+    /* ── Phase 5: 인트로 룬 링 연출 시작 ── */
+    playIntro: function() {
+      // 룬 링은 CSS 애니메이션으로 자동 동작.
+      // 시작 버튼에 Idle 애니메이션이 자동 적용됨.
+      console.log("[AnimationManager] playIntro");
+    },
+
+    /* ── Phase 3: 스토리 배경 레이어 교체 ── */
+    playStoryBg: function(stageId) {
+      console.log("[AnimationManager] playStoryBg stage:", stageId);
+
+      const bgLayer     = document.getElementById("story-bg-layer");
+      const speakerIcon = document.querySelector(".speaker-icon");
+      const speakerName = document.getElementById("story-speaker-name");
+
+      if (bgLayer) {
+        bgLayer.setAttribute("data-stage", String(stageId));
+      }
+
+      const speaker = SPEAKER_MAP[stageId] || { icon: "🔮", name: "마도사" };
+      if (speakerIcon) speakerIcon.textContent = speaker.icon;
+      if (speakerName) speakerName.textContent = speaker.name;
+    },
+
+    /* ── Phase 3: 타이핑 시작 (pulseBorder 시작) ── */
+    playTypingStart: function() {
+      const storyBox = document.getElementById("story-click-area");
+      if (storyBox) storyBox.classList.add("typing");
+    },
+
+    /* ── Phase 3: 타이핑 종료 (pulseBorder 중단) ── */
+    playTypingEnd: function() {
+      const storyBox = document.getElementById("story-click-area");
+      if (storyBox) storyBox.classList.remove("typing");
+    },
+
+    /* ── Phase 4: 정답 마법진 연출 (4단계, 총 0.8s) ── */
+    playSolved: function(container) {
+      if (_solvedPlaying) return;
+      _solvedPlaying = true;
+      console.log("[AnimationManager] playSolved");
+
+      /* ① 마법진 SVG 등장 (0.0s~0.2s) */
+      const overlay = document.createElement("div");
+      overlay.className = "magic-circle-overlay";
+      overlay.innerHTML = [
+        '<svg class="magic-circle-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">',
+          '<circle cx="100" cy="100" r="90" fill="none" stroke="rgba(212,175,55,0.6)" stroke-width="1.5"/>',
+          '<circle cx="100" cy="100" r="70" fill="none" stroke="rgba(120,200,255,0.4)" stroke-width="1"/>',
+          '<polygon points="100,20 175,65 175,135 100,180 25,135 25,65" fill="none" stroke="rgba(212,175,55,0.5)" stroke-width="1.2"/>',
+          '<polygon points="100,40 160,73 160,127 100,160 40,127 40,73"  fill="none" stroke="rgba(120,200,255,0.3)" stroke-width="0.8"/>',
+          '<text x="100" y="55"  text-anchor="middle" font-size="16" fill="rgba(212,175,55,0.7)" font-family="serif">ᛟ</text>',
+          '<text x="160" y="115" text-anchor="middle" font-size="16" fill="rgba(212,175,55,0.7)" font-family="serif">ᛉ</text>',
+          '<text x="40"  y="115" text-anchor="middle" font-size="16" fill="rgba(212,175,55,0.7)" font-family="serif">ᚱ</text>',
+          '<text x="100" y="168" text-anchor="middle" font-size="16" fill="rgba(212,175,55,0.7)" font-family="serif">ᛏ</text>',
+        "</svg>"
+      ].join("");
+
+      if (container) container.appendChild(overlay);
+
+      /* ② 빛 번쩍 (0.2s~0.5s) */
+      setTimeout(function() {
+        if (container) container.classList.add("flash-white");
+        setTimeout(function() {
+          if (container) container.classList.remove("flash-white");
+        }, 300);
+      }, 200);
+
+      /* ③ "✦ 정답! ✦" 텍스트 팝인 (0.5s~0.8s) */
+      setTimeout(function() {
+        if (overlay) overlay.remove();
+
+        const solvedText = document.createElement("div");
+        solvedText.className = "solved-text";
+        solvedText.textContent = "✦  정 답 !  ✦";
+        if (container) container.appendChild(solvedText);
+
+        /* ④ 위로 소멸 (0.8s~1.2s) */
+        setTimeout(function() {
+          solvedText.classList.add("floating-away");
+          setTimeout(function() {
+            if (solvedText.parentNode) solvedText.remove();
+            _solvedPlaying = false;
+          }, 400);
+        }, 800);
+      }, 500);
+    },
+
+    /* ── Phase 6: 성문 개방 연출 ── */
+    playGateOpen: function(score) {
+      if (_gateOpenPlaying) return;
+      _gateOpenPlaying = true;
+      console.log("[AnimationManager] playGateOpen score:", score);
+
+      /* 엔딩 카드에 성문 SVG 주입 */
+      const endingCard = document.querySelector("#scene-ending .card");
+      if (!endingCard) {
+        _gateOpenPlaying = false;
+        return;
+      }
+
+      /* 기존 성문 제거 후 재생성 */
+      const existingGate = endingCard.querySelector(".gate-container");
+      if (existingGate) existingGate.remove();
+
+      const gateEl = document.createElement("div");
+      gateEl.className = "gate-container";
+      gateEl.innerHTML = [
+        '<div class="gate-glow"></div>',
+        '<svg class="gate-svg" viewBox="0 0 180 160" xmlns="http://www.w3.org/2000/svg">',
+          /* 성문 외곽 아치 */
+          '<path d="M10,160 L10,60 Q10,10 90,10 Q170,10 170,60 L170,160 Z"',
+          '      fill="rgba(8,15,26,0.9)" stroke="rgba(212,175,55,0.5)" stroke-width="2"/>',
+          /* 왼쪽 문짝 */
+          '<g class="gate-left">',
+            '<rect x="12" y="60" width="76" height="100" rx="2"',
+            '      fill="rgba(20,35,60,0.95)" stroke="rgba(212,175,55,0.4)" stroke-width="1.5"/>',
+            '<rect x="18" y="68" width="30" height="42" rx="1" fill="none" stroke="rgba(212,175,55,0.25)" stroke-width="1"/>',
+            '<rect x="52" y="68" width="30" height="42" rx="1" fill="none" stroke="rgba(212,175,55,0.25)" stroke-width="1"/>',
+            '<circle cx="84" cy="115" r="4" fill="rgba(212,175,55,0.6)"/>',
+          '</g>',
+          /* 오른쪽 문짝 */
+          '<g class="gate-right">',
+            '<rect x="92" y="60" width="76" height="100" rx="2"',
+            '      fill="rgba(20,35,60,0.95)" stroke="rgba(212,175,55,0.4)" stroke-width="1.5"/>',
+            '<rect x="98" y="68" width="30" height="42" rx="1" fill="none" stroke="rgba(212,175,55,0.25)" stroke-width="1"/>',
+            '<rect x="132" y="68" width="30" height="42" rx="1" fill="none" stroke="rgba(212,175,55,0.25)" stroke-width="1"/>',
+            '<circle cx="96" cy="115" r="4" fill="rgba(212,175,55,0.6)"/>',
+          '</g>',
+          /* 아치 장식 */
+          '<path d="M25,60 Q90,15 155,60" fill="none" stroke="rgba(212,175,55,0.35)" stroke-width="1.5"/>',
+          '<text x="90" y="42" text-anchor="middle" font-size="14" fill="rgba(212,175,55,0.5)" font-family="serif">✦</text>',
+        '</svg>'
+      ].join("");
+
+      /* h2 앞에 성문 삽입 */
+      const h2 = endingCard.querySelector("h2");
+      if (h2) {
+        endingCard.insertBefore(gateEl, h2);
+      } else {
+        endingCard.prepend(gateEl);
+      }
+
+      /* ① 성문 문짝 열림 (0.5s 딜레이) */
+      setTimeout(function() {
+        const gateLeft  = gateEl.querySelector(".gate-left");
+        const gateRight = gateEl.querySelector(".gate-right");
+        const gateGlow  = gateEl.querySelector(".gate-glow");
+
+        if (gateLeft)  gateLeft.classList.add("open");
+        if (gateRight) gateRight.classList.add("open");
+
+        /* ② 황금빛 솟구침 (1.1s) */
+        if (gateGlow)  gateGlow.classList.add("open");
+      }, 100);
+
+      /* ③ 컨페티 낙하 (1.2s) */
+      setTimeout(function() {
+        createCSSConfetti(endingCard);
+      }, 1200);
+
+      /* ④ 랭크 표시 (2.0s) */
+      setTimeout(function() {
+        const existingRank = endingCard.querySelector(".rank-display");
+        if (existingRank) existingRank.remove();
+
+        const rankEl = document.createElement("div");
+        rankEl.className = "rank-display";
+
+        if (score >= 90) {
+          rankEl.classList.add("rank-s");
+          rankEl.textContent = "🏆  S 랭크 탈출!";
+        } else if (score >= 70) {
+          rankEl.classList.add("rank-a");
+          rankEl.textContent = "⭐  A 랭크 탈출!";
+        } else {
+          rankEl.classList.add("rank-b");
+          rankEl.textContent = "탈출 완료!";
+        }
+
+        const recordEl = endingCard.querySelector(".record-box");
+        if (recordEl) {
+          endingCard.insertBefore(rankEl, recordEl);
+        } else {
+          endingCard.appendChild(rankEl);
+        }
+
+        _gateOpenPlaying = false;
+      }, 2000);
+    },
+
+    /* ── 업적 토스트 팝업 ── */
+    playAchievement: function(icon, title) {
+      console.log("[AnimationManager] playAchievement:", title);
+
+      const toast = document.createElement("div");
+      toast.className = "achievement-toast";
+      toast.innerHTML = [
+        '<div class="toast-icon">' + icon + '</div>',
+        '<div class="toast-body">',
+          '<div class="toast-label">업적 달성!</div>',
+          '<div class="toast-title">' + title + '</div>',
+        '</div>'
+      ].join("");
+
+      document.body.appendChild(toast);
+
+      /* 3초 후 슬라이드 아웃 */
+      setTimeout(function() {
+        toast.classList.add("hiding");
+        setTimeout(function() {
+          if (toast.parentNode) toast.remove();
+        }, 400);
+      }, 3000);
+    },
+
+    /* ── SVG Ripple (퍼즐 클릭 시) ── */
+    playRipple: function(x, y, container) {
+      if (typeof createSVGRipple === "function") {
+        createSVGRipple(x, y, container);
+      }
+    }
+  };
+})();
+</script>
+
 
     <!-- Core Engine Includes -->
     <script>
@@ -718,6 +1875,11 @@ const StoryManager = (function() {
       let index = 0;
       const speed = 35; // 한 글자당 대기 시간 (ms)
 
+      // 타이핑 시작 시 앱니메이션 훅
+      if (typeof AnimationManager !== "undefined") {
+        AnimationManager.playTypingStart();
+      }
+
       function type() {
         if (!isTyping) return; // 타이핑 도중 정지(전체 텍스트 출력) 처리되면 루프 즉시 종료
         if (index < text.length) {
@@ -726,6 +1888,10 @@ const StoryManager = (function() {
           typingTimer = setTimeout(type, speed);
         } else {
           isTyping = false;
+          // 타이핑 완료 시 애니메이션 종료
+          if (typeof AnimationManager !== "undefined") {
+            AnimationManager.playTypingEnd();
+          }
         }
       }
       
@@ -803,6 +1969,128 @@ const PuzzleManager = (function() {
       return activePuzzle;
     }
   };
+})();
+</script>
+
+    <script>
+/* ============================================================
+   AchievementManager.html
+   업적 시스템. EventBus 구독 방식으로 기존 코드에 침투하지 않음.
+   ============================================================ */
+const AchievementManager = (function() {
+  "use strict";
+
+  /* 업적 정의 */
+  const ACHIEVEMENTS = [
+    {
+      id: "first_clear",
+      icon: "🏅",
+      title: "첫 탈출",
+      desc: "처음으로 성을 탈출했습니다.",
+      check: function(state) {
+        return state.game && state.game.cleared === true;
+      }
+    },
+    {
+      id: "no_wrong",
+      icon: "🎯",
+      title: "무오답 도전",
+      desc: "한 번도 틀리지 않고 탈출했습니다.",
+      check: function(state) {
+        return state.puzzle && state.puzzle.wrongCount === 0 && state.game && state.game.cleared;
+      }
+    },
+    {
+      id: "no_hint",
+      icon: "💡",
+      title: "힌트 거부",
+      desc: "힌트 없이 탈출했습니다.",
+      check: function(state) {
+        return state.puzzle && state.puzzle.hintCount === 0 && state.game && state.game.cleared;
+      }
+    },
+    {
+      id: "speed_run",
+      icon: "⚡",
+      title: "번개 탈출",
+      desc: "5분 이내에 탈출했습니다.",
+      check: function(state) {
+        if (!state.game || !state.game.cleared) return false;
+        if (!state.game.startTime || !state.game.endTime) return false;
+        const elapsed = (new Date(state.game.endTime) - new Date(state.game.startTime)) / 1000;
+        return elapsed <= 300; // 5분 = 300초
+      }
+    },
+    {
+      id: "perfect",
+      icon: "🔥",
+      title: "완벽한 탈출",
+      desc: "오답도, 힌트도 없이 탈출했습니다.",
+      check: function(state) {
+        return state.puzzle &&
+               state.puzzle.wrongCount === 0 &&
+               state.puzzle.hintCount === 0 &&
+               state.game && state.game.cleared;
+      }
+    }
+  ];
+
+  /* 이미 보여준 업적 ID 추적 (중복 방지) */
+  const _shown = {};
+
+  /* 현재 상태 스냅샷 수집 */
+  function _collectState() {
+    return {
+      game:   (typeof GameState   !== "undefined") ? GameState   : null,
+      puzzle: (typeof PuzzleState !== "undefined") ? PuzzleState : null
+    };
+  }
+
+  /* 업적 확인 및 표시 */
+  function _evaluate() {
+    const state = _collectState();
+    ACHIEVEMENTS.forEach(function(ach) {
+      if (_shown[ach.id]) return;
+      try {
+        if (ach.check(state)) {
+          _shown[ach.id] = true;
+          if (typeof AnimationManager !== "undefined") {
+            AnimationManager.playAchievement(ach.icon, ach.title);
+          }
+        }
+      } catch (e) {
+        /* 안전하게 무시 */
+      }
+    });
+  }
+
+  return {
+    init: function() {
+      /* EventBus 구독 — 상태 변경마다 업적 평가 */
+      if (typeof EventBus !== "undefined") {
+        EventBus.subscribe("stateChange:game",   _evaluate);
+        EventBus.subscribe("stateChange:puzzle", _evaluate);
+      }
+      console.log("[AchievementManager] 초기화 완료. 업적:", ACHIEVEMENTS.length + "개");
+    },
+
+    /* 외부 강제 평가 (테스트용) */
+    evaluate: function() {
+      _evaluate();
+    }
+  };
+})();
+
+/* 자동 초기화 */
+(function() {
+  function tryInit() {
+    if (typeof EventBus !== "undefined" && typeof AnimationManager !== "undefined") {
+      AchievementManager.init();
+    } else {
+      setTimeout(tryInit, 100);
+    }
+  }
+  tryInit();
 })();
 </script>
 
@@ -1831,6 +3119,10 @@ PuzzleManager.register(5, Stage5Puzzle);
 const IntroScene = {
   enter: function(data) {
     console.log("[IntroScene] 진입");
+    // 인트로 룬 링 연출 시작
+    if (typeof AnimationManager !== "undefined") {
+      AnimationManager.playIntro();
+    }
     // 시작하기 버튼 바인딩
     const startBtn = document.getElementById("intro-start-btn");
     if (startBtn) {
@@ -1929,6 +3221,11 @@ const StoryScene = {
     const stageId = data ? data.stageId : 1;
     console.log(`[StoryScene] 진입 - 스테이지 ${stageId}`);
     
+    // 0. 스테이지별 배경 레이어 적용
+    if (typeof AnimationManager !== "undefined") {
+      AnimationManager.playStoryBg(stageId);
+    }
+    
     // 1. 스토리 영역 클릭 리스너 정의 (StoryManager.next() 호출)
     const clickArea = document.getElementById("story-click-area");
     if (clickArea) {
@@ -1941,6 +3238,9 @@ const StoryScene = {
     // 2. StoryManager 개시
     // 대사가 완료되면 해당 스테이지의 퍼즐 씬으로 자동 라우팅
     StoryManager.startStory(stageId, function() {
+      if (typeof AnimationManager !== "undefined") {
+        AnimationManager.playTypingEnd();
+      }
       SceneManager.showScene("puzzle", { stageId: stageId });
     });
   },
@@ -1976,33 +3276,57 @@ const PuzzleScene = {
     const currentPuzzle = PuzzleManager.loadPuzzle(stageId, "puzzle-board-container");
     if (currentPuzzle) {
       currentPuzzle.onClearCallback = () => {
+        // 정답 연출
+        const puzzleArea = document.getElementById("puzzle-board-container");
+        if (typeof AnimationManager !== "undefined" && puzzleArea) {
+          AnimationManager.playSolved(puzzleArea);
+        }
+        
         // 정답 수 갱신
         PuzzleState.correctCount = stageId;
         EventBus.publish("stateChange:puzzle", PuzzleState);
         
-        if (stageId < 5) {
-          // 다음 스테이지 이동
-          GameState.currentStage = stageId + 1;
-          EventBus.publish("stateChange:game", GameState);
-          
-          if (typeof StateStore !== "undefined") {
-            StateStore.saveToLocalStorage();
+        const DELAY_AFTER_SOLVE = 1300; // ms - 클리어 연출 후 다음 샴으로 이동
+        setTimeout(function() {
+          if (stageId < 5) {
+            // 다음 스테이지 이동
+            GameState.currentStage = stageId + 1;
+            EventBus.publish("stateChange:game", GameState);
+            
+            if (typeof StateStore !== "undefined") {
+              StateStore.saveToLocalStorage();
+            }
+            
+            SceneManager.showScene("story", { stageId: GameState.currentStage });
+          } else {
+            // 보스 퍼즐 클리어 -> 엔딩으로
+            GameState.endTime = new Date().toISOString();
+            GameState.cleared = true;
+            EventBus.publish("stateChange:game", GameState);
+            
+            if (typeof StateStore !== "undefined") {
+              StateStore.saveToLocalStorage();
+            }
+            
+            SceneManager.showScene("ending");
           }
-          
-          SceneManager.showScene("story", { stageId: GameState.currentStage });
-        } else {
-          // 보스 퍼즐 클리어 -> 엔딩으로
-          GameState.endTime = new Date().toISOString();
-          GameState.cleared = true;
-          EventBus.publish("stateChange:game", GameState);
-          
-          if (typeof StateStore !== "undefined") {
-            StateStore.saveToLocalStorage();
-          }
-          
-          SceneManager.showScene("ending");
-        }
+        }, DELAY_AFTER_SOLVE);
       };
+      
+      // SVG Ripple: 퍼즐 캔버스 클릭 시
+      const puzzleBoard = document.getElementById("puzzle-board-container");
+      if (puzzleBoard) {
+        this.rippleHandler = (e) => {
+          if (typeof AnimationManager !== "undefined") {
+            const rect = puzzleBoard.getBoundingClientRect();
+            const x = (e.clientX || (e.touches && e.touches[0] && e.touches[0].clientX) || 0) - rect.left;
+            const y = (e.clientY || (e.touches && e.touches[0] && e.touches[0].clientY) || 0) - rect.top;
+            AnimationManager.playRipple(x, y, puzzleBoard);
+          }
+        };
+        puzzleBoard.addEventListener("click",      this.rippleHandler);
+        puzzleBoard.addEventListener("touchstart", this.rippleHandler, { passive: true });
+      }
     }
     
     // 2. 힌트 버튼 리스너 바인딩
@@ -2035,6 +3359,13 @@ const PuzzleScene = {
     if (hintBtn && this.hintHandler) {
       hintBtn.removeEventListener("click", this.hintHandler);
     }
+    
+    // Ripple 리스너 제거
+    const puzzleBoard = document.getElementById("puzzle-board-container");
+    if (puzzleBoard && this.rippleHandler) {
+      puzzleBoard.removeEventListener("click",      this.rippleHandler);
+      puzzleBoard.removeEventListener("touchstart", this.rippleHandler);
+    }
   }
 };
 
@@ -2055,6 +3386,11 @@ const EndingScene = {
     const score = Math.max(0, 100 - (PuzzleState.wrongCount * 5));
     PuzzleState.score = score;
     EventBus.publish("stateChange:puzzle", PuzzleState);
+    
+    // 성문 개방 + 컨페티 + 랭크 연출
+    if (typeof AnimationManager !== "undefined") {
+      AnimationManager.playGateOpen(score);
+    }
     
     // 점수 레코드 바인딩
     const recordEl = document.getElementById("ending-record");

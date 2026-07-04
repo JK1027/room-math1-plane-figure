@@ -16,33 +16,57 @@ const PuzzleScene = {
     const currentPuzzle = PuzzleManager.loadPuzzle(stageId, "puzzle-board-container");
     if (currentPuzzle) {
       currentPuzzle.onClearCallback = () => {
+        // 정답 연출
+        const puzzleArea = document.getElementById("puzzle-board-container");
+        if (typeof AnimationManager !== "undefined" && puzzleArea) {
+          AnimationManager.playSolved(puzzleArea);
+        }
+        
         // 정답 수 갱신
         PuzzleState.correctCount = stageId;
         EventBus.publish("stateChange:puzzle", PuzzleState);
         
-        if (stageId < 5) {
-          // 다음 스테이지 이동
-          GameState.currentStage = stageId + 1;
-          EventBus.publish("stateChange:game", GameState);
-          
-          if (typeof StateStore !== "undefined") {
-            StateStore.saveToLocalStorage();
+        const DELAY_AFTER_SOLVE = 1300; // ms - 클리어 연출 후 다음 샴으로 이동
+        setTimeout(function() {
+          if (stageId < 5) {
+            // 다음 스테이지 이동
+            GameState.currentStage = stageId + 1;
+            EventBus.publish("stateChange:game", GameState);
+            
+            if (typeof StateStore !== "undefined") {
+              StateStore.saveToLocalStorage();
+            }
+            
+            SceneManager.showScene("story", { stageId: GameState.currentStage });
+          } else {
+            // 보스 퍼즐 클리어 -> 엔딩으로
+            GameState.endTime = new Date().toISOString();
+            GameState.cleared = true;
+            EventBus.publish("stateChange:game", GameState);
+            
+            if (typeof StateStore !== "undefined") {
+              StateStore.saveToLocalStorage();
+            }
+            
+            SceneManager.showScene("ending");
           }
-          
-          SceneManager.showScene("story", { stageId: GameState.currentStage });
-        } else {
-          // 보스 퍼즐 클리어 -> 엔딩으로
-          GameState.endTime = new Date().toISOString();
-          GameState.cleared = true;
-          EventBus.publish("stateChange:game", GameState);
-          
-          if (typeof StateStore !== "undefined") {
-            StateStore.saveToLocalStorage();
-          }
-          
-          SceneManager.showScene("ending");
-        }
+        }, DELAY_AFTER_SOLVE);
       };
+      
+      // SVG Ripple: 퍼즐 캔버스 클릭 시
+      const puzzleBoard = document.getElementById("puzzle-board-container");
+      if (puzzleBoard) {
+        this.rippleHandler = (e) => {
+          if (typeof AnimationManager !== "undefined") {
+            const rect = puzzleBoard.getBoundingClientRect();
+            const x = (e.clientX || (e.touches && e.touches[0] && e.touches[0].clientX) || 0) - rect.left;
+            const y = (e.clientY || (e.touches && e.touches[0] && e.touches[0].clientY) || 0) - rect.top;
+            AnimationManager.playRipple(x, y, puzzleBoard);
+          }
+        };
+        puzzleBoard.addEventListener("click",      this.rippleHandler);
+        puzzleBoard.addEventListener("touchstart", this.rippleHandler, { passive: true });
+      }
     }
     
     // 2. 힌트 버튼 리스너 바인딩
@@ -74,6 +98,13 @@ const PuzzleScene = {
     const hintBtn = document.getElementById("puzzle-hint-btn");
     if (hintBtn && this.hintHandler) {
       hintBtn.removeEventListener("click", this.hintHandler);
+    }
+    
+    // Ripple 리스너 제거
+    const puzzleBoard = document.getElementById("puzzle-board-container");
+    if (puzzleBoard && this.rippleHandler) {
+      puzzleBoard.removeEventListener("click",      this.rippleHandler);
+      puzzleBoard.removeEventListener("touchstart", this.rippleHandler);
     }
   }
 };

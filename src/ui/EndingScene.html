@@ -12,6 +12,11 @@ const EndingScene = {
     PuzzleState.score = score;
     EventBus.publish("stateChange:puzzle", PuzzleState);
     
+    // 성문 개방 + 컨페티 + 랭크 연출
+    if (typeof AnimationManager !== "undefined") {
+      AnimationManager.playGateOpen(score);
+    }
+    
     // 점수 레코드 바인딩
     const recordEl = document.getElementById("ending-record");
     if (recordEl) {

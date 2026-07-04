@@ -1,0 +1,102 @@
+<style>
+/* ============================================================
+   ParticleEffects.html
+   CSS 전용 컨페티 + 성문 개방 연출
+   ============================================================ */
+
+/* 컨페티 컨테이너 */
+.confetti-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: 20px;
+  z-index: 5;
+}
+
+/* 컨페티 삼각형 */
+.confetti-triangle {
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  background: var(--gold-primary);
+}
+
+/* 컨페티 사각형 */
+.confetti-square {
+  border-radius: 1px;
+  background: var(--gold-hover);
+}
+
+/* 컨페티 육각형 */
+.confetti-hex {
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  background: rgba(212, 175, 55, 0.8);
+}
+
+/* 엔딩 카드 상단 여백 */
+.ending-card-content {
+  animation: fadeInUp 0.5s ease-out 1.5s both;
+}
+
+/* 랭크 텍스트 */
+.rank-display {
+  font-family: var(--font-title);
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  animation: popIn 0.4s ease-out 2s both;
+}
+
+.rank-s  { color: var(--gold-primary); text-shadow: 0 0 20px rgba(212,175,55,0.6); }
+.rank-a  { color: var(--text-light); }
+.rank-b  { color: var(--text-muted); }
+</style>
+
+<script>
+/* ============================================================
+   ParticleEffects.html
+   CSS 컨페티 생성 함수 (Canvas 없음)
+   AnimationManager.playGateOpen()에서 호출됨
+   ============================================================ */
+function createCSSConfetti(container) {
+  if (!container) return;
+
+  // 기존 컨페티 제거
+  const existing = container.querySelector(".confetti-container");
+  if (existing) existing.remove();
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "confetti-container";
+
+  const shapes  = ["confetti-triangle", "confetti-square", "confetti-hex"];
+  const TOTAL   = 22;
+  const WIDTH   = container.offsetWidth || 400;
+
+  for (let i = 0; i < TOTAL; i++) {
+    const el = document.createElement("div");
+    const shape = shapes[i % shapes.length];
+    el.className = "confetti-piece " + shape;
+
+    const left      = Math.random() * 90 + 5;       // 5%~95%
+    const duration  = (1.4 + Math.random() * 1.2).toFixed(2); // 1.4s~2.6s
+    const delay     = (Math.random() * 0.8).toFixed(2);       // 0s~0.8s
+    const size      = Math.floor(6 + Math.random() * 7);       // 6px~12px
+
+    el.style.cssText = [
+      "left:" + left + "%",
+      "--duration:" + duration + "s",
+      "--delay:" + delay + "s",
+      "width:" + size + "px",
+      "height:" + size + "px"
+    ].join(";");
+
+    wrapper.appendChild(el);
+  }
+
+  container.appendChild(wrapper);
+
+  // 3초 후 컨페티 제거
+  setTimeout(function() {
+    if (wrapper.parentNode) wrapper.remove();
+  }, 3500);
+}
+</script>

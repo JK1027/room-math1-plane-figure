@@ -68,6 +68,11 @@ const StoryManager = (function() {
       let index = 0;
       const speed = 35; // 한 글자당 대기 시간 (ms)
 
+      // 타이핑 시작 시 앱니메이션 훅
+      if (typeof AnimationManager !== "undefined") {
+        AnimationManager.playTypingStart();
+      }
+
       function type() {
         if (!isTyping) return; // 타이핑 도중 정지(전체 텍스트 출력) 처리되면 루프 즉시 종료
         if (index < text.length) {
@@ -76,6 +81,10 @@ const StoryManager = (function() {
           typingTimer = setTimeout(type, speed);
         } else {
           isTyping = false;
+          // 타이핑 완료 시 애니메이션 종료
+          if (typeof AnimationManager !== "undefined") {
+            AnimationManager.playTypingEnd();
+          }
         }
       }
       

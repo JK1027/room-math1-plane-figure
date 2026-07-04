@@ -7,6 +7,11 @@ const StoryScene = {
     const stageId = data ? data.stageId : 1;
     console.log(`[StoryScene] 진입 - 스테이지 ${stageId}`);
     
+    // 0. 스테이지별 배경 레이어 적용
+    if (typeof AnimationManager !== "undefined") {
+      AnimationManager.playStoryBg(stageId);
+    }
+    
     // 1. 스토리 영역 클릭 리스너 정의 (StoryManager.next() 호출)
     const clickArea = document.getElementById("story-click-area");
     if (clickArea) {
@@ -19,6 +24,9 @@ const StoryScene = {
     // 2. StoryManager 개시
     // 대사가 완료되면 해당 스테이지의 퍼즐 씬으로 자동 라우팅
     StoryManager.startStory(stageId, function() {
+      if (typeof AnimationManager !== "undefined") {
+        AnimationManager.playTypingEnd();
+      }
       SceneManager.showScene("puzzle", { stageId: stageId });
     });
   },

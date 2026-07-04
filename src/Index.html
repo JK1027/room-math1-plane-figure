@@ -8,11 +8,31 @@
     <?!= include("Styles"); ?>
   </head>
   <body>
+    <!-- 전역 배경 레이어: 별 3개 + 안개 -->
+    <div class="stars-small"></div>
+    <div class="stars-medium"></div>
+    <div class="stars-large"></div>
+    <div class="bg-fog"></div>
+
     <div id="game-container">
       
       <!-- 1. Intro Scene -->
       <div id="scene-intro" class="scene active">
         <div class="card">
+          <!-- 룬 링 SVG -->
+          <div class="rune-ring-wrapper">
+            <svg class="rune-ring-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <!-- 외부 링 (느린 회전 + 맥동) -->
+              <polygon class="outer-ring" points="60,4 114,32 114,88 60,116 6,88 6,32"
+                       fill="none" stroke="rgba(212,175,55,0.45)" stroke-width="1.5"/>
+              <!-- 내부 링 (역방향 회전) -->
+              <polygon class="inner-ring" points="60,18 102,42 102,78 60,102 18,78 18,42"
+                       fill="none" stroke="rgba(120,200,255,0.3)" stroke-width="1"/>
+              <!-- 중앙 룬 심볼 -->
+              <text x="60" y="66" text-anchor="middle" dominant-baseline="middle"
+                    font-size="22" fill="rgba(212,175,55,0.6)" font-family="serif">✦</text>
+            </svg>
+          </div>
           <h1>Geometry Escape</h1>
           <h2 class="sub-title">기하의 성</h2>
           <p class="description">수학의 봉인을 풀고 마도사의 성을 탈출하세요.</p>
@@ -40,9 +60,33 @@
 
       <!-- 3. Story Scene -->
       <div id="scene-story" class="scene">
-        <div id="story-click-area" class="story-box">
-          <div id="story-dialog-text" class="dialog-text">스토리가 로딩 중입니다...</div>
-          <div class="tap-indicator">▼ 클릭하여 계속</div>
+        <div class="story-layer-container">
+          <!-- Layer 1: 스테이지별 배경 그라데이션 -->
+          <div id="story-bg-layer" class="story-bg-layer" data-stage="1"></div>
+          <!-- Layer 2: 안개 -->
+          <div class="story-fog-layer"></div>
+          <!-- Layer 3: 룬 문양 SVG -->
+          <div class="story-rune-layer">
+            <svg class="rune-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+              <polygon points="100,8 188,55 188,145 100,192 12,145 12,55"
+                       fill="none" stroke="rgba(120,200,255,0.15)" stroke-width="1.2"/>
+              <polygon points="100,30 170,70 170,130 100,170 30,130 30,70"
+                       fill="none" stroke="rgba(212,175,55,0.1)" stroke-width="0.8"/>
+            </svg>
+          </div>
+          <!-- Layer 4: 화자 정보 + 대사창 -->
+          <div class="story-content-layer">
+            <!-- 화자 네임박스 -->
+            <div class="story-speaker-bar">
+              <span class="speaker-icon">🔮</span>
+              <span id="story-speaker-name">마도사</span>
+            </div>
+            <!-- Layer 5: 대사창 -->
+            <div id="story-click-area" class="story-box">
+              <div id="story-dialog-text" class="dialog-text">스토리가 로딩 중입니다...</div>
+              <div class="tap-indicator">▼ 클릭하여 계속</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -65,10 +109,14 @@
       <!-- 5. Ending Scene -->
       <div id="scene-ending" class="scene">
         <div class="card">
-          <h2>빛의 영역으로</h2>
-          <p class="description">마도사의 성을 무사히 탈출했습니다!</p>
-          <div id="ending-record" class="record-box"></div>
-          <button id="ending-submit-btn" class="btn">기록 및 랭킹 등록</button>
+          <!-- 성문 SVG는 AnimationManager.playGateOpen()이 동적으로 삽입 -->
+          <div class="ending-card-content">
+            <h2>빛의 영역으로</h2>
+            <p class="description">마도사의 성을 무사히 탈출했습니다!</p>
+            <!-- 랭크 표시는 AnimationManager가 삽입 -->
+            <div id="ending-record" class="record-box"></div>
+            <button id="ending-submit-btn" class="btn">기록 및 랭킹 등록</button>
+          </div>
         </div>
       </div>
 
@@ -96,12 +144,20 @@
 
     </div>
 
+    <!-- Effects Layer (CSS 먼저 적용) -->
+    <?!= include("effects/BackgroundEffects"); ?>
+    <?!= include("effects/SceneEffects"); ?>
+    <?!= include("effects/GlowEffects"); ?>
+    <?!= include("effects/ParticleEffects"); ?>
+    <?!= include("effects/AnimationManager"); ?>
+
     <!-- Core Engine Includes -->
     <?!= include("engine/EventBus"); ?>
     <?!= include("engine/GameState"); ?>
     <?!= include("engine/SceneEngine"); ?>
     <?!= include("engine/StoryEngine"); ?>
     <?!= include("engine/PuzzleManager"); ?>
+    <?!= include("engine/AchievementManager"); ?>
     
     <!-- Services Includes -->
     <?!= include("services/DbService"); ?>

@@ -3,6 +3,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+KR:wght@300;400;700&display=swap");
 
 :root {
+  /* 기존 */
   --bg-color: #080f1a;
   --panel-bg: rgba(13, 27, 42, 0.75);
   --gold-primary: #d4af37;
@@ -13,6 +14,26 @@
   --border-gold: rgba(212, 175, 55, 0.3);
   --font-title: "Outfit", "Noto Sans KR", sans-serif;
   --font-body: "Noto Sans KR", sans-serif;
+
+  /* 신규: 확장 색상 변수 */
+  --gold-light: #fff0a0;
+  --gold-dim: rgba(212, 175, 55, 0.15);
+  --navy-deep: #040a14;
+  --fog-color: rgba(100, 160, 255, 0.04);
+  --rune-color: rgba(120, 200, 255, 0.12);
+  --rune-glow: rgba(100, 180, 255, 0.4);
+
+  /* 신규: 스테이지별 배경 변수 */
+  --stage1-from: #001a0a;  /* 거울의 숲: 어두운 초록 */
+  --stage1-to:   #0b131f;
+  --stage2-from: #0a0014;  /* 신전: 어두운 보라 */
+  --stage2-to:   #1b1040;
+  --stage3-from: #001030;  /* 빛의 신전: 어두운 파랑 */
+  --stage3-to:   #0a2060;
+  --stage4-from: #200000;  /* 제단: 어두운 빨강 */
+  --stage4-to:   #0b131f;
+  --stage5-from: #1a000a;  /* 알현실: 어두운 자주 */
+  --stage5-to:   #200010;
 }
 
 * {
@@ -88,7 +109,10 @@ h1 {
   font-size: 2.8rem;
   font-weight: 800;
   color: var(--gold-primary);
-  text-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+  text-shadow:
+    0 0 10px rgba(212, 175, 55, 0.5),
+    0 0 30px rgba(212, 175, 55, 0.25),
+    0 0 60px rgba(212, 175, 55, 0.12);
   letter-spacing: 1px;
 }
 
@@ -108,7 +132,7 @@ h1 {
   margin-bottom: 30px;
 }
 
-/* 버튼 모션 디자인 */
+/* 버튼 3상태 디자인 (Idle / Hover / Active) */
 .btn {
   background: linear-gradient(135deg, var(--gold-primary), #b8860b);
   border: none;
@@ -122,16 +146,26 @@ h1 {
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   width: 100%;
   letter-spacing: 1px;
+  position: relative;
+  overflow: hidden;
+  /* Idle: 황금빛 맥동 */
+  animation: btnIdle 3s ease-in-out infinite;
 }
 
+/* Hover: 위로 뜨며 외광 강화 */
 .btn:hover {
   background: linear-gradient(135deg, var(--gold-hover), var(--gold-primary));
-  box-shadow: 0 6px 22px rgba(212, 175, 55, 0.5), 0 0 10px var(--gold-hover);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(212, 175, 55, 0.6), 0 0 16px var(--gold-light);
+  transform: translateY(-3px);
+  animation: none;
 }
 
+/* Active(클릭): 눌리는 느낌 + 내광 순간 점화 */
 .btn:active {
-  transform: translateY(0);
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 20px var(--gold-light);
+  transition: all 0.08s;
+  animation: none;
 }
 
 .btn:disabled {
@@ -141,6 +175,12 @@ h1 {
   cursor: not-allowed;
   transform: none;
   border: 1px solid rgba(255, 255, 255, 0.05);
+  animation: none;
+}
+
+@keyframes btnIdle {
+  0%, 100% { box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3); }
+  50%       { box-shadow: 0 4px 22px rgba(212, 175, 55, 0.55), 0 0 8px rgba(212, 175, 55, 0.2); }
 }
 
 .btn-secondary {
@@ -226,6 +266,31 @@ h1 {
   font-weight: bold;
   letter-spacing: 1px;
   animation: bounce 1.5s infinite;
+  transition: opacity 0.3s ease;
+}
+
+/* 타이핑 중일 때 인디케이터 숨김 */
+.story-box.typing .tap-indicator {
+  opacity: 0;
+}
+
+/* Pulse Border: outline + box-shadow 동시 사용 */
+.story-box.typing {
+  outline: 1px solid transparent;
+  animation: pulseBorder 0.8s ease-in-out infinite;
+}
+
+@keyframes pulseBorder {
+  0%, 100% {
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.7), 0 0 8px rgba(212, 175, 55, 0.15);
+    outline-color: transparent;
+    border-color: var(--gold-primary);
+  }
+  50% {
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.7), 0 0 22px rgba(212, 175, 55, 0.5);
+    outline-color: rgba(212, 175, 55, 0.25);
+    border-color: var(--gold-hover);
+  }
 }
 
 /* 퍼즐 컨테이너 */
@@ -315,6 +380,353 @@ h1 {
 @keyframes shine {
   0% { left: -100%; }
   100% { left: 100%; }
+}
+
+/* 룬 링 회전 */
+@keyframes runeRotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* 룬 링 역방향 회전 (내부 링) */
+@keyframes runeRotateReverse {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+
+/* 페이드인 등장 */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 마법진 등장 */
+@keyframes magicCircleIn {
+  from { opacity: 0; transform: scale(0.3) rotate(-30deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+/* 빛 번쩍 */
+@keyframes flashWhite {
+  0%   { filter: brightness(1); }
+  30%  { filter: brightness(2.5) saturate(0.5); }
+  100% { filter: brightness(1); }
+}
+
+/* 텍스트 위로 소멸 */
+@keyframes floatUp {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-30px); }
+}
+
+/* 성문 왼쪽 열림 */
+@keyframes gateOpenLeft {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-52%); }
+}
+
+/* 성문 오른쪽 열림 */
+@keyframes gateOpenRight {
+  from { transform: translateX(0); }
+  to   { transform: translateX(52%); }
+}
+
+/* 성문 빛 넘침 */
+@keyframes gateGlow {
+  from { opacity: 0; transform: scaleX(0.1); }
+  to   { opacity: 1; transform: scaleX(1); }
+}
+
+/* 컨페티 낙하 */
+@keyframes confettiFall {
+  from { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  to   { transform: translateY(420px) rotate(720deg); opacity: 0; }
+}
+
+/* 안개 표류 */
+@keyframes fogDrift {
+  from { transform: translateX(-5%) translateY(0); }
+  to   { transform: translateX(5%) translateY(-3%); }
+}
+
+/* 별 반짝임 */
+@keyframes starTwinkle {
+  0%, 100% { opacity: 0.75; }
+  50%       { opacity: 0.35; }
+}
+
+/* 별 이동 (느린 흐름) */
+@keyframes starDrift {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-30px); }
+}
+
+/* 인트로 룬 링 진동 */
+@keyframes runeRingPulse {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 0.9; }
+}
+
+/* 업적 토스트 슬라이드인 */
+@keyframes toastSlideIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes toastSlideOut {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(120%); opacity: 0; }
+}
+
+/* 바운스 팝 (업적, 정답 텍스트) */
+@keyframes popIn {
+  0%   { transform: scale(0); opacity: 0; }
+  70%  { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* 인트로 룬 링 래퍼 */
+.rune-ring-wrapper {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 16px;
+}
+
+.rune-ring-svg {
+  width: 100%;
+  height: 100%;
+  animation: runeRotate 20s linear infinite;
+}
+
+.rune-ring-svg .inner-ring {
+  animation: runeRotateReverse 12s linear infinite;
+  transform-origin: center;
+}
+
+.rune-ring-svg .outer-ring {
+  animation: runeRingPulse 4s ease-in-out infinite;
+}
+
+/* 업적 토스트 */
+.achievement-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(13, 27, 42, 0.95);
+  border: 1px solid var(--gold-primary);
+  border-radius: 12px;
+  padding: 14px 18px;
+  z-index: 9999;
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 220px;
+  animation: toastSlideIn 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+  backdrop-filter: blur(10px);
+}
+
+.achievement-toast.hiding {
+  animation: toastSlideOut 0.4s ease-in forwards;
+}
+
+.achievement-toast .toast-icon {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+
+.achievement-toast .toast-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.achievement-toast .toast-label {
+  font-size: 0.72rem;
+  color: var(--gold-primary);
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.achievement-toast .toast-title {
+  font-size: 0.95rem;
+  color: var(--text-light);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* 스토리 씬 레이어 구조 */
+.story-layer-container {
+  position: relative;
+  width: 100%;
+  min-height: 320px;
+}
+
+.story-bg-layer {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  z-index: 0;
+  transition: background 1s ease;
+}
+
+.story-fog-layer {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(ellipse 80% 60% at 50% 80%,
+    var(--fog-color) 0%, transparent 70%);
+  animation: fogDrift 12s ease-in-out infinite alternate;
+}
+
+.story-rune-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.story-rune-layer .rune-svg {
+  width: 90%;
+  max-width: 340px;
+  animation: runeRotate 40s linear infinite;
+}
+
+.story-content-layer {
+  position: relative;
+  z-index: 2;
+  padding: 8px;
+}
+
+.story-speaker-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 6px 14px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 8px;
+  border-left: 3px solid var(--gold-primary);
+  width: fit-content;
+}
+
+.story-speaker-bar .speaker-icon {
+  font-size: 1.1rem;
+}
+
+#story-speaker-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--gold-primary);
+  letter-spacing: 1px;
+}
+
+/* 마법진 오버레이 */
+.magic-circle-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  pointer-events: none;
+  border-radius: 12px;
+}
+
+.magic-circle-svg {
+  width: 80%;
+  max-width: 280px;
+  animation: magicCircleIn 0.2s ease-out forwards;
+}
+
+.puzzle-wrapper {
+  position: relative;
+}
+
+/* 정답 연출 텍스트 */
+.solved-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 25;
+  font-family: var(--font-title);
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--gold-light);
+  text-shadow: 0 0 20px var(--gold-primary), 0 0 40px rgba(212, 175, 55, 0.5);
+  pointer-events: none;
+  white-space: nowrap;
+  animation: popIn 0.3s ease-out forwards;
+}
+
+.solved-text.floating-away {
+  animation: floatUp 0.4s ease-in forwards;
+}
+
+/* 빛 번쩍 클래스 */
+.flash-white {
+  animation: flashWhite 0.3s ease-out forwards;
+}
+
+/* 성문 컨테이너 */
+.gate-container {
+  position: relative;
+  width: 180px;
+  height: 160px;
+  margin: 0 auto 20px;
+  overflow: hidden;
+}
+
+.gate-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.gate-left, .gate-right {
+  transition: none;
+}
+
+.gate-left.open {
+  animation: gateOpenLeft 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.5s forwards;
+}
+
+.gate-right.open {
+  animation: gateOpenRight 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.5s forwards;
+}
+
+.gate-glow {
+  position: absolute;
+  top: 10%;
+  left: 10%;
+  width: 80%;
+  height: 80%;
+  background: radial-gradient(ellipse, rgba(255, 220, 80, 0.7) 0%, transparent 70%);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.gate-glow.open {
+  animation: gateGlow 0.6s ease-out 1.1s forwards;
+}
+
+/* 컨페티 조각 */
+.confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  top: 0;
+  pointer-events: none;
+  animation: confettiFall var(--duration, 2s) var(--delay, 0s) ease-in forwards;
 }
 
 /* 모바일 쿼리 */

@@ -5,6 +5,10 @@
 const IntroScene = {
   enter: function(data) {
     console.log("[IntroScene] 진입");
+    // 인트로 룬 링 연출 시작
+    if (typeof AnimationManager !== "undefined") {
+      AnimationManager.playIntro();
+    }
     // 시작하기 버튼 바인딩
     const startBtn = document.getElementById("intro-start-btn");
     if (startBtn) {
