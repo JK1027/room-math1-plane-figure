@@ -3187,9 +3187,9 @@ class Stage1Puzzle extends PuzzleBase {
         <!-- SVG 교차 도판 -->
         <div style="position: relative; display: inline-block; margin-bottom: 10px;">
           <svg id="stage1-svg" width="220" height="220" style="background:#0b131f; border-radius: 50%; border: 2px solid var(--gold-primary); box-shadow: 0 0 15px var(--gold-glow);">
-            <!-- 빛의 호 (정답 시 노출할 맞꼭지각 호 2개) -->
-            <path id="stage1-arc-top" d="M 110,75 A 35,35 0 0,1 135,85" fill="none" stroke="rgba(212,175,55,0)" stroke-width="3" style="transition: stroke 0.5s ease;" />
-            <path id="stage1-arc-bottom" d="M 110,145 A 35,35 0 0,1 85,135" fill="none" stroke="rgba(212,175,55,0)" stroke-width="3" style="transition: stroke 0.5s ease;" />
+            <!-- 빛의 호 (기본 노출되도록 은은한 반투명, 정답 시 밝게 전이) -->
+            <path id="stage1-arc-top" d="M 145,110 A 35,35 0 0,0 110,75" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2.5" style="transition: stroke 0.5s ease;" />
+            <path id="stage1-arc-bottom" d="M 75,110 A 35,35 0 0,0 110,145" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2.5" style="transition: stroke 0.5s ease;" />
             
             <!-- 고정선 (수평 L) -->
             <line x1="20" y1="110" x2="200" y2="110" stroke="#a5a5a5" stroke-width="4" stroke-linecap="round" />
@@ -3200,9 +3200,9 @@ class Stage1Puzzle extends PuzzleBase {
             <!-- 중심 피벗 데코 -->
             <circle cx="110" cy="110" r="8" fill="var(--gold-primary)" />
             
-            <!-- 라벨 텍스트 -->
-            <text x="115" y="70" fill="#fff" font-size="12" font-weight="bold" id="stage1-top-label">45°</text>
-            <text x="90" y="155" fill="var(--gold-primary)" font-size="12" font-weight="bold" id="stage1-bottom-label">x</text>
+            <!-- 라벨 텍스트 (호 바깥쪽으로 위치 미세 보정) -->
+            <text x="125" y="80" fill="#fff" font-size="12" font-weight="bold" id="stage1-top-label">90°</text>
+            <text x="80" y="145" fill="var(--gold-primary)" font-size="12" font-weight="bold" id="stage1-bottom-label">x</text>
           </svg>
         </div>
         
@@ -3296,9 +3296,29 @@ class Stage1Puzzle extends PuzzleBase {
     }
 
     // 슬라이더 변화에 따라 상단 텍스트 레이블의 위치 각도 표시 실시간 동적 갱신
+    const calculatedTop = 180 - this.currentAngle;
     if (this.topLabel) {
-      const calculatedTop = 180 - this.currentAngle;
       this.topLabel.textContent = calculatedTop + "°";
+    }
+
+    // ── 수평선 L과 회전선 사이의 맞꼭지각 호(Arc) 실시간 동적 렌더링 ──
+    const r = 35;
+    const cx = 110;
+    const cy = 110;
+    const rad = (this.currentAngle - 180) * Math.PI / 180;
+    
+    // 1) 상단 호 (우측 수평 끝점 (145, 110) -> 회전선 상단으로 반시계 방향 호)
+    const endX1 = cx + r * Math.cos(rad);
+    const endY1 = cy + r * Math.sin(rad);
+    if (this.arcTop) {
+      this.arcTop.setAttribute("d", `M ${cx + r},${cy} A ${r},${r} 0 0,0 ${endX1},${endY1}`);
+    }
+
+    // 2) 하단 호 (좌측 수평 끝점 (75, 110) -> 회전선 하단으로 반시계 방향 호)
+    const endX2 = cx - r * Math.cos(rad);
+    const endY2 = cy - r * Math.sin(rad);
+    if (this.arcBottom) {
+      this.arcBottom.setAttribute("d", `M ${cx - r},${cy} A ${r},${r} 0 0,0 ${endX2},${endY2}`);
     }
   }
 
