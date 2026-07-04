@@ -753,4 +753,33 @@ h1 {
     font-size: 0.85rem;
   }
 }
+
+/* 마법 수정 및 모달 추가 CSS */
+@keyframes floatCrystal {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(5deg); }
+}
+
+.scene-overlay {
+  display: flex;
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 10, 18, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.scene-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.scene-overlay.show .card {
+  transform: scale(1);
+}
 </style>

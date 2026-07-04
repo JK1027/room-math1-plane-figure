@@ -108,7 +108,19 @@
         <div class="puzzle-wrapper">
           <div class="puzzle-header">
             <h3 id="puzzle-stage-title">스테이지 1</h3>
-            <button id="puzzle-hint-btn" class="btn-secondary">힌트</button>
+            <div style="display: flex; gap: 8px;">
+              <button id="puzzle-hint-btn" class="btn-secondary">힌트</button>
+              <button id="puzzle-solution-btn" class="btn-secondary" style="display: none; background: rgba(231, 76, 60, 0.25); border-color: #e74c3c; color: #ff7675;">풀이 보기</button>
+            </div>
+          </div>
+          <!-- 마법 수정 인벤토리 바 -->
+          <div id="puzzle-inventory-bar" style="margin: 8px auto; display: flex; justify-content: center; align-items: center; gap: 12px; padding: 8px 15px; background: rgba(13, 27, 42, 0.6); border-radius: 8px; border: 1px solid rgba(212,175,55,0.2); width: fit-content; box-shadow: 0 0 10px rgba(0,0,0,0.5);">
+            <span style="font-size: 0.78rem; color: var(--gold-light); font-weight: bold; letter-spacing: 0.5px;">마법 수정:</span>
+            <span id="crystal-1" style="font-size: 1.1rem; opacity: 0.2; filter: grayscale(100%); transition: all 0.3s;" title="청색 수정 (Stage 1)">🔷</span>
+            <span id="crystal-2" style="font-size: 1.1rem; opacity: 0.2; filter: grayscale(100%); transition: all 0.3s;" title="녹색 수정 (Stage 2)">🟢</span>
+            <span id="crystal-3" style="font-size: 1.1rem; opacity: 0.2; filter: grayscale(100%); transition: all 0.3s;" title="황색 수정 (Stage 3)">🟡</span>
+            <span id="crystal-4" style="font-size: 1.1rem; opacity: 0.2; filter: grayscale(100%); transition: all 0.3s;" title="적색 수정 (Stage 4)">🔴</span>
+            <span id="crystal-5" style="font-size: 1.1rem; opacity: 0.2; filter: grayscale(100%); transition: all 0.3s;" title="자색 수정 (Stage 5)">🟣</span>
           </div>
           <div id="puzzle-board-container" class="puzzle-canvas-area">
             <div class="mock-container">
@@ -152,6 +164,16 @@
             </tbody>
           </table>
           <button id="ranking-restart-btn" class="btn" style="margin-top:20px;">다시 모험하기</button>
+        </div>
+      </div>
+
+      <!-- 7. 마법 수정 획득 연출 모달 -->
+      <div id="crystal-modal" class="scene-overlay">
+        <div class="card" style="text-align: center; max-width: 320px; border: 2px solid var(--gold-primary); box-shadow: 0 0 30px var(--gold-glow); padding: 30px 20px; transform: scale(0.85); transition: transform 0.3s ease;">
+          <div id="crystal-modal-icon" style="font-size: 5rem; margin-bottom: 15px; animation: floatCrystal 3s ease-in-out infinite; filter: drop-shadow(0 0 15px currentColor);">💎</div>
+          <h2 id="crystal-modal-title" style="color: var(--gold-primary); font-size: 1.4rem; margin-bottom: 8px;">청색 수정 획득!</h2>
+          <p id="crystal-modal-desc" style="color: var(--text-light); font-size: 0.9rem; line-height: 1.6; margin-bottom: 20px;">맞꼭지각의 대칭성이 증명되어 숲의 마법 결계가 해제되었습니다.</p>
+          <button id="crystal-modal-btn" class="btn" style="width: 100%; margin: 0; padding: 12px 20px; font-size: 0.95rem;">계속하기</button>
         </div>
       </div>
 

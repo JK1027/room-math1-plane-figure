@@ -12,6 +12,9 @@ const PuzzleScene = {
       stageTitleEl.textContent = `스테이지 ${stageId} - 방 탈출 퍼즐`;
     }
     
+    // 0. 마법 수정 인벤토리 상태 갱신
+    this.updateCrystalInventory();
+    
     // 1. PuzzleManager를 통해 퍼즐 인스턴스 기동 및 클리어 핸들러 연결
     const currentPuzzle = PuzzleManager.loadPuzzle(stageId, "puzzle-board-container");
     if (currentPuzzle) {
@@ -22,34 +25,40 @@ const PuzzleScene = {
           AnimationManager.playSolved(puzzleArea);
         }
         
-        // 정답 수 갱신
+        // 정답 수 및 획득한 수정 갱신
         PuzzleState.correctCount = stageId;
         EventBus.publish("stateChange:puzzle", PuzzleState);
         
-        const DELAY_AFTER_SOLVE = 1300; // ms - 클리어 연출 후 다음 샴으로 이동
-        setTimeout(function() {
-          if (stageId < 5) {
-            // 다음 스테이지 이동
-            GameState.currentStage = stageId + 1;
-            EventBus.publish("stateChange:game", GameState);
-            
-            if (typeof StateStore !== "undefined") {
-              StateStore.saveToLocalStorage();
+        // 인벤토리 상태 한 번 더 갱신
+        this.updateCrystalInventory();
+        
+        const DELAY_AFTER_SOLVE = 1000;
+        setTimeout(() => {
+          // 마법 수정 획득 연출 모달 기동
+          this.showCrystalModal(stageId, () => {
+            if (stageId < 5) {
+              // 다음 스테이지 이동
+              GameState.currentStage = stageId + 1;
+              EventBus.publish("stateChange:game", GameState);
+              
+              if (typeof StateStore !== "undefined") {
+                StateStore.saveToLocalStorage();
+              }
+              
+              SceneManager.showScene("story", { stageId: GameState.currentStage });
+            } else {
+              // 보스 퍼즐 클리어 -> 엔딩으로
+              GameState.endTime = new Date().toISOString();
+              GameState.cleared = true;
+              EventBus.publish("stateChange:game", GameState);
+              
+              if (typeof StateStore !== "undefined") {
+                StateStore.saveToLocalStorage();
+              }
+              
+              SceneManager.showScene("ending");
             }
-            
-            SceneManager.showScene("story", { stageId: GameState.currentStage });
-          } else {
-            // 보스 퍼즐 클리어 -> 엔딩으로
-            GameState.endTime = new Date().toISOString();
-            GameState.cleared = true;
-            EventBus.publish("stateChange:game", GameState);
-            
-            if (typeof StateStore !== "undefined") {
-              StateStore.saveToLocalStorage();
-            }
-            
-            SceneManager.showScene("ending");
-          }
+          });
         }, DELAY_AFTER_SOLVE);
       };
       
@@ -73,75 +82,191 @@ const PuzzleScene = {
     const hintBtn = document.getElementById("puzzle-hint-btn");
     if (hintBtn) {
       this.hintHandler = () => {
-        let npcName = "마도사";
-        if (stageId === 1) npcName = "숲의 정령";
-        if (stageId === 2) npcName = "신전 수호자";
-        if (stageId === 3) npcName = "빛의 현자";
-        if (stageId === 4) npcName = "제단의 영혼";
+        let npcName = "엘리안";
+        if (stageId === 5) npcName = "모르간"; // 5스테이지 보스는 조롱 메시지
 
         let hintMsg = "";
         
         if (stageId === 5) {
-          // 5스테이지 단계별 힌트 차감 (최대 3단계)
           if (PuzzleState.hintCount >= 3) {
             if (typeof FeedbackSystem !== "undefined") {
-              FeedbackSystem.showWarning("이미 마지막 힌트까지 확인하셨습니다.");
+              FeedbackSystem.showWarning("이미 마지막 조롱(힌트)까지 보았습니다!");
             }
             return;
           }
           
           PuzzleState.hintCount += 1;
           
-          const PENALTIES = [5, 10, 15]; // 누적 차감량: 1단계=5, 2단계=15, 3단계=30
+          const PENALTIES = [5, 10, 15]; // 누적 차감량
           const currentPenalty = PENALTIES[PuzzleState.hintCount - 1];
           PuzzleState.hintPenalty += currentPenalty;
           
           EventBus.publish("stateChange:puzzle", PuzzleState);
           
           if (PuzzleState.hintCount === 1) {
-            hintMsg = `[1단계 힌트 -5점]\n평행선 L과 M 사이의 관계를 보세요. L선 위 꼭짓점 A의 좌측 엇각 45°가 평행선 M 위에 엇각으로 아래 내각(45°)에 복원됩니다.`;
+            hintMsg = `\"후후... 네 녀석은 평행선의 엇각조차 잊어버린 것이냐? L선과 만나는 저 45°가 어디로 흐르는지 잘 보아라.\"`;
           } else if (PuzzleState.hintCount === 2) {
-            hintMsg = `[2단계 힌트 -10점 추가]\n삼각형 한 외각의 성질을 기억하세요! 삼각형 외각 x는 이웃하지 않는 두 내각(엇각으로 구한 45°와 제시된 60°)의 합과 같습니다.`;
+            hintMsg = `\"삼각형의 외각 규칙을 떠올려 보거라! 외각 x는 이웃하지 않는 두 내각의 합과 같다는 것을 알고나 있느냐? 크큭...\"`;
           } else {
-            hintMsg = `[3단계 힌트 -15점 추가]\n최종 해 공식: x = 45 + 60 입니다. 계산해서 답을 얻으세요!`;
+            hintMsg = `\"불쌍해서 마지막 단서를 던져주지! x = 45 + 60 이다. 이 얕은 녀석아, 더이상 내 조롱을 견딜 수 있겠느냐?\"`;
           }
           
-          // 퍼즐에 실시간 SVG 힌트 레이어 연출을 위한 이벤트 발행
           EventBus.publish("puzzle:showHint", PuzzleState.hintCount);
           
         } else {
-          // 1~4스테이지는 기존처럼 힌트 횟수만 추가 (차감 없음)
           PuzzleState.hintCount += 1;
           EventBus.publish("stateChange:puzzle", PuzzleState);
           
-          if (stageId === 1) hintMsg = "맞꼭지각은 두 직선이 만날 때 생기는 서로 마주 보는 두 각이며, 크기가 항상 동일합니다. 180° 평각에서 135°를 제외한 각도를 찾아보세요.";
-          if (stageId === 2) hintMsg = "두 선이 평행할 때, 횡단선과의 위치가 동일한 동위각과 서로 지그재그 관계인 엇각의 크기는 같습니다.";
-          if (stageId === 3) hintMsg = "꺾인 점 좌우로 수평 보조선을 드래그해 보세요. 엇각 관계(45도와 30도)가 보조선 위아래로 쪼개져 보일 것입니다.";
-          if (stageId === 4) hintMsg = "삼각형 내부의 세 내각의 총합은 언제나 180도입니다. 고정 50도를 제외한 나머지 두 칸의 각도 카드의 합이 130도가 되도록 배치해 보세요.";
+          if (stageId === 1) hintMsg = "맞꼭지각은 마주 보는 두 각으로 크기가 같습니다. 그리고 일직선(평각)은 항상 180°가 되지요. 180°에서 135°를 뺀 각도를 찾아보세요!";
+          if (stageId === 2) hintMsg = "두 선이 평행할 때, 같은 위치의 동위각과 지그재그 관계인 엇각의 크기는 같습니다. 기준각이 60°이니 엇각과 동위각의 성질을 기억하세요!";
+          if (stageId === 3) hintMsg = "꺾인 점(★)을 좌우로 드래그해서 가로 보조선을 만들어 보세요. 엇각 관계(45도와 30도)가 보조선 위아래로 나누어 표시될 것입니다!";
+          if (stageId === 4) hintMsg = "삼각형의 세 내각의 총합은 항상 180°입니다. 주어진 50°를 제외한 나머지 B와 C의 합이 130°가 되도록 알맞게 카드를 드롭해보세요!";
         }
         
         if (typeof FeedbackSystem !== "undefined") {
           FeedbackSystem.showHint(npcName, hintMsg);
         } else {
-          alert(`[${npcName}의 힌트]\n${hintMsg}`);
+          alert(`[${npcName}의 조언]\n${hintMsg}`);
         }
       };
       hintBtn.addEventListener("click", this.hintHandler);
     }
+
+    // 3. 오답 누적에 따른 "풀이 보기" 버튼 활성화 및 동작 연동
+    const solutionBtn = document.getElementById("puzzle-solution-btn");
+    if (solutionBtn) {
+      solutionBtn.style.display = "none"; // 기본 감춤
+      
+      this.solutionHandler = () => {
+        let solutionText = "";
+        if (stageId === 1) {
+          solutionText = "빛의 다이얼을 135°(우측 하단 점선)에 맞추면, 마주 보는 맞꼭지각 x의 값도 동일해야 하지만, 180° 일직선에서 135°를 제외한 예각 크기는 180° - 135° = 45°가 됩니다.";
+        } else if (stageId === 2) {
+          solutionText = "두 직선이 평행할 때, 동위각과 엇각은 기준각(60°)과 크기가 동일합니다. 따라서 동위각 A는 60°이고, 엇각 B도 60°가 됩니다.";
+        } else if (stageId === 3) {
+          solutionText = "꺾임점(★)에 두 평행선과 일치하는 수평 보조선을 그리면, 위쪽의 엇각 45°와 아래쪽의 엇각 30°로 나누어집니다. 따라서 거울 각도 x는 이 두 엇각의 합인 45° + 30° = 75°가 됩니다.";
+        } else if (stageId === 4) {
+          solutionText = "삼각형 내각의 총합은 180°입니다. 각 A = 50°이므로 B + C = 130°여야 합니다. 예각삼각형 형태에 일치하도록 각 B = 60°(또는 70°), 각 C = 70°(또는 60°) 카드를 배치해야 합니다.";
+        } else if (stageId === 5) {
+          solutionText = "1) 평행선 L과 AB선이 이루는 45°는 엇각 성질에 의해 아래 내각 B = 45°가 됩니다.\n2) 삼각형 한 외각 x는 이웃하지 않는 두 내각의 합과 같습니다.\n3) 따라서 x = 60°(내각 A) + 45°(엇각 B) = 105°가 됩니다.";
+        }
+
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showHint("빛의 수호자 엘리안", `[상세 풀이 비책]\n${solutionText}`);
+        } else {
+          alert(`[엘리안의 풀이 비책]\n${solutionText}`);
+        }
+      };
+      solutionBtn.addEventListener("click", this.solutionHandler);
+
+      this.puzzleStateSub = (state) => {
+        if (state && state.wrongCount >= 3) {
+          solutionBtn.style.display = "inline-block";
+        } else {
+          solutionBtn.style.display = "none";
+        }
+      };
+      EventBus.subscribe("stateChange:puzzle", this.puzzleStateSub);
+
+      if (typeof PuzzleState !== "undefined" && PuzzleState.wrongCount >= 3) {
+        solutionBtn.style.display = "inline-block";
+      }
+    }
+  },
+
+  updateCrystalInventory: function() {
+    if (typeof PuzzleState === "undefined") return;
+    for (let i = 1; i <= 5; i++) {
+      const crystalEl = document.getElementById(`crystal-${i}`);
+      if (crystalEl) {
+        if (i <= PuzzleState.correctCount) {
+          crystalEl.style.opacity = "1";
+          crystalEl.style.filter = "none";
+          let glowColor = "#54a0ff";
+          if (i === 1) glowColor = "#54a0ff"; // 청색
+          if (i === 2) glowColor = "#2ecc71"; // 녹색
+          if (i === 3) glowColor = "#f1c40f"; // 황색
+          if (i === 4) glowColor = "#ff7675"; // 적색
+          if (i === 5) glowColor = "#9b59b6"; // 자색
+          crystalEl.style.filter = `drop-shadow(0 0 6px ${glowColor})`;
+        } else {
+          crystalEl.style.opacity = "0.2";
+          crystalEl.style.filter = "grayscale(100%)";
+        }
+      }
+    }
+  },
+
+  showCrystalModal: function(stageId, onProceed) {
+    const modal = document.getElementById("crystal-modal");
+    const icon = document.getElementById("crystal-modal-icon");
+    const title = document.getElementById("crystal-modal-title");
+    const desc = document.getElementById("crystal-modal-desc");
+    const btn = document.getElementById("crystal-modal-btn");
+
+    if (!modal || !icon || !title || !desc || !btn) {
+      if (onProceed) onProceed();
+      return;
+    }
+
+    let emoji = "💎";
+    let color = "#54a0ff";
+    let titleText = "수정 획득!";
+    let descText = "";
+
+    if (stageId === 1) {
+      emoji = "🔷"; color = "#54a0ff"; titleText = "청색 수정 획득!";
+      descText = "맞꼭지각의 대칭성을 성공적으로 증명하여 청색 수정을 획득했습니다! 엘리안이 말하길, 이 수정으로 성의 기하학 동력 장치를 복원할 수 있다고 합니다.";
+    } else if (stageId === 2) {
+      emoji = "🟢"; color = "#2ecc71"; titleText = "녹색 수정 획득!";
+      descText = "평행선 사이의 동위각과 엇각 관계를 해결하여 녹색 수정을 손에 넣었습니다! 회랑의 철창이 기분 좋게 열립니다.";
+    } else if (stageId === 3) {
+      emoji = "🟡"; color = "#f1c40f"; titleText = "황색 수정 획득!";
+      descText = "꺾임점을 평행 보조선으로 쪼개 엇각을 합쳐 거울 반사각을 조준해 냈습니다! 황색 수정이 황금빛으로 찬란히 빛납니다.";
+    } else if (stageId === 4) {
+      emoji = "🔴"; color = "#ff7675"; titleText = "적색 수정 획득!";
+      descText = "삼각형 내각의 총합(180°)의 비밀을 풀어 적색 수정을 회수했습니다. 제단의 강력했던 그림자 마법이 한 겹 걷혔습니다!";
+    } else if (stageId === 5) {
+      emoji = "🟣"; color = "#9b59b6"; titleText = "자색 수정 획득!";
+      descText = "그림자 마도사 모르간의 최종 기하학 암호를 격파하고 자색 수정을 얻었습니다! 5개의 수정을 모두 모았으니 마침내 최종 성문이 열립니다!";
+    }
+
+    icon.textContent = emoji;
+    icon.style.color = color;
+    title.textContent = titleText;
+    desc.textContent = descText;
+
+    modal.classList.add("show");
+
+    const handler = () => {
+      modal.classList.remove("show");
+      btn.removeEventListener("click", handler);
+      if (typeof onProceed === "function") {
+        onProceed();
+      }
+    };
+    btn.addEventListener("click", handler);
   },
   
   exit: function() {
     console.log("[PuzzleScene] 이탈");
     
-    // 퍼즐 인스턴스 메모리 자원 회수
     PuzzleManager.clearActivePuzzle();
     
     const hintBtn = document.getElementById("puzzle-hint-btn");
     if (hintBtn && this.hintHandler) {
       hintBtn.removeEventListener("click", this.hintHandler);
     }
+
+    const solutionBtn = document.getElementById("puzzle-solution-btn");
+    if (solutionBtn && this.solutionHandler) {
+      solutionBtn.removeEventListener("click", this.solutionHandler);
+    }
+
+    if (this.puzzleStateSub) {
+      EventBus.unsubscribe("stateChange:puzzle", this.puzzleStateSub);
+    }
     
-    // Ripple 리스너 제거
     const puzzleBoard = document.getElementById("puzzle-board-container");
     if (puzzleBoard && this.rippleHandler) {
       puzzleBoard.removeEventListener("click",      this.rippleHandler);

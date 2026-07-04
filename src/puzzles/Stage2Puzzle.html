@@ -118,7 +118,7 @@ class Stage2Puzzle extends PuzzleBase {
       if (this.checkAnswer()) {
         setTimeout(() => {
           if (typeof FeedbackSystem !== "undefined") {
-            FeedbackSystem.showSuccess("정답입니다! 동위각과 엇각의 크기가 같음이 입증되어 회랑의 철창이 올라갔습니다.");
+            FeedbackSystem.showSuccess("정답입니다! 두 평행선이 다른 한 직선과 만날 때, 동위각과 엇각의 크기는 항상 서로 같습니다! (+5점)");
           }
           if (this.onClearCallback) {
             this.onClearCallback();

@@ -219,16 +219,16 @@ const FeedbackSystem = (function() {
 
   return {
     showSuccess: function(message, duration) {
-      _showBar("success", message, duration || 2500);
+      _showBar("success", message, duration || 5000);
     },
     showError: function(message, duration) {
-      _showBar("error", message, duration || 2500);
+      _showBar("error", message, duration || 5000);
     },
     showWarning: function(message, duration) {
-      _showBar("warning", message, duration || 2500);
+      _showBar("warning", message, duration || 5000);
     },
     showInfo: function(message, duration) {
-      _showBar("info", message, duration || 3000);
+      _showBar("info", message, duration || 5000);
     },
     
     // NPC 힌트 모달

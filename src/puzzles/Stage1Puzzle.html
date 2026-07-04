@@ -21,19 +21,26 @@ class Stage1Puzzle extends PuzzleBase {
     this.container.innerHTML = `
       <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
         <p style="color: var(--gold-primary); margin-bottom: 12px; font-size: 0.9rem;">
-          빛의 다이얼을 돌려 <strong>목표 점선(135°)</strong>에 맞추고, 마주 보는 <strong>맞꼭지각(x)</strong>을 계산하세요.
+          빛의 다이얼을 돌려 <strong>목표 소켓(135° 방향)</strong>에 맞추고, 마주 보는 <strong>맞꼭지각(x)</strong>을 구하세요.
         </p>
         
         <!-- SVG 교차 도판 -->
         <div style="position: relative; display: inline-block; margin-bottom: 10px;">
           <svg id="stage1-svg" width="220" height="220" style="background:#0b131f; border-radius: 50%; border: 2px solid var(--gold-primary); box-shadow: 0 0 15px var(--gold-glow);">
-            <!-- 목표 각도 가이드 점선 (135° 방향) -->
-            <line x1="110" y1="20" x2="110" y2="200" stroke="#ff9f43" stroke-width="2.5" stroke-dasharray="4 4" opacity="0.5" transform="rotate(45 110 110)" />
-            <text x="150" y="45" fill="#ff9f43" font-size="8" font-weight="bold" opacity="0.8">목표선 (135°)</text>
+            <!-- 목표 각도 가이드 소켓 (빛나는 반투명 라인 및 캡) -->
+            <line x1="110" y1="20" x2="110" y2="200" stroke="rgba(255, 159, 67, 0.25)" stroke-width="8" stroke-linecap="round" transform="rotate(45 110 110)" />
+            <line x1="110" y1="20" x2="110" y2="200" stroke="#ff9f43" stroke-width="2" stroke-dasharray="4 3" transform="rotate(45 110 110)" />
+            <circle cx="173.6" cy="46.4" r="5" fill="none" stroke="#ff9f43" stroke-width="1.5" />
+            <circle cx="46.4" cy="173.6" r="5" fill="none" stroke="#ff9f43" stroke-width="1.5" />
+            <text x="155" y="38" fill="#ff9f43" font-size="8" font-weight="bold" opacity="0.9">목표 소켓(135°)</text>
 
             <!-- 빛의 호 (기본 노출되도록 은은한 반투명, 정답 시 밝게 전이) -->
             <path id="stage1-arc-top" d="M 145,110 A 35,35 0 0,0 110,75" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2.5" style="transition: stroke 0.5s ease;" />
             <path id="stage1-arc-bottom" d="M 75,110 A 35,35 0 0,0 110,145" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2.5" style="transition: stroke 0.5s ease;" />
+            
+            <!-- 보각 가이드 호 (성공 시 연출용) -->
+            <path id="stage1-arc-supplement" d="" fill="none" stroke="rgba(0, 210, 211, 0)" stroke-width="3" style="transition: stroke 0.5s ease, opacity 0.5s ease;" />
+            <text x="110" y="150" fill="rgba(0, 210, 211, 0)" font-size="11" font-weight="bold" id="stage1-supplement-label" text-anchor="middle" style="transition: fill 0.5s ease;"></text>
             
             <!-- 고정선 (수평 L) -->
             <line x1="20" y1="110" x2="200" y2="110" stroke="#a5a5a5" stroke-width="4" stroke-linecap="round" />
@@ -41,10 +48,10 @@ class Stage1Puzzle extends PuzzleBase {
             <!-- 조작 회전선 (기본 90도) -->
             <line id="stage1-rotate-line" x1="110" y1="20" x2="110" y2="200" stroke="var(--gold-primary)" stroke-width="4" stroke-linecap="round" style="transition: stroke 0.3s;" />
             
-            <!-- 중심 피벗 데코 -->
+            <!-- 덤프 피벗 데코 -->
             <circle cx="110" cy="110" r="8" fill="var(--gold-primary)" />
             
-            <!-- 라벨 텍스트 (호 바깥쪽으로 위치 미세 보정) -->
+            <!-- 라벨 텍스트 -->
             <text x="125" y="80" fill="#fff" font-size="12" font-weight="bold" id="stage1-top-label">90°</text>
             <text x="80" y="145" fill="var(--gold-primary)" font-size="12" font-weight="bold" id="stage1-bottom-label">x</text>
           </svg>
@@ -77,36 +84,32 @@ class Stage1Puzzle extends PuzzleBase {
     this.arcBottom = document.getElementById("stage1-arc-bottom");
     this.topLabel = document.getElementById("stage1-top-label");
     this.bottomLabel = document.getElementById("stage1-bottom-label");
+    this.arcSupplement = document.getElementById("stage1-arc-supplement");
+    this.supplementLabel = document.getElementById("stage1-supplement-label");
 
     this.render();
   }
 
   bindEvents() {
-    // 1. 슬라이더 회전
     this.sliderHandler = (e) => {
       this.currentAngle = parseInt(e.target.value);
       this.render();
     };
 
-    // 2. 키보드 입력
     this.inputHandler = (e) => {
       this.userInput = e.target.value;
     };
 
-    // 3. 검증 확인 버튼 클릭
     this.submitHandler = () => {
       const isAngleCorrect = Math.abs(this.currentAngle - this.targetAngle) <= 2;
       const isInputCorrect = parseInt(this.userInput) === this.targetInput;
 
       if (isAngleCorrect && isInputCorrect) {
-        // 둘 다 맞았을 때 -> 정답 연출 및 완료 처리
         this.slider.disabled = true;
         this.input.disabled = true;
         this.submitBtn.disabled = true;
-
         this.playCorrectAnimation();
       } else {
-        // 부분 오답 분기 안내
         if (typeof PuzzleState !== "undefined") {
           PuzzleState.wrongCount += 1;
           EventBus.publish("stateChange:puzzle", PuzzleState);
@@ -114,11 +117,11 @@ class Stage1Puzzle extends PuzzleBase {
 
         if (typeof FeedbackSystem !== "undefined") {
           if (isAngleCorrect && !isInputCorrect) {
-            FeedbackSystem.showWarning("다이얼 각도는 맞췄으나, 맞꼭지각 x의 올바른 값을 입력해야 합니다.");
+            FeedbackSystem.showWarning("다이얼 각도는 완벽합니다! 이제 45°와 엇갈려 마주 보는 맞꼭지각 x의 올바른 크기를 입력해 주세요.");
           } else if (!isAngleCorrect && isInputCorrect) {
-            FeedbackSystem.showInfo("계산한 각도는 맞습니다! 다이얼을 조절해 선의 대칭 각도를 맞춰보세요. (목표: 135°)");
+            FeedbackSystem.showInfo("맞꼭지각 계산(45°)은 맞습니다! 다이얼을 드래그해 목표 소켓(135° 방향)에 선을 맞춰주세요.");
           } else {
-            FeedbackSystem.showError("다이얼 각도와 입력값 모두 올바르지 않습니다. 다시 계산해 보세요.");
+            FeedbackSystem.showError("다이얼 각도와 입력값 모두 올바르지 않습니다. 천천히 다시 맞춰 보세요.");
           }
         }
       }
@@ -131,7 +134,6 @@ class Stage1Puzzle extends PuzzleBase {
 
   render() {
     if (this.rotateLine) {
-      // 중심 (110, 110) 기준으로 회전 변환
       this.rotateLine.setAttribute("transform", `rotate(${this.currentAngle - 90} 110 110)`);
     }
 
@@ -139,26 +141,24 @@ class Stage1Puzzle extends PuzzleBase {
       this.angleInfo.innerHTML = `조작 각도: <strong style="color: var(--gold-primary);">${this.currentAngle}°</strong>`;
     }
 
-    // 슬라이더 변화에 따라 상단 텍스트 레이블의 위치 각도 표시 실시간 동적 갱신
     const calculatedTop = 180 - this.currentAngle;
     if (this.topLabel) {
       this.topLabel.textContent = calculatedTop + "°";
     }
 
-    // ── 수평선 L과 회전선 사이의 맞꼭지각 호(Arc) 실시간 동적 렌더링 ──
     const r = 35;
     const cx = 110;
     const cy = 110;
     const rad = (this.currentAngle - 180) * Math.PI / 180;
     
-    // 1) 상단 호 (우측 수평 끝점 (145, 110) -> 회전선 상단으로 반시계 방향 호)
+    // 1) 상단 호
     const endX1 = cx + r * Math.cos(rad);
     const endY1 = cy + r * Math.sin(rad);
     if (this.arcTop) {
       this.arcTop.setAttribute("d", `M ${cx + r},${cy} A ${r},${r} 0 0,0 ${endX1},${endY1}`);
     }
 
-    // 2) 하단 호 (좌측 수평 끝점 (75, 110) -> 회전선 하단으로 반시계 방향 호)
+    // 2) 하단 호
     const endX2 = cx - r * Math.cos(rad);
     const endY2 = cy - r * Math.sin(rad);
     if (this.arcBottom) {
@@ -167,7 +167,6 @@ class Stage1Puzzle extends PuzzleBase {
   }
 
   playCorrectAnimation() {
-    // 1. 호(arc) 황금빛 발광 표시
     if (this.arcTop) this.arcTop.setAttribute("stroke", "var(--gold-primary)");
     if (this.arcBottom) this.arcBottom.setAttribute("stroke", "var(--gold-primary)");
     if (this.rotateLine) this.rotateLine.setAttribute("stroke", "var(--gold-light)");
@@ -177,9 +176,23 @@ class Stage1Puzzle extends PuzzleBase {
       this.bottomLabel.setAttribute("fill", "var(--gold-light)");
     }
 
-    // 2. 피드백 및 완료 처리 딜레이
+    // [옵션 C] 보각 자동 연출 추가
+    const r = 35;
+    const cx = 110;
+    const cy = 110;
+    // 보각 호 렌더링 (회전선 상단 (134.7, 85.3) -> 왼쪽 수평선 (75, 110)까지 135도 영역)
+    if (this.arcSupplement) {
+      this.arcSupplement.setAttribute("d", `M 134.7,85.3 A ${r},${r} 0 0,0 75,110`);
+      this.arcSupplement.setAttribute("stroke", "#00d2d3");
+      this.arcSupplement.style.opacity = "1";
+    }
+    if (this.supplementLabel) {
+      this.supplementLabel.textContent = "보각: 135° (180° - 45°)";
+      this.supplementLabel.setAttribute("fill", "#00d2d3");
+    }
+
     if (typeof FeedbackSystem !== "undefined") {
-      FeedbackSystem.showSuccess("철컥! 맞꼭지각의 대칭성이 증명되어 돌문이 개방되었습니다!");
+      FeedbackSystem.showSuccess("맞꼭지각 x = 45° 정답! 맞꼭지각은 항상 크기가 같습니다. 보각의 크기는 135°입니다! (+5점)");
     }
 
     const svg = document.getElementById("stage1-svg");
@@ -196,7 +209,7 @@ class Stage1Puzzle extends PuzzleBase {
         const clearBtn = document.getElementById("mock-puzzle-clear-btn");
         if (clearBtn) clearBtn.click();
       }
-    }, 1400);
+    }, 2000);
   }
 
   checkAnswer() {
@@ -210,6 +223,15 @@ class Stage1Puzzle extends PuzzleBase {
     this.userInput = "";
     this.init();
     this.bindEvents();
+    
+    if (this.arcSupplement) {
+      this.arcSupplement.setAttribute("stroke", "rgba(0, 210, 211, 0)");
+      this.arcSupplement.setAttribute("d", "");
+    }
+    if (this.supplementLabel) {
+      this.supplementLabel.setAttribute("fill", "rgba(0, 210, 211, 0)");
+      this.supplementLabel.textContent = "";
+    }
   }
 
   destroy() {

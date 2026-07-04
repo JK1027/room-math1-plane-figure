@@ -22,27 +22,27 @@ class Stage4Puzzle extends PuzzleBase {
         
         <!-- 삼각형 보드판 -->
         <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
-          <!-- SVG 삼각형 외곽선 및 호 데코 -->
+          <!-- SVG 삼각형 외곽선 및 호 데코 (수학적 50-60-70 예각삼각형 비례 구현) -->
           <svg width="280" height="180" style="position: absolute; top:0; left:0; pointer-events: none;">
-            <polygon points="140,20 40,145 240,145" fill="none" stroke="var(--gold-primary)" stroke-width="3" />
-            <!-- 각 A(50) 가이드 호 -->
-            <path d="M 125,40 A 20,20 0 0,0 155,40" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" />
-            <!-- 각 B 가이드 호 -->
-            <path d="M 58,145 A 20,20 0 0,0 52,128" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" />
-            <!-- 각 C 가이드 호 -->
-            <path d="M 222,145 A 20,20 0 0,1 228,128" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" />
+            <polygon points="152,30 83,150 196,150" fill="none" stroke="var(--gold-primary)" stroke-width="3" />
+            <!-- 각 A(50) 가이드 호 (확대 및 선명화) -->
+            <path d="M 137,56 A 30,30 0 0,0 162.3,58.2" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.8" />
+            <!-- 각 B(60) 가이드 호 (확대 및 선명화) -->
+            <path d="M 113,150 A 30,30 0 0,0 98,124" fill="none" stroke="var(--gold-light)" stroke-width="2.5" />
+            <!-- 각 C(70) 가이드 호 (확대 및 선명화) -->
+            <path d="M 166,150 A 30,30 0 0,1 185.7,121.8" fill="none" stroke="var(--gold-light)" stroke-width="2.5" />
           </svg>
           
           <!-- 각 A (고정 50도) -->
-          <div style="position: absolute; top: 38px; left: 128px; font-size: 0.95rem; color: #fff; font-weight: bold;">50°</div>
+          <div style="position: absolute; top: 62px; left: 140px; font-size: 0.9rem; color: #fff; font-weight: bold;">50°</div>
           
           <!-- 각 B 드롭존 (꼭짓점 B 주변 배치) -->
-          <div id="drop-zone-B" class="dropzone" style="position: absolute; top: 104px; left: 24px; width: 64px; height: 38px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.9rem; font-weight: bold; text-align: center; line-height: 34px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">B</div>
-          <div style="position: absolute; top: 144px; left: 42px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">각 B</div>
+          <div id="drop-zone-B" class="dropzone" style="position: absolute; top: 106px; left: 22px; width: 56px; height: 34px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-align: center; line-height: 30px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">B</div>
+          <div style="position: absolute; top: 142px; left: 34px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">각 B</div>
           
           <!-- 각 C 드롭존 (꼭짓점 C 주변 배치) -->
-          <div id="drop-zone-C" class="dropzone" style="position: absolute; top: 104px; left: 192px; width: 64px; height: 38px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.9rem; font-weight: bold; text-align: center; line-height: 34px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">C</div>
-          <div style="position: absolute; top: 144px; left: 211px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">각 C</div>
+          <div id="drop-zone-C" class="dropzone" style="position: absolute; top: 106px; left: 202px; width: 56px; height: 34px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-align: center; line-height: 30px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">C</div>
+          <div style="position: absolute; top: 142px; left: 214px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">각 C</div>
           
           <!-- 중앙 실시간 합계 디스플레이 (Glow 효과 추가) -->
           <div id="sum-formula" style="position: absolute; top: 62px; left: 0; width: 100%; text-align: center; font-size: 0.85rem; font-weight: bold;">
@@ -109,7 +109,7 @@ class Stage4Puzzle extends PuzzleBase {
         
         setTimeout(() => {
           if (typeof FeedbackSystem !== "undefined") {
-            FeedbackSystem.showSuccess(`정답입니다! 50° + ${this.solved.zoneB}° + ${this.solved.zoneC}° = 180°가 완성되어 제단의 봉인이 풀렸습니다.`);
+            FeedbackSystem.showSuccess(`정답입니다! 삼각형 세 내각의 크기의 합은 언제나 180°입니다! (+5점)`);
           }
           if (this.onClearCallback) {
             this.onClearCallback();

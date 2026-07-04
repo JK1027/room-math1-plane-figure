@@ -19,7 +19,7 @@ class Stage5Puzzle extends PuzzleBase {
     this.container.innerHTML = `
       <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
         <p style="color: var(--gold-primary); margin-bottom: 10px; font-size: 0.9rem;">
-          마도사의 마지막 봉인 장치입니다. 기하학 수식의 최종 각도 <strong>x</strong>를 입력하세요.
+          모르간의 마지막 결계입니다. 기하학 법칙을 연계하여 최종 각도 <strong>x</strong>를 구하세요.
         </p>
         
         <!-- 보드판 (SVG) -->
@@ -35,46 +35,45 @@ class Stage5Puzzle extends PuzzleBase {
             <text x="245" y="135" fill="#a5a5a5" font-size="9">M</text>
             
             <!-- 삼각형 ABC 구성선 -->
-            <!-- A: (140, 40), B: (70, 140), C: (200, 140) -->
-            <polygon points="140,40 70,140 200,140" fill="none" stroke="#e0e1dd" stroke-width="2" />
+            <!-- A: (180, 40), B: (80, 140), C: (207, 140) -->
+            <polygon points="180,40 80,140 207,140" fill="none" stroke="#e0e1dd" stroke-width="2" />
             
             <!-- 외각선 (AC 연장선) -->
-            <!-- (140,40)에서 (200,140) 방향 벡터: (60,100). 연장하여 (230, 190)까지 그리기 -->
-            <line x1="200" y1="140" x2="230" y2="190" stroke="#ff4757" stroke-width="2" stroke-dasharray="2" />
+            <line x1="207" y1="140" x2="218" y2="180" stroke="#ff4757" stroke-width="2" stroke-dasharray="2" />
             
             <!-- 기본 고정 각도 표시 -->
             <!-- 1) A의 왼쪽 각도 (L선과 AB선 사이) = 45° -->
-            <path d="M 115,40 A 25,25 0 0,0 123,58" fill="none" stroke="var(--gold-primary)" stroke-width="1.5" />
-            <text x="95" y="55" fill="#fff" font-size="10" font-weight="bold">45°</text>
+            <path d="M 155,40 A 25,25 0 0,0 162.3,57.7" fill="none" stroke="var(--gold-primary)" stroke-width="1.5" />
+            <text x="135" y="55" fill="#fff" font-size="10" font-weight="bold">45°</text>
             
-            <!-- 2) A의 내각 (삼각형 내부 상단 꼭짓점 각) = 60° -->
-            <path d="M 133,50 A 20,20 0 0,0 146,50" fill="none" stroke="var(--gold-primary)" stroke-width="1.5" />
-            <text x="133" y="68" fill="#fff" font-size="10" font-weight="bold">60°</text>
+            <!-- 2) A의 내각 (삼각형 내부 상단 꼭지각) = 60° -->
+            <path d="M 165.9,54.1 A 20,20 0 0,0 185.2,59.3" fill="none" stroke="var(--gold-primary)" stroke-width="1.5" />
+            <text x="173" y="68" fill="#fff" font-size="10" font-weight="bold">60°</text>
             
-            <!-- 3) 외각 x 표시 (M선과 AC연장선 사이) -->
-            <path d="M 215,140 A 20,20 0 0,1 213,162" fill="none" stroke="#ff4757" stroke-width="2" />
-            <text x="222" y="152" fill="#ff4757" font-size="12" font-weight="bold">x</text>
+            <!-- 3) 외각 x 표시 (M선과 AC연장선 사이 - 105° 시각 비례) -->
+            <path d="M 187,140 A 20,20 0 0,1 212.2,159.2" fill="none" stroke="#ff4757" stroke-width="3" filter="drop-shadow(0 0 5px #ff4757)" />
+            <text x="195" y="165" fill="#ff4757" font-size="13" font-weight="bold">x</text>
             
-            <!-- ── 실시간 힌트 가이드 레이어 (기본 display: none) ── -->
+            <!-- ── 실시간 힌트/풀이 가이드 레이어 (기본 display: none) ── -->
             <!-- 힌트 1단계: B 내각 엇각 표시 -->
-            <g id="h5-step1" style="display: none;">
-              <path d="M 85,140 A 20,20 0 0,0 80,126" fill="none" stroke="#2ecc71" stroke-width="2" />
-              <text x="84" y="130" fill="#2ecc71" font-size="10" font-weight="bold">45°(엇각)</text>
+            <g id="h5-step1" style="display: none; transition: opacity 0.5s;">
+              <path d="M 100,140 A 20,20 0 0,0 94.1,125.9" fill="none" stroke="#2ecc71" stroke-width="2.5" />
+              <text x="92" y="132" fill="#2ecc71" font-size="9" font-weight="bold">45°(엇각)</text>
               <!-- 엇각 점선 가이드 -->
-              <path d="M 125,55 L 85,125" stroke="#2ecc71" stroke-width="1.5" stroke-dasharray="2" fill="none" />
+              <path d="M 162,57 L 94,126" stroke="#2ecc71" stroke-width="2" stroke-dasharray="3" fill="none" />
             </g>
             
             <!-- 힌트 2단계: 외각 공식 가이드 -->
-            <g id="h5-step2" style="display: none;">
-              <rect x="50" y="85" width="180" height="22" rx="4" fill="rgba(13,27,42,0.95)" stroke="var(--gold-primary)" stroke-width="1" />
+            <g id="h5-step2" style="display: none; transition: opacity 0.5s;">
+              <rect x="40" y="85" width="200" height="22" rx="4" fill="rgba(13,27,42,0.95)" stroke="var(--gold-primary)" stroke-width="1" />
               <text x="140" y="100" fill="var(--gold-light)" font-size="9" text-anchor="middle" font-weight="bold">외각 x = 이웃하지 않는 두 내각의 합</text>
             </g>
           </svg>
         </div>
         
         <!-- 힌트 3단계 안내선 박스 -->
-        <div id="h5-step3-text" style="font-size: 0.85rem; color: #2ecc71; font-weight: bold; margin-bottom: 8px; display: none;">
-          힌트 공식: x = 45° + 60°
+        <div id="h5-step3-text" style="font-size: 0.85rem; color: #2ecc71; font-weight: bold; margin-bottom: 8px; display: none; transition: opacity 0.5s;">
+          해법 수식: x = 45° + 60° = 105°
         </div>
         
         <!-- 입력창 영역 -->
@@ -98,8 +97,11 @@ class Stage5Puzzle extends PuzzleBase {
         this.input.disabled = true;
         this.submitBtn.disabled = true;
         
+        // 정답 시 풀이 보기 시각 애니메이션 즉시 구동
+        this.playSolveAnimation();
+        
         if (typeof FeedbackSystem !== "undefined") {
-          FeedbackSystem.showSuccess("성공! 기하학의 모든 봉인을 해제해 냈습니다!");
+          FeedbackSystem.showSuccess("성공! 삼각형 외각 정리(x = 60° + 45° = 105°)로 모르간의 마지막 봉인을 깨뜨렸습니다! (+5점)");
         }
 
         const svg = document.getElementById("stage5-svg");
@@ -116,10 +118,10 @@ class Stage5Puzzle extends PuzzleBase {
             const clearBtn = document.getElementById("mock-puzzle-clear-btn");
             if (clearBtn) clearBtn.click();
           }
-        }, 1400);
+        }, 2200);
       } else {
         if (typeof FeedbackSystem !== "undefined") {
-          FeedbackSystem.showError("마도사의 그림자 장치가 요동칩니다!\n\"어림없는 계산이다, 오답이다!\"");
+          FeedbackSystem.showError("모르간이 비웃습니다!\n\"흐하하! 그런 엉터리 계산으로 나를 넘어설 수 있을 것 같으냐!\"");
         }
         
         if (typeof PuzzleState !== "undefined") {
@@ -139,7 +141,12 @@ class Stage5Puzzle extends PuzzleBase {
       };
       EventBus.subscribe("puzzle:showHint", this.hintSubscription);
       
-      // 이미 힌트를 쓴 채 새로고침 복구된 경우 대응
+      // 풀이 보기 클릭 시 애니메이션 트리거 구독
+      this.solutionSubscription = () => {
+        this.playSolveAnimation();
+      };
+      EventBus.subscribe("puzzle:showSolution", this.solutionSubscription);
+      
       if (typeof PuzzleState !== "undefined" && PuzzleState.hintCount > 0) {
         this.showSvgHint(PuzzleState.hintCount);
       }
@@ -151,9 +158,49 @@ class Stage5Puzzle extends PuzzleBase {
     const s2 = document.getElementById("h5-step2");
     const s3 = document.getElementById("h5-step3-text");
     
-    if (step >= 1 && s1) s1.style.display = "block";
-    if (step >= 2 && s2) s2.style.display = "block";
-    if (step >= 3 && s3) s3.style.display = "block";
+    if (step >= 1 && s1) {
+      s1.style.display = "block";
+      s1.style.opacity = "1";
+    }
+    if (step >= 2 && s2) {
+      s2.style.display = "block";
+      s2.style.opacity = "1";
+    }
+    if (step >= 3 && s3) {
+      s3.style.display = "block";
+      s3.style.opacity = "1";
+    }
+  }
+
+  playSolveAnimation() {
+    const s1 = document.getElementById("h5-step1");
+    const s2 = document.getElementById("h5-step2");
+    const s3 = document.getElementById("h5-step3-text");
+    
+    // 1단계: 엇각 45° 표시
+    if (s1) {
+      s1.style.display = "block";
+      s1.style.opacity = "0";
+      setTimeout(() => { s1.style.opacity = "1"; }, 100);
+    }
+    
+    // 2단계: 외각 공식 가이드 표시 (1초 뒤)
+    setTimeout(() => {
+      if (s2) {
+        s2.style.display = "block";
+        s2.style.opacity = "0";
+        setTimeout(() => { s2.style.opacity = "1"; }, 100);
+      }
+    }, 1000);
+
+    // 3단계: 최종 수식 정답 표시 (2초 뒤)
+    setTimeout(() => {
+      if (s3) {
+        s3.style.display = "block";
+        s3.style.opacity = "0";
+        setTimeout(() => { s3.style.opacity = "1"; }, 100);
+      }
+    }, 2000);
   }
 
   checkAnswer() {
@@ -168,7 +215,6 @@ class Stage5Puzzle extends PuzzleBase {
     if (this.submitBtn) this.submitBtn.disabled = false;
     this.userAnswer = "";
     
-    // 힌트 엘리먼트 가리기
     const s1 = document.getElementById("h5-step1");
     const s2 = document.getElementById("h5-step2");
     const s3 = document.getElementById("h5-step3-text");
@@ -180,8 +226,9 @@ class Stage5Puzzle extends PuzzleBase {
   destroy() {
     if (this.input && this.inputHandler) this.input.removeEventListener("input", this.inputHandler);
     if (this.submitBtn && this.submitHandler) this.submitBtn.removeEventListener("click", this.submitHandler);
-    if (typeof EventBus !== "undefined" && this.hintSubscription) {
-      EventBus.unsubscribe("puzzle:showHint", this.hintSubscription);
+    if (typeof EventBus !== "undefined") {
+      if (this.hintSubscription) EventBus.unsubscribe("puzzle:showHint", this.hintSubscription);
+      if (this.solutionSubscription) EventBus.unsubscribe("puzzle:showSolution", this.solutionSubscription);
     }
     this.container.innerHTML = "";
   }

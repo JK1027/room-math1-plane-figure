@@ -136,6 +136,45 @@ const StoryManager = (function() {
 
       // 3. 다음 대사를 꺼내 타이핑 효과 적용
       currentFullText = dialogueQueue.shift();
+      
+      let speakerName = "나레이션";
+      let speakerIcon = "📖";
+      let displayStoryText = currentFullText;
+
+      const colonIndex = currentFullText.indexOf(":");
+      if (colonIndex > 0 && colonIndex < 15) {
+        speakerName = currentFullText.substring(0, colonIndex).trim();
+        displayStoryText = currentFullText.substring(colonIndex + 1).trim();
+        
+        // 앞뒤 따옴표 제거
+        if (displayStoryText.startsWith('"') && displayStoryText.endsWith('"')) {
+          displayStoryText = displayStoryText.substring(1, displayStoryText.length - 1);
+        }
+
+        // 아이콘 매칭
+        if (speakerName === "모르간") {
+          speakerIcon = "🔮";
+        } else if (speakerName === "엘리안") {
+          speakerIcon = "🧚";
+        } else if (typeof UserState !== "undefined" && speakerName === UserState.name) {
+          speakerIcon = "⚔️";
+        } else if (speakerName === "시스템") {
+          speakerIcon = "⚙️";
+        } else {
+          speakerIcon = "💬";
+        }
+      }
+
+      const speakerNameEl = document.getElementById("story-speaker-name");
+      if (speakerNameEl) {
+        speakerNameEl.textContent = speakerName;
+      }
+      const speakerIconEl = document.querySelector(".speaker-icon");
+      if (speakerIconEl) {
+        speakerIconEl.textContent = speakerIcon;
+      }
+
+      currentFullText = displayStoryText;
       this.typeText(currentFullText, currentEl);
     },
 

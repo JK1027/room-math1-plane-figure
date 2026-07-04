@@ -176,7 +176,7 @@ class Stage3Puzzle extends PuzzleBase {
     }
 
     if (typeof FeedbackSystem !== "undefined") {
-      FeedbackSystem.showSuccess("각도가 완벽히 일치하여 빛의 광선이 수신 보석에 조준되었습니다!");
+      FeedbackSystem.showSuccess("정답입니다! 평행 보조선을 그리면 엇각의 성질에 의해 두 엇각의 합 x = 45° + 30° = 75°가 됩니다! (+5점)");
     }
 
     if (typeof AnimationManager !== "undefined" && this.svg) {
