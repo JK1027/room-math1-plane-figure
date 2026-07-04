@@ -66,6 +66,24 @@ const ResultRepository = {
         }
       }
     );
+  },
+
+  /**
+   * 서버로부터 원본 랭킹 목록을 조회합니다.
+   * @param {Function} onSuccess
+   * @param {Function} onFailure
+   */
+  getRawLeaderboard: function(onSuccess, onFailure) {
+    DbService.call(
+      "getLeaderboard",
+      [],
+      function(response) {
+        if (onSuccess) onSuccess(response);
+      },
+      function(err) {
+        if (onFailure) onFailure(err);
+      }
+    );
   }
 };
 </script>

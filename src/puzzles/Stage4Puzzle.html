@@ -14,7 +14,7 @@ class Stage4Puzzle extends PuzzleBase {
   init() {
     this.container.innerHTML = `
       <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
-        <p style="color: #d4af37; margin-bottom: 10px; font-size: 0.9rem;">삼각형 세 내각의 크기의 합이 180°가 되도록 빈 칸에 알맞은 조각을 드래그하세요.</p>
+        <p style="color: #d4af37; margin-bottom: 10px; font-size: 0.9rem;">각도 카드를 클릭한 뒤, 빈 칸(각 B 또는 각 C)을 클릭하여 채워 넣으세요.</p>
         
         <!-- 삼각형 보드판 -->
         <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 1px solid #d4af37; border-radius: 8px;">
@@ -27,11 +27,11 @@ class Stage4Puzzle extends PuzzleBase {
           <div style="position: absolute; top: 32px; left: 128px; font-size: 0.95rem; color: #fff; font-weight: bold;">50°</div>
           
           <!-- 각 B 드롭존 -->
-          <div id="drop-zone-B" class="dropzone" style="position: absolute; top: 110px; left: 55px; width: 44px; height: 26px; border: 2px dashed #d4af37; border-radius: 4px; font-size: 0.8rem; text-align: center; line-height: 22px; color: #a5a5a5; background: rgba(0,0,0,0.5);">B</div>
+          <div id="drop-zone-B" class="dropzone" style="position: absolute; top: 110px; left: 55px; width: 44px; height: 26px; border: 2px dashed #d4af37; border-radius: 4px; font-size: 0.8rem; text-align: center; line-height: 22px; color: #a5a5a5; background: rgba(0,0,0,0.5); cursor: pointer;">B</div>
           <div style="position: absolute; top: 140px; left: 63px; font-size: 0.65rem; color: #d4af37; font-weight:bold;">각 B</div>
           
           <!-- 각 C 드롭존 -->
-          <div id="drop-zone-C" class="dropzone" style="position: absolute; top: 110px; left: 181px; width: 44px; height: 26px; border: 2px dashed #d4af37; border-radius: 4px; font-size: 0.8rem; text-align: center; line-height: 22px; color: #a5a5a5; background: rgba(0,0,0,0.5);">C</div>
+          <div id="drop-zone-C" class="dropzone" style="position: absolute; top: 110px; left: 181px; width: 44px; height: 26px; border: 2px dashed #d4af37; border-radius: 4px; font-size: 0.8rem; text-align: center; line-height: 22px; color: #a5a5a5; background: rgba(0,0,0,0.5); cursor: pointer;">C</div>
           <div style="position: absolute; top: 140px; left: 190px; font-size: 0.65rem; color: #d4af37; font-weight:bold;">각 C</div>
           
           <div id="sum-formula" style="position: absolute; top: 156px; left: 0; width: 100%; text-align: center; font-size: 0.75rem; color: #a5a5a5;">
@@ -39,45 +39,50 @@ class Stage4Puzzle extends PuzzleBase {
           </div>
         </div>
         
-        <!-- 드래그 카드 후보 -->
+        <!-- 카드 후보 -->
         <div style="margin-top: 15px; display: flex; justify-content: center; gap: 10px;">
-          <div class="drag-card" draggable="true" data-value="40" style="width: 45px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: grab; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">40°</div>
-          <div class="drag-card" draggable="true" data-value="60" style="width: 45px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: grab; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">60°</div>
-          <div class="drag-card" draggable="true" data-value="70" style="width: 45px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: grab; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">70°</div>
-          <div class="drag-card" draggable="true" data-value="90" style="width: 45px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: grab; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">90°</div>
+          <div class="drag-card" data-value="40" style="width: 45px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">40°</div>
+          <div class="drag-card" data-value="60" style="width: 45px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">60°</div>
+          <div class="drag-card" data-value="70" style="width: 45px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">70°</div>
+          <div class="drag-card" data-value="90" style="width: 45px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">90°</div>
         </div>
       </div>
     `;
     this.cards = this.container.querySelectorAll(".drag-card");
     this.zones = this.container.querySelectorAll(".dropzone");
     this.formula = document.getElementById("sum-formula");
+    this.selectedCard = null;
   }
 
   bindEvents() {
-    this.dragStartHandler = (e) => {
-      this.draggedValue = e.target.getAttribute("data-value");
-      e.dataTransfer.setData("text/plain", this.draggedValue);
-      e.target.style.opacity = "0.5";
+    this.cardClickHandler = (e) => {
+      // 모든 카드의 선택 스타일 제거
+      this.cards.forEach(c => {
+        c.style.borderColor = "#d4af37";
+        c.style.background = "#1b263b";
+        c.style.boxShadow = "0 4px 6px rgba(0,0,0,0.3)";
+      });
+      // 선택 카드 지정 및 스타일 적용
+      this.selectedCard = e.currentTarget;
+      this.selectedCard.style.borderColor = "#ff4757";
+      this.selectedCard.style.background = "rgba(255, 71, 87, 0.2)";
+      this.selectedCard.style.boxShadow = "0 0 10px rgba(255, 71, 87, 0.6)";
     };
 
-    this.dragEndHandler = (e) => {
-      e.target.style.opacity = "1";
-    };
+    this.zoneClickHandler = (e) => {
+      if (!this.selectedCard) {
+        alert("먼저 아래 각도 카드 중 하나를 선택한 뒤 빈 칸을 클릭해 주세요.");
+        return;
+      }
 
-    this.dragOverHandler = (e) => {
-      e.preventDefault();
-    };
+      const zoneId = e.currentTarget.id;
+      const val = parseInt(this.selectedCard.getAttribute("data-value"));
 
-    this.dropHandler = (e) => {
-      e.preventDefault();
-      const zoneId = e.target.id;
-      const val = parseInt(e.dataTransfer.getData("text/plain"));
-
-      e.target.innerText = val + "°";
-      e.target.style.background = "rgba(212,175,55,0.2)";
-      e.target.style.borderColor = "#d4af37";
-      e.target.style.color = "#fff";
-      e.target.style.borderStyle = "solid";
+      e.currentTarget.innerText = val + "°";
+      e.currentTarget.style.background = "rgba(212,175,55,0.2)";
+      e.currentTarget.style.borderColor = "#d4af37";
+      e.currentTarget.style.color = "#fff";
+      e.currentTarget.style.borderStyle = "solid";
 
       if (zoneId === "drop-zone-B") this.solved.zoneB = val;
       if (zoneId === "drop-zone-C") this.solved.zoneC = val;
@@ -94,17 +99,24 @@ class Stage4Puzzle extends PuzzleBase {
             if (clearBtn) clearBtn.click();
           }
         }, 300);
+      } else {
+        // 둘 다 값이 차있는데 틀린 경우 오답 카운팅 및 안내
+        if (this.solved.zoneB && this.solved.zoneC) {
+          if (typeof PuzzleState !== "undefined") {
+            PuzzleState.wrongCount += 1;
+            EventBus.publish("stateChange:puzzle", PuzzleState);
+          }
+          alert("세 내각의 크기의 합이 180°가 되지 않습니다. 다시 구성해 보세요.");
+        }
       }
     };
 
     this.cards.forEach(card => {
-      card.addEventListener("dragstart", this.dragStartHandler);
-      card.addEventListener("dragend", this.dragEndHandler);
+      card.addEventListener("click", this.cardClickHandler);
     });
 
     this.zones.forEach(zone => {
-      zone.addEventListener("dragover", this.dragOverHandler);
-      zone.addEventListener("drop", this.dropHandler);
+      zone.addEventListener("click", this.zoneClickHandler);
     });
   }
 
@@ -131,14 +143,12 @@ class Stage4Puzzle extends PuzzleBase {
   destroy() {
     if (this.cards) {
       this.cards.forEach(card => {
-        card.removeEventListener("dragstart", this.dragStartHandler);
-        card.removeEventListener("dragend", this.dragEndHandler);
+        card.removeEventListener("click", this.cardClickHandler);
       });
     }
     if (this.zones) {
       this.zones.forEach(zone => {
-        zone.removeEventListener("dragover", this.dragOverHandler);
-        zone.removeEventListener("drop", this.dropHandler);
+        zone.removeEventListener("click", this.zoneClickHandler);
       });
     }
     this.container.innerHTML = "";

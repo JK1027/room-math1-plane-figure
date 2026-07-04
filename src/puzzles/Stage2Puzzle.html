@@ -13,7 +13,7 @@ class Stage2Puzzle extends PuzzleBase {
   init() {
     this.container.innerHTML = `
       <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
-        <p style="color: #d4af37; margin-bottom: 10px; font-size: 0.9rem;">각도 카드를 드래그하여 알맞은 동위각(A)과 엇각(B) 자리에 놓으세요.</p>
+        <p style="color: #d4af37; margin-bottom: 10px; font-size: 0.9rem;">각도 카드를 클릭한 뒤, 알맞은 동위각(A)과 엇각(B) 자리를 클릭하여 채우세요.</p>
         
         <!-- 게임판 -->
         <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 1px solid #d4af37; border-radius: 8px; overflow: hidden;">
@@ -28,79 +28,90 @@ class Stage2Puzzle extends PuzzleBase {
           <div style="position: absolute; top: 22px; left: 105px; font-size: 0.85rem; color: #ff4757; font-weight: bold;">60°</div>
           
           <!-- 드롭존 A (동위각 자리) -->
-          <div id="drop-zone-A" class="dropzone" style="position: absolute; top: 95px; left: 100px; width: 40px; height: 24px; border: 2px dashed #d4af37; border-radius: 4px; font-size: 0.8rem; text-align: center; line-height: 20px; color: #a5a5a5; background: rgba(0,0,0,0.4);">A</div>
+          <div id="drop-zone-A" class="dropzone" style="position: absolute; top: 95px; left: 100px; width: 40px; height: 24px; border: 2px dashed #d4af37; border-radius: 4px; font-size: 0.8rem; text-align: center; line-height: 20px; color: #a5a5a5; background: rgba(0,0,0,0.4); cursor: pointer;">A</div>
           <div style="position: absolute; top: 76px; left: 104px; font-size: 0.65rem; color: #d4af37; font-weight:bold;">동위각</div>
           
           <!-- 드롭존 B (엇각 자리) -->
-          <div id="drop-zone-B" class="dropzone" style="position: absolute; top: 95px; left: 160px; width: 40px; height: 24px; border: 2px dashed #d4af37; border-radius: 4px; font-size: 0.8rem; text-align: center; line-height: 20px; color: #a5a5a5; background: rgba(0,0,0,0.4);">B</div>
+          <div id="drop-zone-B" class="dropzone" style="position: absolute; top: 95px; left: 160px; width: 40px; height: 24px; border: 2px dashed #d4af37; border-radius: 4px; font-size: 0.8rem; text-align: center; line-height: 20px; color: #a5a5a5; background: rgba(0,0,0,0.4); cursor: pointer;">B</div>
           <div style="position: absolute; top: 76px; left: 166px; font-size: 0.65rem; color: #d4af37; font-weight:bold;">엇각</div>
         </div>
         
-        <!-- 드래그 카드들 -->
+        <!-- 선택 카드들 -->
         <div style="margin-top: 15px; display: flex; justify-content: center; gap: 15px;">
-          <div class="drag-card" draggable="true" data-value="60" style="width: 55px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: grab; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">60°</div>
-          <div class="drag-card" draggable="true" data-value="120" style="width: 55px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: grab; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">120°</div>
+          <div class="drag-card" data-value="60" style="width: 55px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">60°</div>
+          <div class="drag-card" data-value="120" style="width: 55px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">120°</div>
         </div>
       </div>
     `;
     this.cards = this.container.querySelectorAll(".drag-card");
     this.zones = this.container.querySelectorAll(".dropzone");
+    this.selectedCard = null;
   }
 
   bindEvents() {
-    this.dragStartHandler = (e) => {
-      this.draggedValue = e.target.getAttribute("data-value");
-      e.dataTransfer.setData("text/plain", this.draggedValue);
-      e.target.style.opacity = "0.5";
+    this.cardClickHandler = (e) => {
+      // 모든 카드의 선택 스타일 제거
+      this.cards.forEach(c => {
+        c.style.borderColor = "#d4af37";
+        c.style.background = "#1b263b";
+        c.style.boxShadow = "0 4px 6px rgba(0,0,0,0.3)";
+      });
+      // 선택된 카드 지정 및 스타일 부여
+      this.selectedCard = e.currentTarget;
+      this.selectedCard.style.borderColor = "#ff4757";
+      this.selectedCard.style.background = "rgba(255, 71, 87, 0.2)";
+      this.selectedCard.style.boxShadow = "0 0 10px rgba(255, 71, 87, 0.6)";
     };
 
-    this.dragEndHandler = (e) => {
-      e.target.style.opacity = "1";
-    };
+    this.zoneClickHandler = (e) => {
+      if (!this.selectedCard) {
+        alert("먼저 아래 각도 카드 중 하나를 선택한 뒤 빈 칸을 클릭해 주세요.");
+        return;
+      }
+      
+      const zoneId = e.currentTarget.id;
+      const val = this.selectedCard.getAttribute("data-value");
 
-    this.dragOverHandler = (e) => {
-      e.preventDefault();
-    };
-
-    this.dropHandler = (e) => {
-      e.preventDefault();
-      const zoneId = e.target.id;
-      const val = e.dataTransfer.getData("text/plain");
-
+      e.currentTarget.innerText = val + "°";
+      e.currentTarget.style.background = "rgba(212,175,55,0.2)";
+      e.currentTarget.style.borderColor = "#d4af37";
+      e.currentTarget.style.color = "#fff";
+      e.currentTarget.style.borderStyle = "solid";
+      
       if (val === "60") {
-        e.target.innerText = "60°";
-        e.target.style.background = "rgba(212,175,55,0.2)";
-        e.target.style.borderColor = "#d4af37";
-        e.target.style.color = "#fff";
-        e.target.style.borderStyle = "solid";
-        
         if (zoneId === "drop-zone-A") this.solved.zoneA = true;
         if (zoneId === "drop-zone-B") this.solved.zoneB = true;
-
-        if (this.checkAnswer()) {
-          setTimeout(() => {
-            alert("정답입니다! 동위각과 엇각의 크기가 같음이 입증되어 회랑의 철창이 올라갔습니다.");
-            if (this.onClearCallback) {
-              this.onClearCallback();
-            } else {
-              const clearBtn = document.getElementById("mock-puzzle-clear-btn");
-              if (clearBtn) clearBtn.click();
-            }
-          }, 300);
-        }
       } else {
+        if (zoneId === "drop-zone-A") this.solved.zoneA = false;
+        if (zoneId === "drop-zone-B") this.solved.zoneB = false;
+        
+        // 오답 카운트 기록
+        if (typeof PuzzleState !== "undefined") {
+          PuzzleState.wrongCount += 1;
+          EventBus.publish("stateChange:puzzle", PuzzleState);
+        }
         alert("정답이 아닙니다. 동위각과 엇각은 평행선 조건에서 기준각과 크기가 같습니다.");
+      }
+
+      if (this.checkAnswer()) {
+        setTimeout(() => {
+          alert("정답입니다! 동위각과 엇각의 크기가 같음이 입증되어 회랑의 철창이 올라갔습니다.");
+          if (this.onClearCallback) {
+            this.onClearCallback();
+          } else {
+            const clearBtn = document.getElementById("mock-puzzle-clear-btn");
+            if (clearBtn) clearBtn.click();
+          }
+        }, 300);
       }
     };
 
     this.cards.forEach(card => {
-      card.addEventListener("dragstart", this.dragStartHandler);
-      card.addEventListener("dragend", this.dragEndHandler);
+      card.addEventListener("click", this.cardClickHandler);
     });
 
     this.zones.forEach(zone => {
-      zone.addEventListener("dragover", this.dragOverHandler);
-      zone.addEventListener("drop", this.dropHandler);
+      zone.addEventListener("click", this.zoneClickHandler);
     });
   }
 
@@ -117,14 +128,12 @@ class Stage2Puzzle extends PuzzleBase {
   destroy() {
     if (this.cards) {
       this.cards.forEach(card => {
-        card.removeEventListener("dragstart", this.dragStartHandler);
-        card.removeEventListener("dragend", this.dragEndHandler);
+        card.removeEventListener("click", this.cardClickHandler);
       });
     }
     if (this.zones) {
       this.zones.forEach(zone => {
-        zone.removeEventListener("dragover", this.dragOverHandler);
-        zone.removeEventListener("drop", this.dropHandler);
+        zone.removeEventListener("click", this.zoneClickHandler);
       });
     }
     this.container.innerHTML = "";

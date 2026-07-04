@@ -38,15 +38,12 @@ const SceneManager = (function() {
         } catch (err) {
           console.error("이전 씬 exit() 실행 실패:", err);
         }
-
-        // 이전 씬 DOM 비활성화
-        if (typeof UiState !== "undefined" && UiState.currentSceneId) {
-          const prevDom = document.getElementById(`scene-${UiState.currentSceneId}`);
-          if (prevDom) {
-            prevDom.classList.remove("active");
-          }
-        }
       }
+
+      // 화면 상의 모든 씬 컨테이너를 비활성화 (겹침 방지)
+      document.querySelectorAll(".scene").forEach(el => {
+        el.classList.remove("active");
+      });
 
       // 2. 상태 갱신 및 이벤트 전파
       if (typeof UiState !== "undefined") {
