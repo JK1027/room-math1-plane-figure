@@ -81,24 +81,31 @@ class Stage6Puzzle extends PuzzleBase {
         
         <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
           <svg width="280" height="180" style="position: absolute; top:0; left:0; pointer-events: none;">
-            <!-- 정팔각형 일부 및 외각 연장선 -->
-            <!-- 꼭짓점: C(140, 140)에서 D(200, 140)으로 진행, D 연장선 (250, 140) -->
-            <polygon points="90,40 140,40 180,80 180,140 140,140" fill="none" stroke="var(--gold-primary)" stroke-width="3" />
-            <line x1="140" y1="140" x2="80" y2="140" stroke="rgba(255, 71, 87, 0.7)" stroke-width="3" stroke-dasharray="3 2" />
-            
-            <!-- 외각 x 표시 -->
-            <path d="M 90,140 A 15,15 0 0,1 97,152" fill="none" stroke="rgba(255, 71, 87, 0.9)" stroke-width="2" />
+            <!-- 정팔각형 일부 (3변): 자연스러운 내각 135° 모양으로 배치 -->
+            <!-- 약 P1(80,155), P2(140,155), P3(185,110), P2에서 연장선으로 기준 다른선 방향 -->
+            <!-- 내각 135°를 나타낼 수 있도록 P1-P2-P3 배치 -->
+            <polyline points="80,155 175,155 220,95" fill="none" stroke="var(--gold-primary)" stroke-width="3" />
+            <!-- P2(175,155)에서 왜쪽으로 연장선 (BC 연장 = 외각용) -->
+            <line x1="175" y1="155" x2="95" y2="155" stroke="rgba(255, 71, 87, 0.7)" stroke-width="3" stroke-dasharray="3 2" />
+
+            <!-- 내각 위치 (P2 = 175,155) -->
+            <!-- 내각은 P1방향과 P3방향 사이: P1은 왼쪽(0°), P3은 위쓰(45° 위) -->
+            <!-- 내각 호 (135°): P2에서 P1 방향(왼쪽)과 P3 방향(오른쪽 위) 사이 -->
+            <path d="M 155,155 A 22,22 0 0,1 197,131" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" />
+            <text x="150" y="145" fill="rgba(255,255,255,0.5)" font-size="9" font-weight="bold">내각 135°</text>
+
+            <!-- 외각 x 호: 연장선 방향(왼쪽)과 P3 방향 사이 -->
+            <!-- 연장선 왼쪽, P3 위쪽 => x=45° 자리 -->
+            <path d="M 197,131 A 22,22 0 0,1 195,155" fill="none" stroke="#ff4757" stroke-width="2.5" />
+            <text x="200" y="148" fill="#ff4757" font-size="14" font-weight="bold">x</text>
+
+            <!-- 레이블 -->
+            <text x="140" y="30" fill="var(--text-muted)" font-size="9" text-anchor="middle">제수공식: 360° ÷ n각인준 = 한 외각</text>
+            <text x="140" y="45" fill="var(--gold-primary)" font-size="9" text-anchor="middle">정팔각형(n=8) 외각 합 = 360°</text>
           </svg>
           
-          <div style="position: absolute; top: 78px; left: 108px; font-size: 0.95rem; color: #fff; font-weight: bold;">정팔각형</div>
-          <div style="position: absolute; top: 142px; left: 100px; font-size: 0.85rem; color: var(--gold-primary); font-weight: bold;">내각</div>
-          
-          <!-- 외각 x 라벨 -->
-          <div style="position: absolute; top: 114px; left: 62px; font-size: 1.15rem; color: #ff4757; font-weight: bold;">x</div>
-          
-          <div style="position: absolute; top: 38px; left: 0; width: 100%; text-align: center; font-size: 0.72rem; color: var(--text-muted); font-weight: bold;">
-            다각형 외각 성질: 모든 외각의 합은 항상 360°
-          </div>
+          <div style="position: absolute; top: 60px; left: 0; width: 100%; text-align: center; font-size: 0.8rem; color: var(--text-muted); font-weight: bold;">정팔각형</div>
+
         </div>
 
         <div style="margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 8px;">

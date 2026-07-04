@@ -36,23 +36,36 @@ class Stage5Puzzle extends PuzzleBase {
           [Part 1] 각도 카드를 선택한 뒤, 빈칸(각 B 또는 각 C)을 클릭하여 채워 넣으세요.
         </p>
         
-        <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
-          <svg width="280" height="180" style="position: absolute; top:0; left:0; pointer-events: none;">
-            <polygon points="152,30 83,150 196,150" fill="none" stroke="var(--gold-primary)" stroke-width="3" />
-            <path d="M 137,56 A 30,30 0 0,0 162.3,58.2" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.8" />
-            <path d="M 113,150 A 30,30 0 0,0 98,124" fill="none" stroke="var(--gold-light)" stroke-width="2.5" />
-            <path d="M 166,150 A 30,30 0 0,1 185.7,121.8" fill="none" stroke="var(--gold-light)" stroke-width="2.5" />
+        <div style="position: relative; width: 280px; height: 190px; margin: 0 auto; background: #0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
+          <svg width="280" height="190" style="position: absolute; top:0; left:0; pointer-events: none;">
+            <!-- 삼각형 A(위, 140,25), B(왼쪽 아래, 50,165), C(오른쪽 아래, 230,165) -->
+            <polygon points="140,25 50,165 230,165" fill="none" stroke="var(--gold-primary)" stroke-width="2.5" />
+
+            <!-- 각 A (50°) 호: 위 꼭짓점 내부 -->
+            <path d="M 125,38 A 20,20 0 0,1 155,38" fill="none" stroke="#ff4757" stroke-width="2" />
+            <text x="131" y="28" fill="#ff4757" font-size="11" font-weight="bold">50°</text>
+
+            <!-- 각 B (B) 호: 왼쪽 아래 꼭짓점 내부 -->
+            <path d="M 68,165 A 24,24 0 0,0 60,143" fill="none" stroke="var(--gold-light)" stroke-width="2" />
+
+            <!-- 각 C (C) 호: 오른쪽 아래 꼭짓점 내부 -->
+            <path d="M 212,165 A 24,24 0 0,1 220,143" fill="none" stroke="var(--gold-light)" stroke-width="2" />
+
+            <!-- 합 표시 식 -->
+            <text x="140" y="185" fill="var(--text-muted)" font-size="9" text-anchor="middle">A + B + C = 180°</text>
           </svg>
           
-          <div style="position: absolute; top: 62px; left: 140px; font-size: 0.9rem; color: #fff; font-weight: bold;">50°</div>
+          <!-- A(50°) 위 꼭짓점 위 라벨 -->
           
-          <div id="drop-zone-B" class="dropzone" style="position: absolute; top: 106px; left: 22px; width: 56px; height: 34px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-align: center; line-height: 30px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">B</div>
-          <div style="position: absolute; top: 142px; left: 34px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">각 B</div>
+          <!-- B 드롭존: 왼쪽 아래 -->
+          <div id="drop-zone-B" class="dropzone" style="position: absolute; top: 110px; left: 10px; width: 50px; height: 30px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-align: center; line-height: 26px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">B</div>
+          <div style="position: absolute; top: 143px; left: 8px; font-size: 0.6rem; color: var(--gold-primary); font-weight:bold;">각 B</div>
           
-          <div id="drop-zone-C" class="dropzone" style="position: absolute; top: 106px; left: 202px; width: 56px; height: 34px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-align: center; line-height: 30px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">C</div>
-          <div style="position: absolute; top: 142px; left: 214px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">각 C</div>
+          <!-- C 드롭존: 오른쪽 아래 -->
+          <div id="drop-zone-C" class="dropzone" style="position: absolute; top: 110px; left: 218px; width: 50px; height: 30px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-align: center; line-height: 26px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">C</div>
+          <div style="position: absolute; top: 143px; left: 218px; font-size: 0.6rem; color: var(--gold-primary); font-weight:bold;">각 C</div>
           
-          <div id="sum-formula" style="position: absolute; top: 62px; left: 0; width: 100%; text-align: center; font-size: 0.85rem; font-weight: bold;">
+          <div id="sum-formula" style="position: absolute; top: 52px; left: 0; width: 100%; text-align: center; font-size: 0.85rem; font-weight: bold;">
             식: 50° + B + C = 0°
           </div>
         </div>
@@ -83,27 +96,26 @@ class Stage5Puzzle extends PuzzleBase {
         
         <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
           <svg width="280" height="180" style="position: absolute; top:0; left:0; pointer-events: none;">
-            <!-- 삼각형 ABC 와 BC 연장선 D -->
-            <polygon points="120,30 50,140 180,140" fill="none" stroke="var(--gold-primary)" stroke-width="3" />
-            <line x1="180" y1="140" x2="250" y2="140" stroke="rgba(255, 71, 87, 0.7)" stroke-width="3" stroke-dasharray="3 2" />
-            
-            <!-- 각 A(50), 각 B(60) 가이드 호 -->
-            <path d="M 110,48 A 20,20 0 0,0 128,48" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
-            <path d="M 70,140 A 20,20 0 0,0 60,121" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
-            
-            <!-- 외각 ACD 호 (C=180, D=250 연장선 방향) -->
-            <path d="M 197,133 A 20,20 0 0,1 200,140" fill="none" stroke="rgba(255, 71, 87, 0.9)" stroke-width="2" />
+            <!-- 삼각형 ABC: A(위, 140,30), B(왼쪽 아래, 50,150), C(오른쪽 아래, 210,150) -->
+            <polygon points="140,30 50,150 210,150" fill="none" stroke="var(--gold-primary)" stroke-width="3" />
+            <!-- C에서 오른쪽으로 연장 (BC 연장선) -->
+            <line x1="210" y1="150" x2="262" y2="150" stroke="rgba(255, 71, 87, 0.7)" stroke-width="3" stroke-dasharray="3 2" />
+
+            <!-- 각 A (50°) 호: 위 꼭짓점 내부 -->
+            <path d="M 127,42 A 18,18 0 0,1 153,42" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" />
+            <text x="130" y="32" fill="#fff" font-size="11" font-weight="bold">50°</text>
+
+            <!-- 각 B (60°) 호: 왼쪽 아래 꼭짓점 내부 -->
+            <path d="M 68,150 A 22,22 0 0,0 60,130" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" />
+            <text x="32" y="143" fill="#fff" font-size="11" font-weight="bold">60°</text>
+
+            <!-- 외각 x 호: C(210,150)에서 연장선 위쪽으로 따라 큰 호 -->
+            <path d="M 210,130 A 25,25 0 0,1 232,150" fill="none" stroke="#ff4757" stroke-width="2.5" />
+            <text x="222" y="138" fill="#ff4757" font-size="14" font-weight="bold">x</text>
+
+            <!-- 외각 설명 키 -->
+            <text x="140" y="170" fill="var(--text-muted)" font-size="9" text-anchor="middle">외각 x = 이웃하지 않는 두 내각의 합</text>
           </svg>
-          
-          <div style="position: absolute; top: 58px; left: 112px; font-size: 0.85rem; color: #fff; font-weight: bold;">50°</div>
-          <div style="position: absolute; top: 116px; left: 70px; font-size: 0.85rem; color: #fff; font-weight: bold;">60°</div>
-          
-          <!-- 외각 x 라벨 -->
-          <div style="position: absolute; top: 112px; left: 202px; font-size: 1rem; color: #ff4757; font-weight: bold;">x</div>
-          
-          <div style="position: absolute; top: 78px; left: 0; width: 100%; text-align: center; font-size: 0.75rem; color: var(--text-muted); font-weight: bold;">
-            외각 성질: x = 이웃하지 않는 두 내각의 합
-          </div>
         </div>
 
         <div style="margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 8px;">
