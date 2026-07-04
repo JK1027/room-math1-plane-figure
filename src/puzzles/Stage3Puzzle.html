@@ -47,11 +47,17 @@ class Stage3Puzzle extends PuzzleBase {
             <!-- 보조 가이드 평행선 (y=100 수평선) -->
             <line id="stage3-guide-line" x1="20" y1="100" x2="240" y2="100" stroke="#2ecc71" stroke-width="2" stroke-dasharray="3" style="opacity: 0; transition: opacity 0.4s ease;" />
             
+            <!-- 레이저 경로 가이드 선 (상시 노출) -->
+            <polyline points="40,40 100,100 204,160" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="3" />
+            
             <circle cx="40" cy="40" r="8" fill="var(--gold-primary)" />
             <polygon points="204,152 212,160 204,168 196,160" fill="#00d2d3" id="stage3-target-gem" />
             
             <line id="stage3-mirror" x1="90" y1="100" x2="110" y2="100" stroke="var(--gold-primary)" stroke-width="5" stroke-linecap="round" />
-            <circle cx="100" cy="100" r="6" fill="#ff4757" style="cursor: pointer;" id="stage3-pivot" />
+            
+            <!-- 드래그 피벗 및 펄싱 가이드 별표(★) -->
+            <circle cx="100" cy="100" r="8" fill="#ff4757" style="cursor: pointer; filter: drop-shadow(0 0 4px #ff4757);" id="stage3-pivot" />
+            <text x="96" y="93" fill="#fff" font-size="10" font-weight="bold" pointer-events="none" class="crystal-fragment" style="text-shadow: 0 0 5px #000;">★</text>
             
             <!-- 레이저 빔 -->
             <polyline id="stage3-laser" points="40,40 100,100 204,160" stroke="#ff4757" stroke-width="3.5" stroke-dasharray="2" style="display:none;" />
@@ -108,10 +114,16 @@ class Stage3Puzzle extends PuzzleBase {
             <circle cx="40" cy="30" r="8" fill="var(--gold-primary)" />
             <polygon points="214,162 222,170 214,178 206,170" fill="#00d2d3" id="stage3-target-gem" />
             
+            <!-- 꺾인 레이저 경로 가이드 선 (상시 노출) -->
+            <polyline points="40,30 90,80 150,130 214,170" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="3" />
+            
             <!-- 꺾인 거울 P1 (y=80) 및 P2 (y=130) -->
             <circle cx="90" cy="80" r="4" fill="#a5a5a5" />
             <line id="stage3-mirror" x1="140" y1="130" x2="160" y2="130" stroke="var(--gold-primary)" stroke-width="5" stroke-linecap="round" />
-            <circle cx="150" cy="130" r="6" fill="#ff4757" style="cursor: pointer;" id="stage3-pivot" />
+            
+            <!-- 두 번째 피벗 및 펄싱 가이드 별표(★) -->
+            <circle cx="150" cy="130" r="8" fill="#ff4757" style="cursor: pointer; filter: drop-shadow(0 0 4px #ff4757);" id="stage3-pivot" />
+            <text x="146" y="123" fill="#fff" font-size="10" font-weight="bold" pointer-events="none" class="crystal-fragment" style="text-shadow: 0 0 5px #000;">★</text>
             
             <!-- 레이저 빔 (지그재그 W) -->
             <polyline id="stage3-laser" points="40,30 90,80 150,130 214,170" stroke="#ff4757" stroke-width="3.5" stroke-dasharray="2" style="display:none;" />
