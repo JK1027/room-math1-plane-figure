@@ -1,0 +1,104 @@
+<script>
+/**
+ * 1스테이지 맞꼭지각 회전 퍼즐 클래스.
+ */
+class Stage1Puzzle extends PuzzleBase {
+  constructor(containerId) {
+    super(containerId);
+    this.targetAngle = 135;
+    this.currentAngle = 90;
+    this.sliderHandler = null;
+    this.onClearCallback = null;
+  }
+
+  init() {
+    this.container.innerHTML = `
+      <div style="text-align: center; width: 100%; padding: 15px;">
+        <p style="color: #d4af37; margin-bottom: 15px; font-size: 0.9rem;">마주보는 두 각(맞꼭지각)이 완벽히 일치하도록 회전 다이얼을 꺾으세요.</p>
+        <div style="position: relative; display: inline-block;">
+          <svg id="stage1-svg" width="220" height="220" style="background:#0b131f; border-radius: 50%; border: 2px solid #d4af37; box-shadow: 0 0 15px rgba(212,175,55,0.2);">
+            <!-- 고정선 -->
+            <line x1="20" y1="110" x2="200" y2="110" stroke="#a5a5a5" stroke-width="4" stroke-linecap="round" />
+            <!-- 고정 맞꼭지 대칭 안내선 (45도 기울어짐) -->
+            <line x1="46" y1="46" x2="174" y2="174" stroke="rgba(212,175,55,0.2)" stroke-width="2" stroke-dasharray="4" />
+            
+            <!-- 조작선 (기본 90도에서 회전) -->
+            <line id="stage1-rotate-line" x1="110" y1="20" x2="110" y2="200" stroke="#d4af37" stroke-width="4" stroke-linecap="round" />
+            
+            <!-- 중심 데코 -->
+            <circle cx="110" cy="110" r="8" fill="#d4af37" />
+          </svg>
+        </div>
+        <div style="margin-top: 15px;">
+          <input type="range" id="stage1-slider" min="30" max="150" value="90" style="width: 80%; accent-color: #d4af37;">
+          <div style="margin-top: 8px; font-size: 0.9rem; color: #a5a5a5;" id="stage1-angle-info">
+            조작 각도: 90° | 목표 대칭각: 135°
+          </div>
+        </div>
+      </div>
+    `;
+    this.slider = document.getElementById("stage1-slider");
+    this.rotateLine = document.getElementById("stage1-rotate-line");
+    this.angleInfo = document.getElementById("stage1-angle-info");
+  }
+
+  bindEvents() {
+    this.sliderHandler = (e) => {
+      this.currentAngle = parseInt(e.target.value);
+      this.render();
+      
+      if (this.checkAnswer()) {
+        this.slider.disabled = true;
+        // EventBus를 통해 클리어 알림 발행
+        setTimeout(() => {
+          alert("철컥! 맞꼭지각의 대칭성이 복원되며 돌문이 열렸습니다.");
+          if (this.onClearCallback) {
+            this.onClearCallback();
+          } else {
+            // 직접 PuzzleScene 클리어 동작 트리거용 대체
+            const clearBtn = document.getElementById("mock-puzzle-clear-btn");
+            if (clearBtn) clearBtn.click();
+          }
+        }, 300);
+      }
+    };
+    if (this.slider) {
+      this.slider.addEventListener("input", this.sliderHandler);
+    }
+  }
+
+  render() {
+    if (this.rotateLine) {
+      // 중심(110, 110) 기준으로 각도 조절 회전
+      this.rotateLine.setAttribute("transform", `rotate(${this.currentAngle - 90} 110 110)`);
+    }
+    if (this.angleInfo) {
+      this.angleInfo.innerHTML = `조작 각도: <strong style="color:#d4af37;">${this.currentAngle}°</strong> | 목표 대칭각: <strong>135°</strong>`;
+    }
+  }
+
+  checkAnswer() {
+    // 135도에 정확히 도달했는지 오차 1도 이내 판정
+    return Math.abs(this.currentAngle - this.targetAngle) <= 1;
+  }
+
+  reset() {
+    if (this.slider) {
+      this.slider.disabled = false;
+      this.slider.value = 90;
+      this.currentAngle = 90;
+      this.render();
+    }
+  }
+
+  destroy() {
+    if (this.slider && this.sliderHandler) {
+      this.slider.removeEventListener("input", this.sliderHandler);
+    }
+    this.container.innerHTML = "";
+  }
+}
+
+// 퍼즐 등록
+PuzzleManager.register(1, Stage1Puzzle);
+</script>

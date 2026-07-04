@@ -1,0 +1,70 @@
+<script>
+/**
+ * 퍼즐 생성 및 라이프사이클을 통제하는 매니저.
+ */
+const PuzzleManager = (function() {
+  let activePuzzle = null;
+  const puzzleClasses = {};
+
+  return {
+    /**
+     * 스테이지별 구체적 퍼즐 클래스를 매니저에 매핑합니다.
+     * @param {Number} stageId
+     * @param {Class} puzzleClass - PuzzleBase를 상속한 클래스
+     */
+    register: function(stageId, puzzleClass) {
+      puzzleClasses[stageId] = puzzleClass;
+    },
+
+    /**
+     * 특정 스테이지의 퍼즐 인스턴스를 지정 컨테이너에 주입하고 초기화합니다.
+     * @param {Number} stageId
+     * @param {String} containerId
+     */
+    loadPuzzle: function(stageId, containerId) {
+      this.clearActivePuzzle();
+
+      const TargetPuzzleClass = puzzleClasses[stageId];
+      if (!TargetPuzzleClass) {
+        console.error(`스테이지 ${stageId}의 퍼즐 클래스가 존재하지 않습니다.`);
+        return null;
+      }
+
+      try {
+        activePuzzle = new TargetPuzzleClass(containerId);
+        activePuzzle.init();
+        activePuzzle.bindEvents();
+        activePuzzle.render();
+        console.log(`[PuzzleManager] 스테이지 ${stageId} 퍼즐 기동 완료.`);
+        return activePuzzle;
+      } catch (e) {
+        console.error(`퍼즐 로딩 예외 (Stage ${stageId}):`, e);
+        return null;
+      }
+    },
+
+    /**
+     * 현재 구동 중인 퍼즐을 안전하게 메모리 해제 처리합니다.
+     */
+    clearActivePuzzle: function() {
+      if (activePuzzle) {
+        try {
+          activePuzzle.destroy();
+          console.log("[PuzzleManager] 기존 활성 퍼즐이 해제되었습니다.");
+        } catch (e) {
+          console.error("퍼즐 자원 해제 실패:", e);
+        } finally {
+          activePuzzle = null;
+        }
+      }
+    },
+
+    /**
+     * 구동 중인 퍼즐 인스턴스를 가져옵니다.
+     */
+    getActivePuzzle: function() {
+      return activePuzzle;
+    }
+  };
+})();
+</script>

@@ -1,0 +1,55 @@
+<script>
+/**
+ * 모든 기하 퍼즐의 기반이 되는 인터페이스 클래스.
+ */
+class PuzzleBase {
+  constructor(containerId) {
+    this.containerId = containerId;
+    this.container = document.getElementById(containerId);
+    if (!this.container) {
+      console.warn(`[PuzzleBase] 컨테이너 DOM [${containerId}]을 찾을 수 없습니다.`);
+    }
+  }
+
+  /**
+   * 퍼즐 레이아웃을 생성하고 조작 요소를 그립니다.
+   */
+  init() {
+    throw new Error("init() 메서드가 구현되지 않았습니다.");
+  }
+
+  /**
+   * 캔버스/SVG 드로잉을 갱신합니다.
+   */
+  render() {}
+
+  /**
+   * 마우스 및 터치(모바일) 드래그 이벤트를 등록합니다.
+   */
+  bindEvents() {
+    throw new Error("bindEvents() 메서드가 구현되지 않았습니다.");
+  }
+
+  /**
+   * 기하학적인 정답 조건과 일치하는지 판별합니다.
+   * @returns {Boolean} 정답 부합 여부
+   */
+  checkAnswer() {
+    throw new Error("checkAnswer() 메서드가 구현되지 않았습니다.");
+  }
+
+  /**
+   * 퍼즐의 조작 상태를 최초 배치 상태로 초기화합니다.
+   */
+  reset() {
+    throw new Error("reset() 메서드가 구현되지 않았습니다.");
+  }
+
+  /**
+   * 리스너 해제 및 캐시 객체를 정리합니다.
+   */
+  destroy() {
+    throw new Error("destroy() 메서드가 구현되지 않았습니다.");
+  }
+}
+</script>

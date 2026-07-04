@@ -1,0 +1,78 @@
+<script>
+/**
+ * 씬 전환 및 생명주기 제어를 담당하는 엔진.
+ * 개별 Scene 객체들은 SceneManager에 등록되어 생명주기 훅(enter, exit)을 수행합니다.
+ */
+const SceneManager = (function() {
+  let currentScene = null;
+  const scenes = {};
+
+  return {
+    /**
+     * Scene 객체를 등록합니다.
+     * @param {String} sceneId - 등록할 씬의 ID (DOM 컨테이너 ID 매핑용)
+     * @param {Object} sceneInstance - enter(), exit() 메서드를 구현한 씬 객체
+     */
+    register: function(sceneId, sceneInstance) {
+      scenes[sceneId] = sceneInstance;
+    },
+
+    /**
+     * 지정된 씬으로 전환하고 생명주기 훅을 실행시킵니다.
+     * @param {String} sceneId - 대상 씬 ID
+     * @param {*} data - 새 씬 진입 시 전달할 옵션 데이터
+     */
+    showScene: function(sceneId, data) {
+      const nextScene = scenes[sceneId];
+      if (!nextScene) {
+        console.error(`Scene [${sceneId}]이 등록되지 않았습니다.`);
+        return;
+      }
+
+      // 1. 기존 씬 정리 (exit)
+      if (currentScene) {
+        try {
+          if (typeof currentScene.exit === "function") {
+            currentScene.exit();
+          }
+        } catch (err) {
+          console.error("이전 씬 exit() 실행 실패:", err);
+        }
+
+        // 이전 씬 DOM 비활성화
+        if (typeof UiState !== "undefined" && UiState.currentSceneId) {
+          const prevDom = document.getElementById(`scene-${UiState.currentSceneId}`);
+          if (prevDom) {
+            prevDom.classList.remove("active");
+          }
+        }
+      }
+
+      // 2. 상태 갱신 및 이벤트 전파
+      if (typeof UiState !== "undefined") {
+        UiState.currentSceneId = sceneId;
+        if (typeof EventBus !== "undefined") {
+          EventBus.publish("stateChange:ui", UiState);
+        }
+      }
+
+      // 3. 새 씬 표시 (enter)
+      currentScene = nextScene;
+      const nextDom = document.getElementById(`scene-${sceneId}`);
+      if (nextDom) {
+        nextDom.classList.add("active");
+      } else {
+        console.warn(`scene-${sceneId} 아이디를 가진 DOM 컨테이너가 존재하지 않습니다.`);
+      }
+
+      try {
+        if (typeof currentScene.enter === "function") {
+          currentScene.enter(data);
+        }
+      } catch (err) {
+        console.error("새로운 씬 enter() 실행 실패:", err);
+      }
+    }
+  };
+})();
+</script>

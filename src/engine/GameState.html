@@ -1,0 +1,76 @@
+<script>
+/**
+ * 세분화된 클라이언트 글로벌 상태 정의.
+ */
+const UserState = {
+  studentNo: "",
+  name: "",
+  browser: "",
+  device: ""
+};
+
+const GameState = {
+  currentStage: 1,
+  startTime: null,
+  endTime: null,
+  cleared: false,
+  gameVersion: "1.0.0"
+};
+
+const PuzzleState = {
+  correctCount: 0,
+  wrongCount: 0,
+  hintCount: 0,
+  score: 0
+};
+
+const UiState = {
+  currentSceneId: "intro"
+};
+
+/**
+ * 상태 저장 및 새로고침 대응 복구 유틸리티.
+ */
+const StateStore = {
+  saveToLocalStorage: function() {
+    try {
+      localStorage.setItem("user_state", JSON.stringify(UserState));
+      localStorage.setItem("game_state", JSON.stringify(GameState));
+      localStorage.setItem("puzzle_state", JSON.stringify(PuzzleState));
+    } catch (e) {
+      console.error("localStorage 저장 실패:", e);
+    }
+  },
+  
+  loadFromLocalStorage: function() {
+    try {
+      const user = localStorage.getItem("user_state");
+      const game = localStorage.getItem("game_state");
+      const puzzle = localStorage.getItem("puzzle_state");
+      
+      if (user && game && puzzle) {
+        Object.assign(UserState, JSON.parse(user));
+        Object.assign(GameState, JSON.parse(game));
+        Object.assign(PuzzleState, JSON.parse(puzzle));
+        
+        console.log("로컬스토리지로부터 이전 게임 상태가 복구되었습니다.");
+        return true;
+      }
+    } catch (e) {
+      console.error("localStorage 데이터 로드 실패:", e);
+    }
+    return false;
+  },
+  
+  clearStorage: function() {
+    try {
+      localStorage.removeItem("user_state");
+      localStorage.removeItem("game_state");
+      localStorage.removeItem("puzzle_state");
+      console.log("로컬스토리지 게임 상태가 초기화되었습니다.");
+    } catch (e) {
+      console.error("localStorage 데이터 삭제 실패:", e);
+    }
+  }
+};
+</script>

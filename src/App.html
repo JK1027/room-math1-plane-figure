@@ -1,0 +1,47 @@
+<script>
+/**
+ * 클라이언트 메인 애플리케이션 라이프사이클 엔트리 포인트.
+ */
+document.addEventListener("DOMContentLoaded", function() {
+  console.log("Geometry Escape 클라이언트 코어 초기화 시작.");
+
+  // 1. 전역 상태 변화 디버깅 구독
+  if (typeof EventBus !== "undefined") {
+    EventBus.subscribe("stateChange:user", function(user) {
+      console.log("[State Update] UserState:", user);
+    });
+    EventBus.subscribe("stateChange:game", function(game) {
+      console.log("[State Update] GameState:", game);
+    });
+    EventBus.subscribe("stateChange:puzzle", function(puzzle) {
+      console.log("[State Update] PuzzleState:", puzzle);
+    });
+    EventBus.subscribe("stateChange:ui", function(ui) {
+      console.log("[State Update] UiState:", ui);
+    });
+  }
+
+  // 2. 새로고침 상태 복구 시도
+  let restored = false;
+  if (typeof StateStore !== "undefined") {
+    restored = StateStore.loadFromLocalStorage();
+  }
+
+  // 3. 최초 라우팅 제어
+  if (restored && GameState.startTime && !GameState.cleared) {
+    console.log(`이전 세션이 존재하여 스테이지 ${GameState.currentStage}로 복구합니다.`);
+    SceneManager.showScene("puzzle", { stageId: GameState.currentStage });
+  } else {
+    SceneManager.showScene("intro");
+  }
+
+  // 4. 비정상 이탈 방지 경고 리스너
+  window.addEventListener("beforeunload", function(e) {
+    if (GameState.startTime && !GameState.cleared) {
+      const msg = "진행 중인 탈출 기록이 사라집니다. 정말 페이지를 나가시겠습니까?";
+      (e || window.event).returnValue = msg;
+      return msg;
+    }
+  });
+});
+</script>

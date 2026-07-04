@@ -1,0 +1,114 @@
+<script>
+/**
+ * 5스테이지 종합 문제 (그림자 마도사) 퍼즐 클래스.
+ */
+class Stage5Puzzle extends PuzzleBase {
+  constructor(containerId) {
+    super(containerId);
+    this.targetAnswer = 105;
+    this.userAnswer = "";
+    this.inputHandler = null;
+    this.submitHandler = null;
+    this.onClearCallback = null;
+  }
+
+  init() {
+    this.container.innerHTML = `
+      <div style="text-align: center; width: 100%; padding: 15px;">
+        <p style="color: #d4af37; margin-bottom: 10px; font-size: 0.9rem;">마도사의 마지막 장치를 해제하기 위해 기하학 복합 수식의 정답(x)을 입력하세요.</p>
+        
+        <!-- 복합 기하 문제 판넬 (SVG) -->
+        <div style="position: relative; display: inline-block;">
+          <svg id="stage5-svg" width="280" height="180" style="background:#0b131f; border: 1.5px solid #d4af37; border-radius: 8px;">
+            <!-- 평행선 2선 L, M -->
+            <line x1="20" y1="40" x2="260" y2="40" stroke="#a5a5a5" stroke-width="2" />
+            <line x1="20" y1="140" x2="260" y2="140" stroke="#a5a5a5" stroke-width="2" />
+            
+            <!-- 삼각형 조합선 -->
+            <polygon points="80,140 180,40 180,140" fill="none" stroke="#e0e1dd" stroke-width="2" />
+            <line x1="180" y1="40" x2="230" y2="140" stroke="#ff4757" stroke-width="2" />
+            
+            <!-- 수치 라벨 -->
+            <text x="95" y="132" fill="#a5a5a5" font-size="10">45°</text>
+            <text x="186" y="56" fill="#ff4757" font-size="11" font-weight="bold">x</text>
+            <text x="210" y="130" fill="#a5a5a5" font-size="10">60°</text>
+            
+            <!-- 보조선 정보 -->
+            <text x="30" y="25" fill="#d4af37" font-size="9" font-weight="bold">평행 가이드: L // M</text>
+          </svg>
+        </div>
+        
+        <!-- 정답 입력부 -->
+        <div style="margin-top: 15px;">
+          <input type="number" id="stage5-input" placeholder="x의 각도 입력" style="width: 120px; padding: 9px; text-align: center; font-size: 1rem; border: 1px solid #d4af37; border-radius: 4px; background: rgba(0,0,0,0.5); color: #fff; outline:none; vertical-align: middle;">
+          <button id="stage5-submit-btn" class="btn" style="width: 80px; padding: 10px; display: inline-block; vertical-align: middle; margin-left: 10px; font-size: 0.9rem;">입력</button>
+          <div style="font-size:0.75rem; color:#a5a5a5; margin-top:8px;">
+            (힌트: 평행선의 동위각/엇각의 성질과 삼각형 한 외각의 성질을 결합하세요)
+          </div>
+        </div>
+      </div>
+    `;
+    this.input = document.getElementById("stage5-input");
+    this.submitBtn = document.getElementById("stage5-submit-btn");
+  }
+
+  bindEvents() {
+    this.inputHandler = (e) => {
+      this.userAnswer = e.target.value;
+    };
+    
+    this.submitHandler = () => {
+      if (this.checkAnswer()) {
+        this.input.disabled = true;
+        this.submitBtn.disabled = true;
+        setTimeout(() => {
+          alert("콰콰콰콰광! 그림자 마도사의 암호가 풀리며 성이 무너지고 출구가 나타났습니다.");
+          if (this.onClearCallback) {
+            this.onClearCallback();
+          } else {
+            const clearBtn = document.getElementById("mock-puzzle-clear-btn");
+            if (clearBtn) clearBtn.click();
+          }
+        }, 300);
+      } else {
+        alert("마도사의 그림자 파동이 울립니다...\n\"어리석구나, 오답이다!\"");
+        
+        // 오답 카운트 기록 갱신 트리거
+        if (typeof PuzzleState !== "undefined") {
+          PuzzleState.wrongCount += 1;
+          EventBus.publish("stateChange:puzzle", PuzzleState);
+        }
+      }
+    };
+    
+    if (this.input) this.input.addEventListener("input", this.inputHandler);
+    if (this.submitBtn) this.submitBtn.addEventListener("click", this.submitHandler);
+  }
+
+  checkAnswer() {
+    return parseInt(this.userAnswer) === this.targetAnswer;
+  }
+
+  reset() {
+    if (this.input) {
+      this.input.disabled = false;
+      this.input.value = "";
+    }
+    if (this.submitBtn) this.submitBtn.disabled = false;
+    this.userAnswer = "";
+  }
+
+  destroy() {
+    if (this.input && this.inputHandler) {
+      this.input.removeEventListener("input", this.inputHandler);
+    }
+    if (this.submitBtn && this.submitHandler) {
+      this.submitBtn.removeEventListener("click", this.submitHandler);
+    }
+    this.container.innerHTML = "";
+  }
+}
+
+// 퍼즐 등록
+PuzzleManager.register(5, Stage5Puzzle);
+</script>

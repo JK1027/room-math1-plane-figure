@@ -1,0 +1,91 @@
+<script>
+/**
+ * 랭킹/순위표 화면 씬 객체.
+ */
+const RankingScene = {
+  enter: function(data) {
+    console.log("[RankingScene] 진입");
+    
+    const tbody = document.getElementById("ranking-list-body");
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="5">순위 데이터를 불러오는 중...</td></tr>`;
+    }
+    
+    // RankingService를 통해 가공된 정렬 데이터를 수신받아 출력
+    RankingService.getLeaderboard(
+      function(topList) {
+        RankingScene.renderList(topList);
+      },
+      function(err) {
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="5" style="color:#ff4757; font-weight:bold;">랭킹 데이터를 로드하지 못했습니다.</td></tr>`;
+        }
+      }
+    );
+    
+    // 처음부터 다시 하기 버튼 바인딩
+    const restartBtn = document.getElementById("ranking-restart-btn");
+    if (restartBtn) {
+      this.restartHandler = () => {
+        // 모든 상태 롤백 초기화
+        UserState.studentNo = "";
+        UserState.name = "";
+        EventBus.publish("stateChange:user", UserState);
+        
+        GameState.startTime = null;
+        GameState.endTime = null;
+        GameState.cleared = false;
+        GameState.currentStage = 1;
+        EventBus.publish("stateChange:game", GameState);
+        
+        PuzzleState.correctCount = 0;
+        PuzzleState.wrongCount = 0;
+        PuzzleState.hintCount = 0;
+        PuzzleState.score = 0;
+        EventBus.publish("stateChange:puzzle", PuzzleState);
+        
+        if (typeof StateStore !== "undefined") {
+          StateStore.clearStorage();
+        }
+        
+        SceneManager.showScene("intro");
+      };
+      restartBtn.addEventListener("click", this.restartHandler);
+    }
+  },
+  
+  /**
+   * 상위 랭킹 리스트 테이블을 동적으로 그립니다.
+   */
+  renderList: function(list) {
+    const tbody = document.getElementById("ranking-list-body");
+    if (!tbody) return;
+    
+    if (!list || list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5">기록된 순위가 없습니다. 첫 랭커가 되어보세요!</td></tr>`;
+      return;
+    }
+    
+    tbody.innerHTML = list.map((item) => `
+      <tr>
+        <td style="color:#d4af37; font-weight:bold;">${item.rank}위</td>
+        <td>${item.studentNo}</td>
+        <td>${item.name}</td>
+        <td style="color:#d4af37; font-weight:bold;">${item.score}점</td>
+        <td>${item.playTime}초</td>
+      </tr>
+    `).join("");
+  },
+  
+  exit: function() {
+    console.log("[RankingScene] 이탈");
+    const restartBtn = document.getElementById("ranking-restart-btn");
+    if (restartBtn && this.restartHandler) {
+      restartBtn.removeEventListener("click", this.restartHandler);
+    }
+  }
+};
+
+// 씬 등록
+SceneManager.register("ranking", RankingScene);
+</script>

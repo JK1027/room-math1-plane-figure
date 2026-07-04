@@ -1,0 +1,342 @@
+<style>
+/* 폰트 로드 */
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+KR:wght@300;400;700&display=swap");
+
+:root {
+  --bg-color: #080f1a;
+  --panel-bg: rgba(13, 27, 42, 0.75);
+  --gold-primary: #d4af37;
+  --gold-hover: #f3e5ab;
+  --gold-glow: rgba(212, 175, 55, 0.35);
+  --text-light: #e0e1dd;
+  --text-muted: #8892b0;
+  --border-gold: rgba(212, 175, 55, 0.3);
+  --font-title: "Outfit", "Noto Sans KR", sans-serif;
+  --font-body: "Noto Sans KR", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: radial-gradient(circle at center, #1b263b 0%, #080f1a 100%);
+  color: var(--text-light);
+  font-family: var(--font-body);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  overflow-x: hidden;
+  padding: 15px;
+}
+
+#game-container {
+  width: 100%;
+  max-width: 600px;
+  min-height: 520px;
+  position: relative;
+}
+
+/* 씬 전환 효과 */
+.scene {
+  display: none;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  width: 100%;
+}
+
+.scene.active {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 글래스모피즘 패널 */
+.card {
+  background: var(--panel-bg);
+  border: 1px solid var(--border-gold);
+  border-radius: 20px;
+  padding: 40px 30px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 25px var(--gold-glow);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -50%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(to right, transparent, rgba(212, 175, 55, 0.05), transparent);
+  transform: skewX(-25deg);
+  animation: shine 8s infinite linear;
+}
+
+h1 {
+  font-family: var(--font-title);
+  font-size: 2.8rem;
+  font-weight: 800;
+  color: var(--gold-primary);
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+  letter-spacing: 1px;
+}
+
+.sub-title {
+  font-family: var(--font-title);
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--text-light);
+  margin-bottom: 25px;
+  letter-spacing: 2px;
+}
+
+.description {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  margin-bottom: 30px;
+}
+
+/* 버튼 모션 디자인 */
+.btn {
+  background: linear-gradient(135deg, var(--gold-primary), #b8860b);
+  border: none;
+  color: #0b131f;
+  padding: 15px 30px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  width: 100%;
+  letter-spacing: 1px;
+}
+
+.btn:hover {
+  background: linear-gradient(135deg, var(--gold-hover), var(--gold-primary));
+  box-shadow: 0 6px 22px rgba(212, 175, 55, 0.5), 0 0 10px var(--gold-hover);
+  transform: translateY(-2px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  background: #3a3b3c;
+  color: #777;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--gold-primary);
+  color: var(--gold-primary);
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(212, 175, 55, 0.15);
+  color: var(--gold-hover);
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
+}
+
+/* 입력 필드 */
+.form-group {
+  margin-bottom: 22px;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--gold-primary);
+  margin-bottom: 8px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 13px 15px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+/* 대사 출력 영역 */
+.story-box {
+  background: rgba(8, 15, 26, 0.9);
+  border: 2px solid var(--gold-primary);
+  border-radius: 16px;
+  padding: 30px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(212, 175, 55, 0.15);
+  transition: border-color 0.3s ease;
+}
+
+.story-box:hover {
+  border-color: var(--gold-hover);
+}
+
+.dialog-text {
+  font-size: 1.15rem;
+  line-height: 1.8;
+  color: #f1f2f6;
+  white-space: pre-line;
+}
+
+.tap-indicator {
+  align-self: flex-end;
+  font-size: 0.8rem;
+  color: var(--gold-primary);
+  font-weight: bold;
+  letter-spacing: 1px;
+  animation: bounce 1.5s infinite;
+}
+
+/* 퍼즐 컨테이너 */
+.puzzle-wrapper {
+  background: var(--panel-bg);
+  border: 1px solid var(--border-gold);
+  border-radius: 20px;
+  padding: 25px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 20px var(--gold-glow);
+}
+
+.puzzle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+  padding-bottom: 12px;
+}
+
+.puzzle-header h3 {
+  font-family: var(--font-title);
+  color: var(--gold-primary);
+  font-weight: 700;
+  font-size: 1.3rem;
+}
+
+.puzzle-canvas-area {
+  background: rgba(5, 10, 18, 0.75);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  min-height: 360px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  touch-action: none; /* 모바일 터치 드래그 시 뷰포트 스크롤 간섭 완전 차단 */
+}
+
+/* 결과 패널 */
+.record-box {
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
+  padding: 18px;
+  margin-bottom: 30px;
+  font-size: 1rem;
+  color: var(--gold-primary);
+  font-weight: 700;
+  border: 1px dashed var(--border-gold);
+}
+
+/* 테이블 구조 */
+.ranking-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.ranking-table th, .ranking-table td {
+  padding: 14px 10px;
+  text-align: center;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+.ranking-table th {
+  color: var(--gold-primary);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+}
+
+.ranking-table td {
+  font-size: 0.95rem;
+  color: var(--text-light);
+}
+
+.ranking-table tbody tr:hover {
+  background: rgba(212, 175, 55, 0.04);
+}
+
+/* 애니메이션 */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes shine {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* 모바일 쿼리 */
+@media (max-width: 480px) {
+  .card {
+    padding: 30px 20px;
+  }
+  h1 {
+    font-size: 2.2rem;
+  }
+  .sub-title {
+    font-size: 1.3rem;
+  }
+  .story-box {
+    padding: 20px;
+    min-height: 170px;
+  }
+  .dialog-text {
+    font-size: 1.05rem;
+    line-height: 1.7;
+  }
+  .ranking-table th, .ranking-table td {
+    padding: 10px 5px;
+    font-size: 0.85rem;
+  }
+}
+</style>

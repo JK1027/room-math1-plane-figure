@@ -1,0 +1,79 @@
+<script>
+/**
+ * 최종 결과 출력 화면 씬 객체.
+ */
+const EndingScene = {
+  enter: function(data) {
+    console.log("[EndingScene] 진입");
+    
+    // 소요시간 및 최종 점수 연산
+    const playTimeSec = Math.round((new Date(GameState.endTime) - new Date(GameState.startTime)) / 1000);
+    const score = Math.max(0, 100 - (PuzzleState.wrongCount * 5));
+    PuzzleState.score = score;
+    EventBus.publish("stateChange:puzzle", PuzzleState);
+    
+    // 점수 레코드 바인딩
+    const recordEl = document.getElementById("ending-record");
+    if (recordEl) {
+      recordEl.innerText = `소요 시간: ${playTimeSec}초 | 오답 횟수: ${PuzzleState.wrongCount}회 | 최종 점수: ${score}점`;
+    }
+    
+    const submitBtn = document.getElementById("ending-submit-btn");
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerText = "기록 및 랭킹 등록";
+      
+      this.submitHandler = () => {
+        submitBtn.disabled = true;
+        submitBtn.innerText = "제출 중...";
+        
+        const payload = {
+          studentNo: UserState.studentNo,
+          name: UserState.name,
+          startTime: GameState.startTime,
+          endTime: GameState.endTime,
+          playTime: playTimeSec,
+          score: PuzzleState.score,
+          correctCount: PuzzleState.correctCount,
+          wrongCount: PuzzleState.wrongCount,
+          hintCount: PuzzleState.hintCount,
+          cleared: GameState.cleared,
+          gameVersion: GameState.gameVersion,
+          browser: UserState.browser,
+          device: UserState.device,
+          stageReached: GameState.currentStage
+        };
+        
+        // ResultRepository 저장 호출
+        ResultRepository.saveResult(
+          payload,
+          function(response) {
+            alert(response.message || "성공적으로 저장되었습니다.");
+            if (typeof StateStore !== "undefined") {
+              StateStore.clearStorage();
+            }
+            SceneManager.showScene("ranking");
+          },
+          function(err) {
+            alert("저장 실패: " + err.message + "\n인터넷 연결 상태를 확인 후 다시 시도해 주세요.");
+            submitBtn.disabled = false;
+            submitBtn.innerText = "다시 기록 제출하기";
+          }
+        );
+      };
+      submitBtn.addEventListener("click", this.submitHandler);
+    }
+  },
+  
+  exit: function() {
+    console.log("[EndingScene] 이탈");
+    const submitBtn = document.getElementById("ending-submit-btn");
+    if (submitBtn && this.submitHandler) {
+      submitBtn.removeEventListener("click", this.submitHandler);
+    }
+  }
+};
+
+// 씬 등록
+SceneManager.register("ending", EndingScene);
+</script>

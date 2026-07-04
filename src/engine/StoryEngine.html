@@ -1,0 +1,85 @@
+<script>
+/**
+ * 대사(스토리) 진행 및 타이핑 이펙트를 담당하는 매니저.
+ */
+const StoryManager = (function() {
+  let dialogueQueue = [];
+  let onComplete = null;
+  let isTyping = false;
+  let typingTimer = null;
+  let currentFullText = "";
+  let currentEl = null;
+
+  return {
+    /**
+     * 특정 스테이지의 스토리를 시작합니다.
+     * @param {Number} stageId
+     * @param {Function} onCompleteCallback - 모든 대사 소진 시 실행할 콜백
+     */
+    startStory: function(stageId, onCompleteCallback) {
+      if (typeof StoryDictionary === "undefined" || !StoryDictionary[stageId]) {
+        console.error(`스테이지 ${stageId}의 스토리 데이터가 존재하지 않습니다.`);
+        if (onCompleteCallback) onCompleteCallback();
+        return;
+      }
+      
+      dialogueQueue = [...StoryDictionary[stageId]];
+      onComplete = onCompleteCallback;
+      
+      this.next();
+    },
+
+    /**
+     * 다음 대사로 넘어가거나, 타이핑 도중이면 전체 텍스트를 즉시 노출합니다.
+     */
+    next: function() {
+      currentEl = document.getElementById("story-dialog-text");
+      if (!currentEl) return;
+
+      // 1. 타이핑 중 클릭 시 타이핑 중단하고 전체 텍스트 일괄 노출
+      if (isTyping) {
+        clearTimeout(typingTimer);
+        isTyping = false;
+        currentEl.innerText = currentFullText;
+        return;
+      }
+
+      // 2. 대사가 남아있지 않은 경우 완료 함수 트리거
+      if (dialogueQueue.length === 0) {
+        if (typeof onComplete === "function") {
+          onComplete();
+        }
+        return;
+      }
+
+      // 3. 다음 대사를 꺼내 타이핑 효과 적용
+      currentFullText = dialogueQueue.shift();
+      this.typeText(currentFullText, currentEl);
+    },
+
+    /**
+     * 문자열을 타이핑 효과와 함께 화면에 출력합니다.
+     * @param {String} text
+     * @param {HTMLElement} element
+     */
+    typeText: function(text, element) {
+      isTyping = true;
+      element.innerText = "";
+      let index = 0;
+      const speed = 35; // 한 글자당 대기 시간 (ms)
+
+      function type() {
+        if (index < text.length) {
+          element.innerText += text.charAt(index);
+          index++;
+          typingTimer = setTimeout(type, speed);
+        } else {
+          isTyping = false;
+        }
+      }
+      
+      type();
+    }
+  };
+})();
+</script>

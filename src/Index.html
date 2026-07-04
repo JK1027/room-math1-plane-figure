@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Geometry Escape: 기하의 성</title>
+    <!-- CSS Include -->
+    <?!= include("Styles"); ?>
+  </head>
+  <body>
+    <div id="game-container">
+      
+      <!-- 1. Intro Scene -->
+      <div id="scene-intro" class="scene active">
+        <div class="card">
+          <h1>Geometry Escape</h1>
+          <h2 class="sub-title">기하의 성</h2>
+          <p class="description">수학의 봉인을 풀고 마도사의 성을 탈출하세요.</p>
+          <button id="intro-start-btn" class="btn">모험 시작하기</button>
+        </div>
+      </div>
+
+      <!-- 2. Input Scene -->
+      <div id="scene-input" class="scene">
+        <div class="card">
+          <h2>모험가 등록</h2>
+          <form id="input-form">
+            <div class="form-group">
+              <label for="student-no">학번 (5자리)</label>
+              <input type="text" id="student-no" placeholder="예: 10101" required maxlength="5">
+            </div>
+            <div class="form-group">
+              <label for="student-name">이름</label>
+              <input type="text" id="student-name" placeholder="홍길동" required>
+            </div>
+            <button type="submit" id="input-submit-btn" class="btn">성문 진입</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- 3. Story Scene -->
+      <div id="scene-story" class="scene">
+        <div id="story-click-area" class="story-box">
+          <div id="story-dialog-text" class="dialog-text">스토리가 로딩 중입니다...</div>
+          <div class="tap-indicator">▼ 클릭하여 계속</div>
+        </div>
+      </div>
+
+      <!-- 4. Puzzle Scene -->
+      <div id="scene-puzzle" class="scene">
+        <div class="puzzle-wrapper">
+          <div class="puzzle-header">
+            <h3 id="puzzle-stage-title">스테이지 1</h3>
+            <button id="puzzle-hint-btn" class="btn-secondary">힌트</button>
+          </div>
+          <div id="puzzle-board-container" class="puzzle-canvas-area">
+            <div class="mock-container">
+              <p>도형 조작 영역</p>
+              <button id="mock-puzzle-clear-btn" class="btn">퍼즐 해결 완료 (Mock)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Ending Scene -->
+      <div id="scene-ending" class="scene">
+        <div class="card">
+          <h2>빛의 영역으로</h2>
+          <p class="description">마도사의 성을 무사히 탈출했습니다!</p>
+          <div id="ending-record" class="record-box"></div>
+          <button id="ending-submit-btn" class="btn">기록 및 랭킹 등록</button>
+        </div>
+      </div>
+
+      <!-- 6. Ranking Scene -->
+      <div id="scene-ranking" class="scene">
+        <div class="card">
+          <h2>명예의 전당 (실시간 랭킹)</h2>
+          <table class="ranking-table">
+            <thead>
+              <tr>
+                <th>순위</th>
+                <th>학번</th>
+                <th>이름</th>
+                <th>점수</th>
+                <th>소요시간</th>
+              </tr>
+            </thead>
+            <tbody id="ranking-list-body">
+              <!-- 랭킹 목록이 JS에 의해 주입됩니다 -->
+            </tbody>
+          </table>
+          <button id="ranking-restart-btn" class="btn" style="margin-top:20px;">다시 모험하기</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Core Engine Includes -->
+    <?!= include("engine/EventBus"); ?>
+    <?!= include("engine/GameState"); ?>
+    <?!= include("engine/SceneEngine"); ?>
+    
+    <!-- UI Scenes Includes -->
+    <?!= include("ui/IntroScene"); ?>
+    <?!= include("ui/InputScene"); ?>
+    <?!= include("ui/StoryScene"); ?>
+    <?!= include("ui/PuzzleScene"); ?>
+    <?!= include("ui/EndingScene"); ?>
+    <?!= include("ui/RankingScene"); ?>
+    
+    <!-- Client Core App Initialize -->
+    <?!= include("App"); ?>
+  </body>
+</html>

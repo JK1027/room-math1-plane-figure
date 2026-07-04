@@ -1,0 +1,53 @@
+<script>
+/**
+ * 전역 이벤트 버스 객체.
+ * 컴포넌트 간 직접 결합을 방지하고 상태 변경 이벤트를 비동기식으로 브로드캐스트합니다.
+ */
+const EventBus = (function() {
+  const listeners = {};
+
+  return {
+    /**
+     * 특정 이벤트에 대해 구독을 신청합니다.
+     * @param {String} event - 이벤트명
+     * @param {Function} callback - 호출할 콜백 함수
+     * @returns {Function} 구독 해제를 수행하는 함수
+     */
+    subscribe: function(event, callback) {
+      if (!listeners[event]) {
+        listeners[event] = [];
+      }
+      listeners[event].push(callback);
+      
+      return () => this.unsubscribe(event, callback);
+    },
+
+    /**
+     * 특정 이벤트의 구독을 해제합니다.
+     * @param {String} event
+     * @param {Function} callback
+     */
+    unsubscribe: function(event, callback) {
+      if (!listeners[event]) return;
+      listeners[event] = listeners[event].filter(cb => cb !== callback);
+    },
+
+    /**
+     * 특정 이벤트를 발행하여 구독 중인 모든 콜백을 실행시킵니다.
+     * @param {String} event
+     * @param {*} data - 콜백에 주입할 데이터
+     */
+    publish: function(event, data) {
+      if (!listeners[event]) return;
+      const callbacks = [...listeners[event]];
+      callbacks.forEach(cb => {
+        try {
+          cb(data);
+        } catch (err) {
+          console.error(`EventBus publish error for [${event}]:`, err);
+        }
+      });
+    }
+  };
+})();
+</script>

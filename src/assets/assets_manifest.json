@@ -1,0 +1,13 @@
+{
+  "images": {
+    "bg_intro": "https://images.unsplash.com/photo-1519074069444-1ba4e5663a43?q=80&w=800",
+    "bg_game": "https://images.unsplash.com/photo-1518005020951-eccb494ad742?q=80&w=800",
+    "bg_ending": "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=800",
+    "bg_ranking": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=800"
+  },
+  "sounds": {
+    "correct": "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg",
+    "wrong": "https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg",
+    "bgm": "https://actions.google.com/sounds/v1/ambiences/morning_birds.ogg"
+  }
+}

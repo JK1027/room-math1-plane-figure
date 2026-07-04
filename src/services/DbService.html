@@ -1,0 +1,57 @@
+<script>
+/**
+ * GAS 서버 API 호출을 대행하는 범용 비동기 클라이언트 유틸리티.
+ * google.script.run 환경이 없는 로컬 오프라인 브라우저에서의 테스트를 지원하기 위해
+ * 자동으로 환경을 감지하고 모의(Mock) 응답을 반환하는 가상 런타임을 포함합니다.
+ */
+const DbService = {
+  /**
+   * 백엔드 Code.js의 서버 사이드 함수를 호출합니다.
+   * @param {String} functionName - 호출할 서버 함수명 (예: 'saveGameResult')
+   * @param {Array} args - 전달할 인수 배열 (예: [payload])
+   * @param {Function} onSuccess - 성공 수신 콜백
+   * @param {Function} onFailure - 실패 수신 콜백
+   */
+  call: function(functionName, args, onSuccess, onFailure) {
+    // 1. 실제 GAS 서빙 환경인 경우
+    if (typeof google !== "undefined" && google.script && google.script.run) {
+      let runner = google.script.run;
+      if (onSuccess) {
+        runner = runner.withSuccessHandler(onSuccess);
+      }
+      if (onFailure) {
+        runner = runner.withFailureHandler(onFailure);
+      }
+      
+      // 동적 함수 호출 바인딩
+      if (typeof runner[functionName] === "function") {
+        runner[functionName].apply(runner, args);
+      } else {
+        console.error(`[DbService] 서버 함수 [${functionName}]를 호출할 수 없습니다.`);
+        if (onFailure) onFailure(new Error(`함수 ${functionName} 존재 안 함`));
+      }
+    } 
+    // 2. 로컬 브라우저 개발/디버그 환경인 경우 (Mock)
+    else {
+      console.warn(`[DbService] 로컬 모의 환경에서 [${functionName}]을 처리합니다.`);
+      setTimeout(() => {
+        try {
+          if (functionName === "saveGameResult") {
+            if (onSuccess) onSuccess({ success: true, message: "[로컬 환경] 데이터 저장 성공" });
+          } else if (functionName === "getLeaderboard") {
+            if (onSuccess) onSuccess([
+              { rank: 1, name: "아더", studentNo: "10203", score: 100, playTime: 120 },
+              { rank: 2, name: "멀린", studentNo: "10105", score: 95, playTime: 145 },
+              { rank: 3, name: "랜슬롯", studentNo: "10311", score: 90, playTime: 160 }
+            ]);
+          } else {
+            if (onSuccess) onSuccess();
+          }
+        } catch (e) {
+          if (onFailure) onFailure(e);
+        }
+      }, 600);
+    }
+  }
+};
+</script>

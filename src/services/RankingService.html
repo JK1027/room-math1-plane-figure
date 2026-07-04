@@ -1,0 +1,57 @@
+<script>
+/**
+ * 랭킹 및 리더보드 데이터 가공 비즈니스 서비스.
+ * 서버로부터 수신된 원본 데이터를 정렬 조건에 맞추어 정제합니다.
+ */
+const RankingService = {
+  /**
+   * 정렬 가이드라인을 적용하여 상위 랭킹 리스트를 획득합니다.
+   * 정렬 조건 우선순위:
+   * 1. 점수(Score) 내림차순 (높은 순)
+   * 2. 소요시간(PlayTime) 오름차순 (빠른 순)
+   * 3. 제출시간(SubmitTime) 오름차순 (먼저 완료한 순)
+   * @param {Function} onSuccess
+   * @param {Function} onFailure
+   */
+  getLeaderboard: function(onSuccess, onFailure) {
+    ResultRepository.getRawLeaderboard(
+      function(rawList) {
+        if (!rawList || !Array.isArray(rawList)) {
+          if (onSuccess) onSuccess([]);
+          return;
+        }
+
+        // 다중 정렬 규칙 가공 적용
+        const sortedList = [...rawList].sort((a, b) => {
+          // 1순위: 점수 비교
+          if (b.score !== a.score) {
+            return b.score - a.score;
+          }
+          // 2순위: 소요 시간 비교
+          if (a.playTime !== b.playTime) {
+            return a.playTime - b.playTime;
+          }
+          // 3순위: 제출 타임스탬프 비교
+          const timeA = a.submitTime ? new Date(a.submitTime).getTime() : 0;
+          const timeB = b.submitTime ? new Date(b.submitTime).getTime() : 0;
+          return timeA - timeB;
+        });
+
+        // 상위 10개 레코드 추출 제한
+        const topTen = sortedList.slice(0, 10).map((item, idx) => ({
+          rank: idx + 1,
+          studentNo: item.studentNo,
+          name: item.name,
+          score: item.score,
+          playTime: item.playTime
+        }));
+
+        if (onSuccess) onSuccess(topTen);
+      },
+      function(err) {
+        if (onFailure) onFailure(err);
+      }
+    );
+  }
+};
+</script>

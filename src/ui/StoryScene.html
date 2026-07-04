@@ -1,0 +1,37 @@
+<script>
+/**
+ * 스토리 대사 출력 화면 씬 객체.
+ */
+const StoryScene = {
+  enter: function(data) {
+    const stageId = data ? data.stageId : 1;
+    console.log(`[StoryScene] 진입 - 스테이지 ${stageId}`);
+    
+    // 1. 스토리 영역 클릭 리스너 정의 (StoryManager.next() 호출)
+    const clickArea = document.getElementById("story-click-area");
+    if (clickArea) {
+      this.clickHandler = () => {
+        StoryManager.next();
+      };
+      clickArea.addEventListener("click", this.clickHandler);
+    }
+    
+    // 2. StoryManager 개시
+    // 대사가 완료되면 해당 스테이지의 퍼즐 씬으로 자동 라우팅
+    StoryManager.startStory(stageId, function() {
+      SceneManager.showScene("puzzle", { stageId: stageId });
+    });
+  },
+  
+  exit: function() {
+    console.log("[StoryScene] 이탈");
+    const clickArea = document.getElementById("story-click-area");
+    if (clickArea && this.clickHandler) {
+      clickArea.removeEventListener("click", this.clickHandler);
+    }
+  }
+};
+
+// 씬 등록
+SceneManager.register("story", StoryScene);
+</script>

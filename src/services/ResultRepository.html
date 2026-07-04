@@ -1,0 +1,71 @@
+<script>
+/**
+ * 게임 결과 영속성 데이터 저장소.
+ * 클라이언트와 GAS 백엔드 DB 연동 레이어 간의 데이터 전송을 담당하며,
+ * 동시성 락 충돌 및 네트워크 유실에 대비한 지수 백오프 재시도 및 로컬 임시 백업 보관 정책을 지원합니다.
+ */
+const ResultRepository = {
+  /**
+   * 게임 플레이 최종 기록을 서버에 전송하여 안전하게 저장합니다.
+   * @param {Object} payload - 결과 기록 정보 DTO
+   * @param {Function} onSuccess - 성공 콜백
+   * @param {Function} onFailure - 최종 실패 콜백
+   * @param {Number} retryCount - 내부 재시도 인덱스
+   */
+  saveResult: function(payload, onSuccess, onFailure, retryCount = 1) {
+    if (!payload || !payload.studentNo || !payload.name) {
+      if (onFailure) {
+        onFailure(new Error("학번과 이름이 누락된 데이터는 저장할 수 없습니다."));
+      }
+      return;
+    }
+
+    payload.gameVersion = payload.gameVersion || "1.0.0";
+    payload.submitTime = payload.submitTime || new Date().toISOString();
+
+    const maxRetries = 3;
+    const retryDelay = 2000; // 재시도 대기 간격 (2초)
+
+    DbService.call(
+      "saveGameResult",
+      [payload],
+      function(response) {
+        if (response && response.success) {
+          // 최종 성공 시 백업 보관했던 결과가 있다면 클리어
+          localStorage.removeItem("saved_game_result_backup");
+          if (onSuccess) onSuccess(response);
+        } else {
+          // 서버 측 락 획득 타임아웃 등으로 처리가 밀린 경우 재시도 작동
+          if (retryCount <= maxRetries) {
+            console.warn(`[ResultRepository] 락 타임아웃 감지. ${retryDelay}ms 후 재시도 (${retryCount}/${maxRetries})`);
+            setTimeout(() => {
+              ResultRepository.saveResult(payload, onSuccess, onFailure, retryCount + 1);
+            }, retryDelay);
+          } else {
+            // 로컬 스토리지에 결과 복구용 임시 보존
+            localStorage.setItem("saved_game_result_backup", JSON.stringify(payload));
+            if (onFailure) {
+              onFailure(new Error(response.message || "서버 혼잡으로 기록 저장에 실패하여 로컬 브라우저에 결과를 보관했습니다."));
+            }
+          }
+        }
+      },
+      function(err) {
+        // 네트워크 연결 에러 등 RPC 실패 시 재시도 작동
+        if (retryCount <= maxRetries) {
+          console.warn(`[ResultRepository] 네트워크 장애 감지. ${retryDelay}ms 후 재시도 (${retryCount}/${maxRetries})`);
+          setTimeout(() => {
+            ResultRepository.saveResult(payload, onSuccess, onFailure, retryCount + 1);
+          }, retryDelay);
+        } else {
+          // 로컬 스토리지 백업 처리
+          localStorage.setItem("saved_game_result_backup", JSON.stringify(payload));
+          if (onFailure) {
+            onFailure(new Error("서버와의 통신 오류로 전송하지 못했습니다. 결과 기록은 브라우저에 임시 백업되었습니다."));
+          }
+        }
+      }
+    );
+  }
+};
+</script>

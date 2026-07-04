@@ -1,0 +1,83 @@
+<script>
+/**
+ * 퍼즐 풀이 화면 씬 객체.
+ */
+const PuzzleScene = {
+  enter: function(data) {
+    const stageId = data ? data.stageId : 1;
+    console.log(`[PuzzleScene] 진입 - 스테이지 ${stageId}`);
+    
+    const stageTitleEl = document.getElementById("puzzle-stage-title");
+    if (stageTitleEl) {
+      stageTitleEl.innerText = `스테이지 ${stageId} - 방 탈출 퍼즐`;
+    }
+    
+    // 1. PuzzleManager를 통해 퍼즐 인스턴스 기동 및 클리어 핸들러 연결
+    const currentPuzzle = PuzzleManager.loadPuzzle(stageId, "puzzle-board-container");
+    if (currentPuzzle) {
+      currentPuzzle.onClearCallback = () => {
+        // 정답 수 갱신
+        PuzzleState.correctCount = stageId;
+        EventBus.publish("stateChange:puzzle", PuzzleState);
+        
+        if (stageId < 5) {
+          // 다음 스테이지 이동
+          GameState.currentStage = stageId + 1;
+          EventBus.publish("stateChange:game", GameState);
+          
+          if (typeof StateStore !== "undefined") {
+            StateStore.saveToLocalStorage();
+          }
+          
+          SceneManager.showScene("story", { stageId: GameState.currentStage });
+        } else {
+          // 보스 퍼즐 클리어 -> 엔딩으로
+          GameState.endTime = new Date().toISOString();
+          GameState.cleared = true;
+          EventBus.publish("stateChange:game", GameState);
+          
+          if (typeof StateStore !== "undefined") {
+            StateStore.saveToLocalStorage();
+          }
+          
+          SceneManager.showScene("ending");
+        }
+      };
+    }
+    
+    // 2. 힌트 버튼 리스너 바인딩
+    const hintBtn = document.getElementById("puzzle-hint-btn");
+    if (hintBtn) {
+      this.hintHandler = () => {
+        PuzzleState.hintCount += 1;
+        EventBus.publish("stateChange:puzzle", PuzzleState);
+        
+        let hintMsg = "도형의 정의를 찬찬히 살펴보세요.";
+        if (stageId === 1) hintMsg = "맞꼭지각은 두 직선이 만날 때 생기는 서로 마주보는 두 각이며, 크기가 항상 동일합니다.";
+        if (stageId === 2) hintMsg = "두 선이 평행할 때, 횡단선과의 위치가 동일한 동위각과 서로 지그재그 관계인 엇각의 크기는 같습니다.";
+        if (stageId === 3) hintMsg = "꺾임점을 가로지르는 제3의 평행 가상 보조선을 그리면 위아래 엇각 관계(45도와 30도)로 쪼개져 합이 75도가 됩니다.";
+        if (stageId === 4) hintMsg = "삼각형 내부의 세 내각의 총합은 언제나 180도입니다. 고정 50도를 제외한 나머지 두 칸의 각도 카드의 합이 130도가 되도록 매칭하세요.";
+        if (stageId === 5) hintMsg = "평행선 사이 엇각(45도)을 유추하여 삼각형 내부 내각(45도)을 얻고, 삼각형의 한 외각은 이웃하지 않는 두 내각의 합과 같으므로 x = 45 + 60 입니다.";
+        
+        alert(`[마도사의 힌트]\n${hintMsg} (누적 사용: ${PuzzleState.hintCount}회)`);
+      };
+      hintBtn.addEventListener("click", this.hintHandler);
+    }
+  },
+  
+  exit: function() {
+    console.log("[PuzzleScene] 이탈");
+    
+    // 퍼즐 인스턴스 메모리 자원 회수
+    PuzzleManager.clearActivePuzzle();
+    
+    const hintBtn = document.getElementById("puzzle-hint-btn");
+    if (hintBtn && this.hintHandler) {
+      hintBtn.removeEventListener("click", this.hintHandler);
+    }
+  }
+};
+
+// 씬 등록
+SceneManager.register("puzzle", PuzzleScene);
+</script>

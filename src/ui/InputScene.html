@@ -1,0 +1,68 @@
+<script>
+/**
+ * 학생 학번/이름 입력 화면 씬 객체.
+ */
+const InputScene = {
+  enter: function(data) {
+    console.log("[InputScene] 진입");
+    const submitBtn = document.getElementById("input-submit-btn");
+    if (submitBtn) {
+      this.submitHandler = (e) => {
+        e.preventDefault();
+        
+        const studentNoInput = document.getElementById("student-no");
+        const nameInput = document.getElementById("student-name");
+        
+        const studentNo = studentNoInput ? studentNoInput.value.trim() : "";
+        const name = nameInput ? nameInput.value.trim() : "";
+        
+        // 정규식: 학번 5자리 숫자 (예: 10101)
+        if (!/^\d{5}$/.test(studentNo)) {
+          alert("학번은 5자리 숫자로 입력해주세요. (예: 10101)");
+          return;
+        }
+        if (!name) {
+          alert("이름을 입력해주세요.");
+          return;
+        }
+        
+        // UserState에 반영
+        UserState.studentNo = studentNo;
+        UserState.name = name;
+        UserState.browser = navigator.userAgent;
+        UserState.device = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? "Mobile/Tablet" : "PC";
+        
+        EventBus.publish("stateChange:user", UserState);
+        
+        // 타이머 시작 및 스토리 시작
+        GameState.startTime = new Date().toISOString();
+        GameState.currentStage = 1;
+        EventBus.publish("stateChange:game", GameState);
+        
+        // 새로고침 복구용 로컬 스토리지 기입
+        if (typeof StateStore !== "undefined") {
+          StateStore.saveToLocalStorage();
+        }
+        
+        // 다음 스토리 씬으로 전환
+        SceneManager.showScene("story", { stageId: GameState.currentStage });
+      };
+      
+      const form = document.getElementById("input-form");
+      if (form) {
+        form.addEventListener("submit", this.submitHandler);
+      }
+    }
+  },
+  exit: function() {
+    console.log("[InputScene] 이탈");
+    const form = document.getElementById("input-form");
+    if (form && this.submitHandler) {
+      form.removeEventListener("submit", this.submitHandler);
+    }
+  }
+};
+
+// 씬 등록
+SceneManager.register("input", InputScene);
+</script>
