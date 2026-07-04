@@ -7,6 +7,13 @@ const PuzzleScene = {
     const stageId = data ? data.stageId : 1;
     console.log(`[PuzzleScene] 진입 - 스테이지 ${stageId}`);
     
+    // 스테이지 전환 시 힌트/오답 카운트 초기화 (잠재적 UI 전이 버그 차단)
+    if (typeof PuzzleState !== "undefined") {
+      PuzzleState.wrongCount = 0;
+      PuzzleState.hintCount = 0;
+      EventBus.publish("stateChange:puzzle", PuzzleState);
+    }
+
     const stageTitleEl = document.getElementById("puzzle-stage-title");
     if (stageTitleEl) {
       stageTitleEl.textContent = `스테이지 ${stageId} - 방 탈출 퍼즐`;
@@ -29,6 +36,11 @@ const PuzzleScene = {
           // 크리스탈 조각을 획득했다는 연출
           PuzzleState.currentSubstage += 1;
           EventBus.publish("stateChange:puzzle", PuzzleState);
+          
+          if (typeof StateStore !== "undefined") {
+            StateStore.saveToLocalStorage(); // 하위 단계 저장 보강
+          }
+          
           this.updateCrystalInventory();
           if (typeof FeedbackSystem !== "undefined") {
             FeedbackSystem.showSuccess("1단계 주문 분석 성공! 다음 심화 퍼즐이 활성화되었습니다. 크리스탈 조각을 획득했습니다!");
