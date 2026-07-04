@@ -3526,49 +3526,38 @@
                 const svg = document.getElementById('coordinate-svg');
                 
                 // Overlay "AUTHORIZED PERSONNEL ONLY" text inside SVG
-                const txtGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-                txtGroup.setAttribute("style", "pointer-events: none;");
-                const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-                bg.setAttribute("x", 50);
-                bg.setAttribute("y", 180);
-                bg.setAttribute("width", 400);
-                bg.setAttribute("height", 140);
-                bg.setAttribute("fill", "rgba(7, 10, 19, 0.9)");
-                bg.setAttribute("stroke", "var(--neon-magenta)");
-                bg.setAttribute("stroke-width", "1.5");
-                bg.setAttribute("style", "filter: drop-shadow(0 0 10px rgba(255,0,127,0.4));");
-                txtGroup.appendChild(bg);
+                const bg = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                bg.setAttribute("style", "pointer-events: none;");
+                const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                rect.setAttribute("x", 50);
+                rect.setAttribute("y", 190);
+                rect.setAttribute("width", 400);
+                rect.setAttribute("height", 100);
+                rect.setAttribute("fill", "rgba(7, 10, 19, 0.9)");
+                rect.setAttribute("stroke", "var(--neon-magenta)");
+                rect.setAttribute("stroke-width", "1.5");
+                rect.setAttribute("style", "filter: drop-shadow(0 0 10px rgba(255,0,127,0.4));");
+                bg.appendChild(rect);
 
                 const alertText1 = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 alertText1.setAttribute("x", 250);
-                alertText1.setAttribute("y", 225);
+                alertText1.setAttribute("y", 230);
                 alertText1.setAttribute("class", "tick-label");
                 alertText1.setAttribute("style", "font-size: 15px; fill: var(--neon-magenta); font-weight: bold; letter-spacing: 2px; font-family: var(--font-cyber);");
                 alertText1.setAttribute("text-anchor", "middle");
                 alertText1.textContent = "SYSTEM LOCKED BY HACKER X";
-                txtGroup.appendChild(alertText1);
+                bg.appendChild(alertText1);
 
                 const alertText2 = document.createElementNS("http://www.w3.org/2000/svg", "text");
                 alertText2.setAttribute("x", 250);
-                alertText2.setAttribute("y", 260);
+                alertText2.setAttribute("y", 265);
                 alertText2.setAttribute("class", "tick-label");
                 alertText2.setAttribute("style", "font-size: 11px; fill: #fff; opacity: 0.8;");
                 alertText2.setAttribute("text-anchor", "middle");
                 alertText2.textContent = "최종 비밀번호: [보안 구역 암호 단어] + [복구된 구역 수 (5)]";
-                txtGroup.appendChild(alertText2);
+                bg.appendChild(alertText2);
 
-                const alertText3 = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                alertText3.setAttribute("x", 250);
-                alertText3.setAttribute("y", 295);
-                alertText3.setAttribute("class", "tick-label");
-                alertText3.setAttribute("style", "font-size: 11px; fill: var(--neon-cyan); font-weight: bold; font-family: var(--font-mono);");
-                alertText3.setAttribute("text-anchor", "middle");
-                // Remind the user of the word from M2 in case they forgot, to avoid frustration, or keep it as puzzle
-                const debugWord = this.m2Word || "GRID";
-                alertText3.textContent = `(보안 단말기 복원 로그: **** -> ${debugWord})`;
-                txtGroup.appendChild(alertText3);
-
-                svg.appendChild(txtGroup);
+                svg.appendChild(bg);
 
                 // Setup password input fields in controller
                 const uiArea = document.getElementById('mission-specific-ui');
