@@ -1,232 +1,277 @@
 <script>
 /**
- * 5스테이지 종합 문제 (그림자 마도사) 퍼즐 클래스.
- * Substage 1: 맞꼭지각 + 평행선 동위각 조합 배리어
- * Substage 2: 평행선 엇각 + 삼각형 외각 성질 조합 배리어
- * Substage 3: 맞꼭지각 + 평행선 + 삼각형의 최종 종합 융합 마법진
+ * 5스테이지 삼각형의 성질 퍼즐 클래스.
+ * Substage 1: 삼각형 내각의 합(180도) 카드 드롭 퍼즐
+ * Substage 2: 삼각형의 외각 성질을 이용한 각도 x 계산 퍼즐
  */
 class Stage5Puzzle extends PuzzleBase {
   constructor(containerId) {
     super(containerId);
     this.substage = 1;
-    this.userAnswer = "";
-    this.targetAnswer = 45; // Substage 1 기본 정답
+    this.fixedAngle = 50;
+    this.solved = { zoneB: null, zoneC: null }; // Substage 1용
+    this.inputX = ""; // Substage 2용
+    this.targetX = 110; // 50 + 60 = 110
     this.onClearCallback = null;
+    this.selectedCard = null;
     
-    this.inputHandler = null;
-    this.submitHandler = null;
+    this.cardClickHandler = null;
+    this.zoneClickHandler = null;
+    this.sub2InputHandler = null;
+    this.sub2SubmitHandler = null;
   }
 
   init() {
     if (this.substage === 1) {
       this.initSubstage1();
-    } else if (this.substage === 2) {
-      this.initSubstage2();
     } else {
-      this.initSubstage3();
+      this.initSubstage2();
     }
   }
 
   initSubstage1() {
-    this.targetAnswer = 45;
     this.container.innerHTML = `
       <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
-        <p style="color: var(--gold-primary); margin-bottom: 10px; font-size: 0.9rem;">
-          [Part 1] 맞꼭지각과 동위각의 성질을 연계하여 1차 결계 각도 <strong>x</strong>를 구하세요.
+        <p style="color: var(--gold-primary); margin-bottom: 12px; font-size: 0.9rem;">
+          [Part 1] 각도 카드를 선택한 뒤, 빈칸(각 B 또는 각 C)을 클릭하여 채워 넣으세요.
         </p>
         
-        <div style="position: relative; display: inline-block; margin-bottom: 10px;">
-          <svg id="stage5-svg" width="280" height="190" style="background:#0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
-            <line x1="20" y1="50" x2="260" y2="50" stroke="#a5a5a5" stroke-width="2" />
-            <line x1="20" y1="130" x2="260" y2="130" stroke="#a5a5a5" stroke-width="2" />
-            <text x="30" y="32" fill="var(--gold-primary)" font-size="9" font-weight="bold">L // M (평행)</text>
-            <text x="245" y="45" fill="#a5a5a5" font-size="9">L</text>
-            <text x="245" y="125" fill="#a5a5a5" font-size="9">M</text>
-            
-            <!-- 교차선 -->
-            <line x1="70" y1="20" x2="210" y2="160" stroke="#ff4757" stroke-width="2" />
-            
-            <!-- 위쪽 교차점 (100, 50) 맞꼭지각 표시 -->
-            <path d="M 90,50 A 15,15 0 0,1 100,30" fill="none" stroke="var(--gold-primary)" stroke-width="1.5" />
-            <text x="75" y="40" fill="#fff" font-size="10" font-weight="bold">45°</text>
-            
-            <path d="M 110,50 A 15,15 0 0,1 100,70" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
-            <text x="110" y="68" fill="rgba(255,255,255,0.7)" font-size="10" font-weight="bold">y</text>
-            
-            <!-- 아래쪽 교차점 (180, 130) 동위각 x 표시 -->
-            <path d="M 190,130 A 15,15 0 0,1 180,150" fill="none" stroke="#ff4757" stroke-width="2.5" />
-            <text x="195" y="152" fill="#ff4757" font-size="12" font-weight="bold">x</text>
+        <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
+          <svg width="280" height="180" style="position: absolute; top:0; left:0; pointer-events: none;">
+            <polygon points="152,30 83,150 196,150" fill="none" stroke="var(--gold-primary)" stroke-width="3" />
+            <path d="M 137,56 A 30,30 0 0,0 162.3,58.2" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.8" />
+            <path d="M 113,150 A 30,30 0 0,0 98,124" fill="none" stroke="var(--gold-light)" stroke-width="2.5" />
+            <path d="M 166,150 A 30,30 0 0,1 185.7,121.8" fill="none" stroke="var(--gold-light)" stroke-width="2.5" />
           </svg>
+          
+          <div style="position: absolute; top: 62px; left: 140px; font-size: 0.9rem; color: #fff; font-weight: bold;">50°</div>
+          
+          <div id="drop-zone-B" class="dropzone" style="position: absolute; top: 106px; left: 22px; width: 56px; height: 34px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-align: center; line-height: 30px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">B</div>
+          <div style="position: absolute; top: 142px; left: 34px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">각 B</div>
+          
+          <div id="drop-zone-C" class="dropzone" style="position: absolute; top: 106px; left: 202px; width: 56px; height: 34px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-align: center; line-height: 30px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">C</div>
+          <div style="position: absolute; top: 142px; left: 214px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">각 C</div>
+          
+          <div id="sum-formula" style="position: absolute; top: 62px; left: 0; width: 100%; text-align: center; font-size: 0.85rem; font-weight: bold;">
+            식: 50° + B + C = 0°
+          </div>
         </div>
         
-        <div style="margin-top: 10px;">
-          <input type="number" id="stage5-input" placeholder="x의 각도" style="width: 120px; padding: 9px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none; vertical-align: middle;">
-          <button id="stage5-submit-btn" class="btn" style="width: 80px; padding: 10px; display: inline-block; vertical-align: middle; margin-left: 10px; font-size: 0.9rem;">입력</button>
+        <div style="margin-top: 15px; display: flex; justify-content: center; gap: 8px;">
+          <div class="drag-card" data-value="40" style="width: 42px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s; font-size: 0.85rem;">40°</div>
+          <div class="drag-card" data-value="60" style="width: 42px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s; font-size: 0.85rem;">60°</div>
+          <div class="drag-card" data-value="70" style="width: 42px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s; font-size: 0.85rem;">70°</div>
+          <div class="drag-card" data-value="80" style="width: 42px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s; font-size: 0.85rem;">80°</div>
+          <div class="drag-card" data-value="90" style="width: 42px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s; font-size: 0.85rem;">90°</div>
+          <div class="drag-card" data-value="100" style="width: 42px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s; font-size: 0.85rem;">100°</div>
         </div>
       </div>
     `;
-    this.input = document.getElementById("stage5-input");
-    this.submitBtn = document.getElementById("stage5-submit-btn");
+    this.cards = this.container.querySelectorAll(".drag-card");
+    this.zones = this.container.querySelectorAll(".dropzone");
+    this.formula = document.getElementById("sum-formula");
+    this.selectedCard = null;
+    this.render();
   }
 
   initSubstage2() {
-    this.targetAnswer = 105;
     this.container.innerHTML = `
       <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
-        <p style="color: var(--gold-primary); margin-bottom: 10px; font-size: 0.9rem;">
-          [Part 2] 평행선 엇각과 삼각형 외각 성질을 결합하여 2차 결계 각도 <strong>x</strong>를 구하세요.
+        <p style="color: var(--gold-primary); margin-bottom: 12px; font-size: 0.9rem;">
+          [Part 2] 밑변의 연장선 끝에 생성된 <strong>외각 x</strong>의 크기를 계산하여 입력하세요.
         </p>
         
-        <div style="position: relative; display: inline-block; margin-bottom: 10px;">
-          <svg id="stage5-svg" width="280" height="190" style="background:#0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
-            <line x1="20" y1="40" x2="260" y2="40" stroke="#a5a5a5" stroke-width="2" />
-            <line x1="20" y1="140" x2="260" y2="140" stroke="#a5a5a5" stroke-width="2" />
-            <text x="30" y="25" fill="var(--gold-primary)" font-size="9" font-weight="bold">L // M (평행)</text>
-            <text x="245" y="35" fill="#a5a5a5" font-size="9">L</text>
-            <text x="245" y="135" fill="#a5a5a5" font-size="9">M</text>
+        <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
+          <svg width="280" height="180" style="position: absolute; top:0; left:0; pointer-events: none;">
+            <!-- 삼각형 ABC 와 BC 연장선 D -->
+            <polygon points="120,30 50,140 180,140" fill="none" stroke="var(--gold-primary)" stroke-width="3" />
+            <line x1="180" y1="140" x2="250" y2="140" stroke="rgba(255, 71, 87, 0.7)" stroke-width="3" stroke-dasharray="3 2" />
             
-            <polygon points="180,40 80,140 207,140" fill="none" stroke="#e0e1dd" stroke-width="2" />
-            <line x1="207" y1="140" x2="218" y2="180" stroke="#ff4757" stroke-width="2" stroke-dasharray="2" />
+            <!-- 각 A(50), 각 B(60) 가이드 호 -->
+            <path d="M 110,48 A 20,20 0 0,0 128,48" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+            <path d="M 70,140 A 20,20 0 0,0 60,121" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
             
-            <path d="M 155,40 A 25,25 0 0,0 162.3,57.7" fill="none" stroke="var(--gold-primary)" stroke-width="1.5" />
-            <text x="135" y="55" fill="#fff" font-size="10" font-weight="bold">45°</text>
-            
-            <path d="M 165.9,54.1 A 20,20 0 0,0 185.2,59.3" fill="none" stroke="var(--gold-primary)" stroke-width="1.5" />
-            <text x="173" y="68" fill="#fff" font-size="10" font-weight="bold">60°</text>
-            
-            <path d="M 187,140 A 20,20 0 0,1 212.2,159.2" fill="none" stroke="#ff4757" stroke-width="3" />
-            <text x="195" y="165" fill="#ff4757" font-size="13" font-weight="bold">x</text>
+            <!-- 외각 ACD 호 (C=180, D=250 연장선 방향) -->
+            <path d="M 197,133 A 20,20 0 0,1 200,140" fill="none" stroke="rgba(255, 71, 87, 0.9)" stroke-width="2" />
           </svg>
+          
+          <div style="position: absolute; top: 58px; left: 112px; font-size: 0.85rem; color: #fff; font-weight: bold;">50°</div>
+          <div style="position: absolute; top: 116px; left: 70px; font-size: 0.85rem; color: #fff; font-weight: bold;">60°</div>
+          
+          <!-- 외각 x 라벨 -->
+          <div style="position: absolute; top: 112px; left: 202px; font-size: 1rem; color: #ff4757; font-weight: bold;">x</div>
+          
+          <div style="position: absolute; top: 78px; left: 0; width: 100%; text-align: center; font-size: 0.75rem; color: var(--text-muted); font-weight: bold;">
+            외각 성질: x = 이웃하지 않는 두 내각의 합
+          </div>
         </div>
-        
-        <div style="margin-top: 10px;">
-          <input type="number" id="stage5-input" placeholder="x의 각도" style="width: 120px; padding: 9px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none; vertical-align: middle;">
-          <button id="stage5-submit-btn" class="btn" style="width: 80px; padding: 10px; display: inline-block; vertical-align: middle; margin-left: 10px; font-size: 0.9rem;">입력</button>
-        </div>
-      </div>
-    `;
-    this.input = document.getElementById("stage5-input");
-    this.submitBtn = document.getElementById("stage5-submit-btn");
-  }
 
-  initSubstage3() {
-    this.targetAnswer = 115;
-    this.container.innerHTML = `
-      <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
-        <p style="color: var(--gold-primary); margin-bottom: 10px; font-size: 0.9rem;">
-          [Part 3] 모든 기하학 법칙(맞꼭지각, 평행선, 삼각형)이 융합된 최종 각도 <strong>x</strong>를 구하세요!
-        </p>
-        
-        <div style="position: relative; display: inline-block; margin-bottom: 10px;">
-          <svg id="stage5-svg" width="280" height="200" style="background:#0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
-            <line x1="20" y1="40" x2="260" y2="40" stroke="#a5a5a5" stroke-width="2" />
-            <line x1="20" y1="140" x2="260" y2="140" stroke="#a5a5a5" stroke-width="2" />
-            <text x="30" y="25" fill="var(--gold-primary)" font-size="9" font-weight="bold">L // M (평행)</text>
-            <text x="245" y="35" fill="#a5a5a5" font-size="9">L</text>
-            <text x="245" y="135" fill="#a5a5a5" font-size="9">M</text>
-            
-            <!-- 꺾인 선 경로 -->
-            <!-- L선 교차점: (90, 40), 꺾임점 P: (140, 90), M선 교차점: (110, 140) -->
-            <!-- 윗선 연장하여 맞꼭지각용 빗선 형성 -->
-            <line x1="75" y1="25" x2="140" y2="90" stroke="#fff" stroke-width="2" />
-            <line x1="140" y1="90" x2="110" y2="140" stroke="#fff" stroke-width="2" />
-            
-            <!-- L선 위쪽 맞꼭지각 표시 = 55° -->
-            <path d="M 78,30 A 15,15 0 0,1 90,40" fill="none" stroke="var(--gold-primary)" stroke-width="1.5" />
-            <text x="65" y="28" fill="#fff" font-size="9" font-weight="bold">55°</text>
-            
-            <!-- 꺾인각 x 표시 -->
-            <path d="M 125,75 A 20,20 0 0,0 120,105" fill="none" stroke="#ff4757" stroke-width="3" />
-            <text x="110" y="93" fill="#ff4757" font-size="12" font-weight="bold">x</text>
-            
-            <!-- 하단 꼭짓점 (110, 140)에 붙은 M선 아래 삼각형 -->
-            <!-- 꼭짓점: (110, 140), (70, 185), (150, 185) -->
-            <polygon points="110,140 70,185 150,185" fill="none" stroke="#e0e1dd" stroke-width="1.8" />
-            <text x="63" y="196" fill="#fff" font-size="9" font-weight="bold">50°</text>
-            <text x="145" y="196" fill="#fff" font-size="9" font-weight="bold">70°</text>
-          </svg>
-        </div>
-        
-        <div style="margin-top: 10px;">
-          <input type="number" id="stage5-input" placeholder="최종 각도 x" style="width: 120px; padding: 9px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none; vertical-align: middle;">
-          <button id="stage5-submit-btn" class="btn" style="width: 80px; padding: 10px; display: inline-block; vertical-align: middle; margin-left: 10px; font-size: 0.9rem;">입력</button>
+        <div style="margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 8px;">
+          <span style="font-size: 0.95rem; color: #fff;">외각 x = </span>
+          <input type="number" id="stage5-input-x" placeholder="x의 값" style="width: 80px; padding: 8px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none;">
+          <span style="font-size: 0.95rem; color: #fff;">°</span>
+          <button id="stage5-submit-btn" class="btn" style="width: 70px; padding: 9px; font-size: 0.85rem; margin: 0;">확인</button>
         </div>
       </div>
     `;
-    this.input = document.getElementById("stage5-input");
-    this.submitBtn = document.getElementById("stage5-submit-btn");
+    this.sub2Input = document.getElementById("stage5-input-x");
+    this.sub2Submit = document.getElementById("stage5-submit-btn");
   }
 
   bindEvents() {
-    this.inputHandler = (e) => {
-      this.userAnswer = e.target.value;
+    if (this.substage === 1) {
+      this.bindEventsSubstage1();
+    } else {
+      this.bindEventsSubstage2();
+    }
+  }
+
+  bindEventsSubstage1() {
+    this.cardClickHandler = (e) => {
+      this.cards.forEach(c => {
+        c.style.borderColor = "var(--gold-primary)";
+        c.style.background = "#1b263b";
+        c.style.boxShadow = "0 4px 6px rgba(0,0,0,0.3)";
+      });
+      this.selectedCard = e.currentTarget;
+      this.selectedCard.style.borderColor = "#ff4757";
+      this.selectedCard.style.background = "rgba(255, 71, 87, 0.2)";
+      this.selectedCard.style.boxShadow = "0 0 10px rgba(255, 71, 87, 0.6)";
     };
-    
-    this.submitHandler = () => {
-      if (this.checkAnswer()) {
-        this.input.disabled = true;
-        this.submitBtn.disabled = true;
-        
+
+    this.zoneClickHandler = (e) => {
+      if (!this.selectedCard) {
         if (typeof FeedbackSystem !== "undefined") {
-          if (this.substage === 1) {
-            FeedbackSystem.showSuccess("1차 배리어가 해제되었습니다! 맞꼭지각(y=45°)과 동위각(x=y=45°)의 연계가 훌륭합니다! (+5점)");
-          } else if (this.substage === 2) {
-            FeedbackSystem.showSuccess("2차 배리어가 해제되었습니다! 엇각(45°)과 삼각형 외각(45°+60°)이 완벽히 조화되었습니다! (+5점)");
-          } else {
-            FeedbackSystem.showSuccess("마도사 모르간의 융합 장막을 최종 격파했습니다! 당신은 이제 기하학의 진정한 수호자입니다! (+10점)");
-          }
+          FeedbackSystem.showWarning("먼저 아래 각도 카드 중 하나를 선택한 뒤 빈칸을 클릭해 주세요.");
         }
+        return;
+      }
 
-        const svg = document.getElementById("stage5-svg");
-        if (typeof AnimationManager !== "undefined" && svg) {
-          setTimeout(() => {
-            AnimationManager.playSolved(svg.parentNode);
-          }, 300);
-        }
+      const zoneId = e.currentTarget.id;
+      const val = parseInt(this.selectedCard.getAttribute("data-value"));
 
+      e.currentTarget.textContent = val + "°";
+      e.currentTarget.style.background = "rgba(212,175,55,0.25)";
+      e.currentTarget.style.borderColor = "var(--gold-primary)";
+      e.currentTarget.style.color = "#fff";
+      e.currentTarget.style.borderStyle = "solid";
+
+      if (zoneId === "drop-zone-B") this.solved.zoneB = val;
+      if (zoneId === "drop-zone-C") this.solved.zoneC = val;
+
+      this.render();
+
+      if (this.checkAnswer()) {
+        this.zones.forEach(z => z.style.borderColor = "#2ecc71");
         setTimeout(() => {
           if (this.onClearCallback) {
             this.onClearCallback();
           }
-        }, 1800);
+        }, 300);
       } else {
-        if (typeof FeedbackSystem !== "undefined") {
-          FeedbackSystem.showError("모르간이 비웃습니다!\n\"흐하하! 그런 엉터리 계산으로 나를 넘어설 수 있을 것 같으냐!\"");
+        if (this.solved.zoneB && this.solved.zoneC) {
+          if (typeof PuzzleState !== "undefined") {
+            PuzzleState.wrongCount += 1;
+            EventBus.publish("stateChange:puzzle", PuzzleState);
+          }
+          const sum = 50 + this.solved.zoneB + this.solved.zoneC;
+          if (typeof FeedbackSystem !== "undefined") {
+            if (sum === 180) {
+              FeedbackSystem.showError(`세 각의 합(${sum}°)은 맞으나, 도형의 생김새(예각삼각형)를 보세요. 직각(90°)이나 둔각 카드는 각 B나 C에 적합하지 않습니다. 다시 조합해 보세요.`);
+            } else {
+              FeedbackSystem.showError(`틀렸습니다! 세 각의 합이 ${sum}°입니다. 삼각형 내각의 합은 항상 180°가 되어야 합니다.`);
+            }
+          }
         }
-        
+      }
+    };
+
+    this.cards.forEach(card => {
+      card.addEventListener("click", this.cardClickHandler);
+    });
+
+    this.zones.forEach(zone => {
+      zone.addEventListener("click", this.zoneClickHandler);
+    });
+  }
+
+  bindEventsSubstage2() {
+    this.sub2InputHandler = (e) => {
+      this.inputX = e.target.value;
+    };
+
+    this.sub2SubmitHandler = () => {
+      const val = parseInt(this.inputX);
+      if (val === this.targetX) {
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showSuccess("정답입니다! 삼각형의 한 외각은 이웃하지 않는 두 내각의 합과 같으므로 x = 50° + 60° = 110°가 맞습니다! (+5점)");
+        }
+        if (this.onClearCallback) {
+          this.onClearCallback();
+        }
+      } else {
         if (typeof PuzzleState !== "undefined") {
           PuzzleState.wrongCount += 1;
           EventBus.publish("stateChange:puzzle", PuzzleState);
         }
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showError("틀렸습니다! 연장선 위의 외각 x는 삼각형 내부의 이웃하지 않는 두 각(50°, 60°)의 합과 같아야 합니다.");
+        }
       }
     };
-    
-    if (this.input) this.input.addEventListener("input", this.inputHandler);
-    if (this.submitBtn) this.submitBtn.addEventListener("click", this.submitHandler);
+
+    if (this.sub2Input) this.sub2Input.addEventListener("input", this.sub2InputHandler);
+    if (this.sub2Submit) this.sub2Submit.addEventListener("click", this.sub2SubmitHandler);
+  }
+
+  render() {
+    if (this.substage === 1 && this.formula) {
+      const bStr = this.solved.zoneB ? `${this.solved.zoneB}°` : "B";
+      const cStr = this.solved.zoneC ? `${this.solved.zoneC}°` : "C";
+      const total = 50 + (this.solved.zoneB || 0) + (this.solved.zoneC || 0);
+      
+      let color = "var(--text-muted)";
+      let glow = "none";
+      if (this.solved.zoneB && this.solved.zoneC) {
+        if (total === 180) {
+          const isValidShape = (this.solved.zoneB === 60 && this.solved.zoneC === 70) || (this.solved.zoneB === 70 && this.solved.zoneC === 60);
+          color = isValidShape ? "#2ecc71" : "#f1c40f";
+          glow = isValidShape ? "0 0 10px rgba(46,204,113,0.5)" : "none";
+        } else {
+          color = "#ff4757";
+          glow = "0 0 10px rgba(255,71,87,0.5)";
+        }
+      }
+      
+      this.formula.innerHTML = `
+        <span style="color: #fff;">∑ = </span>
+        <span style="color: ${color}; text-shadow: ${glow}; font-size: 1.15rem;">${total}°</span>
+        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">
+          50° + ${bStr} + ${cStr} = 180°
+        </div>
+      `;
+    }
   }
 
   checkAnswer() {
-    return parseInt(this.userAnswer) === this.targetAnswer;
+    if (this.substage === 1) {
+      if (!this.solved.zoneB || !this.solved.zoneC) return false;
+      const isSumCorrect = (50 + this.solved.zoneB + this.solved.zoneC) === 180;
+      const isShapeCorrect = (this.solved.zoneB === 60 && this.solved.zoneC === 70) || (this.solved.zoneB === 70 && this.solved.zoneC === 60);
+      return isSumCorrect && isShapeCorrect;
+    } else {
+      return parseInt(this.inputX) === this.targetX;
+    }
   }
 
   goNextSubstage() {
     if (this.substage === 1) {
+      this.destroy();
       this.substage = 2;
-      this.userAnswer = "";
+      this.inputX = "";
       
       if (typeof SceneManager !== "undefined") {
-        SceneManager.showScene("story", { stageId: "5_mid1" });
-      } else {
-        this.init();
-        this.bindEvents();
-      }
-      return true;
-    } else if (this.substage === 2) {
-      this.substage = 3;
-      this.userAnswer = "";
-      
-      if (typeof SceneManager !== "undefined") {
-        SceneManager.showScene("story", { stageId: "5_mid2" });
+        SceneManager.showScene("story", { stageId: "5_mid" });
       } else {
         this.init();
         this.bindEvents();
@@ -238,48 +283,52 @@ class Stage5Puzzle extends PuzzleBase {
 
   getHint(count) {
     if (this.substage === 1) {
-      if (count === 1) return "교차하는 두 선에 의해 마주 보는 두 각인 45°와 y는 맞꼭지각 관계입니다. 따라서 y의 크기를 먼저 알 수 있습니다.";
-      if (count === 2) return "L선과 M선이 평행하므로, y°와 x°는 서로 같은 상대적 위치에 존재합니다. 즉 동위각 성질에 의해 y = x 입니다!";
-      return this.getSolution();
-    } else if (this.substage === 2) {
-      if (count === 1) return "평행선 L과 M 사이의 엇각 관계를 통해 삼각형 ABC의 왼쪽 아래 내각 B의 크기를 구해보세요.";
-      if (count === 2) return "엇각 성질에 의해 내각 B는 45°가 됩니다. 그리고 구하려는 외각 x는 이웃하지 않는 두 내각(A=60°, B=45°)의 합과 같습니다!";
+      if (count === 1) return "삼각형의 가장 기초적인 성질인 세 내각의 총합을 기억해 보세요.";
+      if (count === 2) return "삼각형 내부의 각들의 합은 언제나 180°입니다. 주어진 각이 50°이니 B + C = 130°가 되도록 채우되 예각 비율에 알맞게 각각 60°와 70°를 넣어보세요.";
       return this.getSolution();
     } else {
-      if (count === 1) return "꺾인 점 P를 지나는 수평 평행선을 상상해 보고, 위아래 엇각 크기들을 유도해 나갑시다.";
-      if (count === 2) return "P의 윗각은 맞꼭지각 55°의 엇각이므로 55°가 됩니다. P의 아랫각은 M선 아래 삼각형의 나머지 한 내각(180 - (50 + 70) = 60°)과 엇각이므로 60°가 됩니다!";
+      if (count === 1) return "삼각형 밑변을 연장하여 생긴 외각 x는, 바로 이웃한 안쪽 각을 뺀 나머지 두 내각의 합과 같습니다.";
+      if (count === 2) return "즉, x는 안쪽의 50°와 60°를 합친 크기와 완벽하게 같습니다. 이 성질을 수식으로 정리하면 x = 50 + 60 이 됩니다!";
       return this.getSolution();
     }
   }
 
   getSolution() {
     if (this.substage === 1) {
-      return "맞꼭지각 성질에 의해 y = 45°가 성립합니다. 또한 평행선에서 동위각의 크기는 같으므로 x = y = 45°가 됩니다.";
-    } else if (this.substage === 2) {
-      return "평행선 L과 AB선 사이의 엇각에 의해 삼각형 내각 B = 45°입니다. 외각의 정리로 x = 60° + 45° = 105°가 됩니다.";
+      return "삼각형 내각의 총합은 180°입니다. 각 A = 50°이므로 B + C = 130°여야 합니다. 예각삼각형 형태에 일치하도록 각 B = 60°(또는 70°), 각 C = 70°(또는 60°) 카드를 배치해야 합니다.";
     } else {
-      return "L선 위쪽 맞꼭지각이 55°이므로 꺾인 점 P의 윗부분 엇각은 55°입니다. 하단 삼각형 내각의 합은 180°이므로 꼭짓점의 남은 한 각은 180° - 50° - 70° = 60°입니다. 이 각과 꺾인 점 P의 아랫부분 엇각은 60°로 동일합니다. 따라서 x = 55° + 60° = 115°가 됩니다.";
+      return "삼각형의 외각 성질에 의해 외각 x는 이웃하지 않는 두 내각의 합인 50° + 60° = 110°가 됩니다.";
     }
   }
 
   getConceptText() {
-    return "맞꼭지각, 평행선(동위각·엇각), 삼각형(내각·외각)의 모든 성질을 유기적으로 연계하면 아무리 복합적인 기하 문제도 해결할 수 있습니다.";
+    return "삼각형의 한 외각의 크기는 이웃하지 않는 두 내각의 크기의 합과 같습니다.";
   }
 
   reset() {
-    if (this.input) {
-      this.input.disabled = false;
-      this.input.value = "";
-    }
-    if (this.submitBtn) this.submitBtn.disabled = false;
-    this.userAnswer = "";
+    this.solved = { zoneB: null, zoneC: null };
+    this.inputX = "";
     this.init();
     this.bindEvents();
   }
 
   destroy() {
-    if (this.input && this.inputHandler) this.input.removeEventListener("input", this.inputHandler);
-    if (this.submitBtn && this.submitHandler) this.submitBtn.removeEventListener("click", this.submitHandler);
+    if (this.cards) {
+      this.cards.forEach(card => {
+        card.removeEventListener("click", this.cardClickHandler);
+      });
+    }
+    if (this.zones) {
+      this.zones.forEach(zone => {
+        zone.removeEventListener("click", this.zoneClickHandler);
+      });
+    }
+    if (this.sub2Input && this.sub2InputHandler) {
+      this.sub2Input.removeEventListener("input", this.sub2InputHandler);
+    }
+    if (this.sub2Submit && this.sub2SubmitHandler) {
+      this.sub2Submit.removeEventListener("click", this.sub2SubmitHandler);
+    }
     this.container.innerHTML = "";
   }
 }

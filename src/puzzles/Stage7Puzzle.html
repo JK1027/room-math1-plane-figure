@@ -1,0 +1,325 @@
+<script>
+/**
+ * 7스테이지 마왕 발록 최종 종합 보스전 퍼즐 클래스.
+ * 상단 실시간 보스 HP 바 렌더링 및 3페이즈 격퇴 연출 적용.
+ * Substage 1 (Phase 1): 평행선 결계 (엇각 + 맞꼭지각) -> HP 100%
+ * Substage 2 (Phase 2): 삼각형 결계 (엇각 + 외각) -> HP 66%
+ * Substage 3 (Phase 3): 다각형 최종 종합 융합 결계 -> HP 33%
+ */
+class Stage7Puzzle extends PuzzleBase {
+  constructor(containerId) {
+    super(containerId);
+    this.substage = 1;
+    this.userAnswer = "";
+    this.targetAnswer = 45; // Default Phase 1 정답
+    this.onClearCallback = null;
+    
+    this.inputHandler = null;
+    this.submitHandler = null;
+  }
+
+  init() {
+    if (this.substage === 1) {
+      this.initSubstage1();
+    } else if (this.substage === 2) {
+      this.initSubstage2();
+    } else {
+      this.initSubstage3();
+    }
+    this.updateBossHp();
+  }
+
+  // 공통 마왕 발록 HP 바 UI 마크업
+  getBossHeaderHtml(phaseText) {
+    return `
+      <div id="balrog-boss-container" style="margin-bottom: 12px; width: 100%; text-align: center; user-select: none;">
+        <div style="font-weight: bold; color: #ff4757; font-size: 0.95rem; margin-bottom: 5px; text-shadow: 0 0 5px rgba(255, 71, 87, 0.4);">
+          기하를 왜곡하는 마왕 발록 (LV.99)
+        </div>
+        <div style="width: 240px; height: 14px; background: rgba(255,255,255,0.08); border: 2px solid #ff4757; border-radius: 7px; margin: 0 auto; overflow: hidden; position: relative; box-shadow: 0 0 10px rgba(255, 71, 87, 0.25);">
+          <div id="balrog-hp-bar" style="width: 100%; height: 100%; background: linear-gradient(90deg, #ff4757, #ff9f43); transition: width 0.8s ease-out; box-shadow: inset 0 2px 4px rgba(255,255,255,0.3);"></div>
+        </div>
+        <div id="balrog-phase-label" style="font-size: 0.72rem; color: var(--gold-primary); margin-top: 5px; font-weight: bold; text-shadow: 0 0 3px var(--gold-glow);">
+          ${phaseText}
+        </div>
+      </div>
+    `;
+  }
+
+  initSubstage1() {
+    this.targetAnswer = 45;
+    this.container.innerHTML = `
+      <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
+        ${this.getBossHeaderHtml("[1페이즈] 맞꼭지각과 동위각의 1차 평행선 결계")}
+        
+        <div style="position: relative; display: inline-block; margin-bottom: 10px;">
+          <svg id="stage7-svg" width="280" height="180" style="background:#0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
+            <line x1="20" y1="50" x2="260" y2="50" stroke="#a5a5a5" stroke-width="2" />
+            <line x1="20" y1="130" x2="260" y2="130" stroke="#a5a5a5" stroke-width="2" />
+            <text x="30" y="32" fill="var(--gold-primary)" font-size="9" font-weight="bold">L // M (평행)</text>
+            <text x="245" y="45" fill="#a5a5a5" font-size="9">L</text>
+            <text x="245" y="125" fill="#a5a5a5" font-size="9">M</text>
+            
+            <!-- 교차선 -->
+            <line x1="70" y1="20" x2="210" y2="160" stroke="#ff4757" stroke-width="2.2" />
+            
+            <!-- 위쪽 교차점 (100, 50) 맞꼭지각 표시 -->
+            <path d="M 90,50 A 15,15 0 0,1 100,30" fill="none" stroke="var(--gold-primary)" stroke-width="1.5" />
+            <text x="75" y="40" fill="#fff" font-size="10" font-weight="bold">45°</text>
+            
+            <path d="M 110,50 A 15,15 0 0,1 100,70" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+            <text x="110" y="68" fill="rgba(255,255,255,0.7)" font-size="10" font-weight="bold">y</text>
+            
+            <!-- 아래쪽 교차점 (180, 130) 동위각 x 표시 -->
+            <path d="M 190,130 A 15,15 0 0,1 180,150" fill="none" stroke="#ff4757" stroke-width="2.5" />
+            <text x="195" y="152" fill="#ff4757" font-size="12" font-weight="bold">x</text>
+          </svg>
+        </div>
+        
+        <div style="margin-top: 10px;">
+          <input type="number" id="stage7-input" placeholder="x의 각도" style="width: 120px; padding: 9px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none; vertical-align: middle;">
+          <button id="stage7-submit-btn" class="btn" style="width: 80px; padding: 10px; display: inline-block; vertical-align: middle; margin-left: 10px; font-size: 0.9rem;">성검공격</button>
+        </div>
+      </div>
+    `;
+    this.input = document.getElementById("stage7-input");
+    this.submitBtn = document.getElementById("stage7-submit-btn");
+  }
+
+  initSubstage2() {
+    this.targetAnswer = 105;
+    this.container.innerHTML = `
+      <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
+        ${this.getBossHeaderHtml("[2페이즈] 엇각과 삼각형 외각의 2차 삼각 결계")}
+        
+        <div style="position: relative; display: inline-block; margin-bottom: 10px;">
+          <svg id="stage7-svg" width="280" height="180" style="background:#0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
+            <line x1="20" y1="40" x2="260" y2="40" stroke="#a5a5a5" stroke-width="2" />
+            <line x1="20" y1="140" x2="260" y2="140" stroke="#a5a5a5" stroke-width="2" />
+            <text x="30" y="25" fill="var(--gold-primary)" font-size="9" font-weight="bold">L // M (평행)</text>
+            <text x="245" y="35" fill="#a5a5a5" font-size="9">L</text>
+            <text x="245" y="135" fill="#a5a5a5" font-size="9">M</text>
+            
+            <polygon points="180,40 80,140 207,140" fill="none" stroke="#e0e1dd" stroke-width="2" />
+            <line x1="207" y1="140" x2="218" y2="180" stroke="#ff4757" stroke-width="2" stroke-dasharray="2" />
+            
+            <path d="M 155,40 A 25,25 0 0,0 162.3,57.7" fill="none" stroke="var(--gold-primary)" stroke-width="1.5" />
+            <text x="135" y="55" fill="#fff" font-size="10" font-weight="bold">45°</text>
+            
+            <path d="M 165.9,54.1 A 20,20 0 0,0 185.2,59.3" fill="none" stroke="var(--gold-primary)" stroke-width="1.5" />
+            <text x="173" y="68" fill="#fff" font-size="10" font-weight="bold">60°</text>
+            
+            <path d="M 187,140 A 20,20 0 0,1 212.2,159.2" fill="none" stroke="#ff4757" stroke-width="3" />
+            <text x="195" y="165" fill="#ff4757" font-size="13" font-weight="bold">x</text>
+          </svg>
+        </div>
+        
+        <div style="margin-top: 10px;">
+          <input type="number" id="stage7-input" placeholder="x의 각도" style="width: 120px; padding: 9px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none; vertical-align: middle;">
+          <button id="stage7-submit-btn" class="btn" style="width: 80px; padding: 10px; display: inline-block; vertical-align: middle; margin-left: 10px; font-size: 0.9rem;">성검공격</button>
+        </div>
+      </div>
+    `;
+    this.input = document.getElementById("stage7-input");
+    this.submitBtn = document.getElementById("stage7-submit-btn");
+  }
+
+  initSubstage3() {
+    this.targetAnswer = 115;
+    this.container.innerHTML = `
+      <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
+        ${this.getBossHeaderHtml("[최종 3페이즈] 맞꼭지+평행선+삼각형 최종 융합 배리어")}
+        
+        <div style="position: relative; display: inline-block; margin-bottom: 10px;">
+          <svg id="stage7-svg" width="280" height="200" style="background:#0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
+            <line x1="20" y1="40" x2="260" y2="40" stroke="#a5a5a5" stroke-width="2" />
+            <line x1="20" y1="140" x2="260" y2="140" stroke="#a5a5a5" stroke-width="2" />
+            <text x="30" y="25" fill="var(--gold-primary)" font-size="9" font-weight="bold">L // M (평행)</text>
+            <text x="245" y="35" fill="#a5a5a5" font-size="9">L</text>
+            <text x="245" y="135" fill="#a5a5a5" font-size="9">M</text>
+            
+            <!-- 꺾인 선 경로 -->
+            <!-- L선 교차점: (90, 40), 꺾임점 P: (140, 90), M선 교차점: (110, 140) -->
+            <!-- 윗선 연장하여 맞꼭지각용 빗선 형성 -->
+            <line x1="75" y1="25" x2="140" y2="90" stroke="#fff" stroke-width="2" />
+            <line x1="140" y1="90" x2="110" y2="140" stroke="#fff" stroke-width="2" />
+            
+            <!-- L선 위쪽 맞꼭지각 표시 = 55° -->
+            <path d="M 78,30 A 15,15 0 0,1 90,40" fill="none" stroke="var(--gold-primary)" stroke-width="1.5" />
+            <text x="65" y="28" fill="#fff" font-size="9" font-weight="bold">55°</text>
+            
+            <!-- 꺾인각 x 표시 -->
+            <path d="M 125,75 A 20,20 0 0,0 120,105" fill="none" stroke="#ff4757" stroke-width="3" />
+            <text x="110" y="93" fill="#ff4757" font-size="12" font-weight="bold">x</text>
+            
+            <!-- 하단 꼭짓점 (110, 140)에 붙은 M선 아래 삼각형 -->
+            <!-- 꼭짓점: (110, 140), (70, 185), (150, 185) -->
+            <polygon points="110,140 70,185 150,185" fill="none" stroke="#e0e1dd" stroke-width="1.8" />
+            <text x="63" y="196" fill="#fff" font-size="9" font-weight="bold">50°</text>
+            <text x="145" y="196" fill="#fff" font-size="9" font-weight="bold">70°</text>
+          </svg>
+        </div>
+        
+        <div style="margin-top: 10px;">
+          <input type="number" id="stage7-input" placeholder="최종 각도 x" style="width: 120px; padding: 9px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none; vertical-align: middle;">
+          <button id="stage7-submit-btn" class="btn" style="width: 80px; padding: 10px; display: inline-block; vertical-align: middle; margin-left: 10px; font-size: 0.9rem;">최후일격</button>
+        </div>
+      </div>
+    `;
+    this.input = document.getElementById("stage7-input");
+    this.submitBtn = document.getElementById("stage7-submit-btn");
+  }
+
+  updateBossHp() {
+    const hpBar = document.getElementById("balrog-hp-bar");
+    if (!hpBar) return;
+    
+    // substage별 HP 설정
+    if (this.substage === 1) {
+      hpBar.style.width = "100%";
+    } else if (this.substage === 2) {
+      hpBar.style.width = "66%";
+    } else if (this.substage === 3) {
+      hpBar.style.width = "33%";
+    } else {
+      hpBar.style.width = "0%";
+    }
+  }
+
+  bindEvents() {
+    this.inputHandler = (e) => {
+      this.userAnswer = e.target.value;
+    };
+    
+    this.submitHandler = () => {
+      if (this.checkAnswer()) {
+        this.input.disabled = true;
+        this.submitBtn.disabled = true;
+        
+        if (typeof FeedbackSystem !== "undefined") {
+          if (this.substage === 1) {
+            FeedbackSystem.showSuccess("성공! 발록의 1페이즈 평행 결계가 붕괴됩니다! 데미지 33%! (+5점)");
+          } else if (this.substage === 2) {
+            FeedbackSystem.showSuccess("성공! 발록의 2페이즈 삼각 장막마저 깨집니다! 데미지 66%! (+5점)");
+          } else {
+            FeedbackSystem.showSuccess("마왕 발록의 모든 결계를 격파했습니다! 성검의 광휘가 세상을 구원합니다! (+10점)");
+          }
+        }
+
+        const hpBar = document.getElementById("balrog-hp-bar");
+        if (hpBar) {
+          if (this.substage === 1) hpBar.style.width = "66%";
+          if (this.substage === 2) hpBar.style.width = "33%";
+          if (this.substage === 3) hpBar.style.width = "0%";
+        }
+
+        const svg = document.getElementById("stage7-svg");
+        if (typeof AnimationManager !== "undefined" && svg) {
+          setTimeout(() => {
+            AnimationManager.playSolved(svg.parentNode);
+          }, 300);
+        }
+
+        setTimeout(() => {
+          if (this.onClearCallback) {
+            this.onClearCallback();
+          }
+        }, 1800);
+      } else {
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showError("마왕 발록이 폭소를 터뜨립니다!\n\"크하하하! 그 정도 얕은 계산으로 나의 왜곡 마법을 풀 순 없다!\"");
+        }
+        
+        if (typeof PuzzleState !== "undefined") {
+          PuzzleState.wrongCount += 1;
+          EventBus.publish("stateChange:puzzle", PuzzleState);
+        }
+      }
+    };
+    
+    if (this.input) this.input.addEventListener("input", this.inputHandler);
+    if (this.submitBtn) this.submitBtn.addEventListener("click", this.submitHandler);
+  }
+
+  checkAnswer() {
+    return parseInt(this.userAnswer) === this.targetAnswer;
+  }
+
+  goNextSubstage() {
+    if (this.substage === 1) {
+      this.substage = 2;
+      this.userAnswer = "";
+      
+      if (typeof SceneManager !== "undefined") {
+        SceneManager.showScene("story", { stageId: "7_mid1" });
+      } else {
+        this.init();
+        this.bindEvents();
+      }
+      return true;
+    } else if (this.substage === 2) {
+      this.substage = 3;
+      this.userAnswer = "";
+      
+      if (typeof SceneManager !== "undefined") {
+        SceneManager.showScene("story", { stageId: "7_mid2" });
+      } else {
+        this.init();
+        this.bindEvents();
+      }
+      return true;
+    }
+    return false;
+  }
+
+  getHint(count) {
+    if (this.substage === 1) {
+      if (count === 1) return "교차하는 빗선에 의해 마주 보는 두 각은 맞꼭지각이므로 크기가 같습니다. 즉, y = 45° 입니다.";
+      if (count === 2) return "L선과 M선이 평행하므로, y°와 구하려는 x°는 동위각 관계입니다. 따라서 x = y = 45°가 성립합니다.";
+      return this.getSolution();
+    } else if (this.substage === 2) {
+      if (count === 1) return "평행선 사이의 엇각에 의해 삼각형 ABC의 왼쪽 내각 B의 크기는 45°가 됩니다.";
+      if (count === 2) return "삼각형의 외각 공식에 의해, 외각 x는 이웃하지 않는 두 내각(A=60°, B=45°)의 합인 105°가 됩니다.";
+      return this.getSolution();
+    } else {
+      if (count === 1) return "꺾인 점 P를 지나는 수평선 보조선을 그어 위아래 엇각을 유도합니다.";
+      if (count === 2) return "윗부분 엇각은 L선 맞꼭지각 55°와 같고, 아랫부분 엇각은 M선 아래 삼각형의 나머지 한 각인 60°(180 - 50 - 70)와 같습니다. 이를 더하면 115°가 됩니다.";
+      return this.getSolution();
+    }
+  }
+
+  getSolution() {
+    if (this.substage === 1) {
+      return "맞꼭지각 성질에 의해 y = 45°가 성립합니다. 또한 평행선에서 동위각의 크기는 같으므로 x = y = 45°가 됩니다.";
+    } else if (this.substage === 2) {
+      return "평행선 L과 AB선 사이의 엇각에 의해 삼각형 내각 B = 45°입니다. 외각의 정리로 x = 60° + 45° = 105°가 됩니다.";
+    } else {
+      return "L선 위쪽 맞꼭지각이 55°이므로 꺾인 점 P의 윗부분 엇각은 55°입니다. 하단 삼각형 내각의 합은 180°이므로 꼭짓점의 남은 한 각은 180° - 50° - 70° = 60°입니다. 이 각과 꺾인 점 P의 아랫부분 엇각은 60°로 동일합니다. 따라서 x = 55° + 60° = 115°가 됩니다.";
+    }
+  }
+
+  getConceptText() {
+    return "맞꼭지각, 평행선(동위각·엇각), 삼각형(내각·외각)의 모든 성질을 유기적으로 연계하면 아무리 복합적인 기하 문제도 해결할 수 있습니다.";
+  }
+
+  reset() {
+    if (this.input) {
+      this.input.disabled = false;
+      this.input.value = "";
+    }
+    if (this.submitBtn) this.submitBtn.disabled = false;
+    this.userAnswer = "";
+    this.init();
+    this.bindEvents();
+  }
+
+  destroy() {
+    if (this.input && this.inputHandler) this.input.removeEventListener("input", this.inputHandler);
+    if (this.submitBtn && this.submitHandler) this.submitBtn.removeEventListener("click", this.submitHandler);
+    this.container.innerHTML = "";
+  }
+}
+
+// 퍼즐 등록
+PuzzleManager.register(7, Stage7Puzzle);
+</script>
