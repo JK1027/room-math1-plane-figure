@@ -16,9 +16,9 @@ const InputScene = {
         const studentNo = studentNoInput ? studentNoInput.value.trim() : "";
         const name = nameInput ? nameInput.value.trim() : "";
         
-        // 정규식: 학번 5자리 숫자 (예: 10101)
-        if (!/^\d{5}$/.test(studentNo)) {
-          alert("학번은 5자리 숫자로 입력해주세요. (예: 10101)");
+        // 정규식: 학번 4~5자리 숫자 (예: 1011 또는 10101)
+        if (!/^\d{4,5}$/.test(studentNo)) {
+          alert("학번은 4~5자리 숫자로 입력해주세요. (예: 1011 또는 10101)");
           return;
         }
         if (!name) {
