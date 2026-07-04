@@ -93,7 +93,7 @@ class Stage4Puzzle extends PuzzleBase {
       const zoneId = e.currentTarget.id;
       const val = parseInt(this.selectedCard.getAttribute("data-value"));
 
-      e.currentTarget.innerText = val + "°";
+      e.currentTarget.textContent = val + "°";
       e.currentTarget.style.background = "rgba(212,175,55,0.25)";
       e.currentTarget.style.borderColor = "var(--gold-primary)";
       e.currentTarget.style.color = "#fff";

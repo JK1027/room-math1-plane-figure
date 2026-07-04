@@ -21,17 +21,18 @@ const EndingScene = {
     // 점수 레코드 바인딩
     const recordEl = document.getElementById("ending-record");
     if (recordEl) {
-      recordEl.innerText = `소요 시간: ${playTimeSec}초 | 오답 횟수: ${PuzzleState.wrongCount}회 | 최종 점수: ${score}점`;
+      recordEl.textContent = `소요 시간: ${playTimeSec}초 | 오답 횟수: ${PuzzleState.wrongCount}회 | 최종 점수: ${score}점`;
     }
     
+    // 기록 전송 버튼 리스너 바인딩
     const submitBtn = document.getElementById("ending-submit-btn");
     if (submitBtn) {
+      submitBtn.textContent = "기록 및 랭킹 등록";
       submitBtn.disabled = false;
-      submitBtn.innerText = "기록 및 랭킹 등록";
       
       this.submitHandler = () => {
         submitBtn.disabled = true;
-        submitBtn.innerText = "제출 중...";
+        submitBtn.textContent = "제출 중...";
         
         const payload = {
           studentNo: UserState.studentNo,
@@ -75,7 +76,7 @@ const EndingScene = {
               alert("저장 실패: " + err.message);
             }
             submitBtn.disabled = false;
-            submitBtn.innerText = "다시 기록 제출하기";
+            submitBtn.textContent = "다시 기록 제출하기";
           }
         );
       };

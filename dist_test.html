@@ -2194,7 +2194,7 @@ const StoryManager = (function() {
       if (isTyping) {
         clearTimeout(typingTimer);
         isTyping = false;
-        currentEl.innerText = currentFullText;
+        currentEl.textContent = currentFullText;
         if (typeof AnimationManager !== "undefined") {
           AnimationManager.playTypingEnd();
         }
@@ -2228,7 +2228,7 @@ const StoryManager = (function() {
      */
     typeText: function(text, element) {
       isTyping = true;
-      element.innerText = "";
+      element.textContent = "";
       let index = 0;
       const speed = 35; // 한 글자당 대기 시간 (ms)
 
@@ -2240,7 +2240,7 @@ const StoryManager = (function() {
       function type() {
         if (!isTyping) return; // 타이핑 도중 정지(전체 텍스트 출력) 처리되면 루프 즉시 종료
         if (index < text.length) {
-          element.innerText += text.charAt(index);
+          element.textContent += text.charAt(index);
           index++;
           typingTimer = setTimeout(type, speed);
         } else {
@@ -2535,7 +2535,7 @@ const TutorialEngine = (function() {
             if (feedback) feedback.textContent = "먼저 아래 [90°] 카드를 선택하세요!";
             return;
           }
-          zone.innerText = "90°";
+          zone.textContent = "90°";
           zone.style.background = "rgba(212,175,55,0.25)";
           zone.style.borderColor = "var(--gold-primary)";
           zone.style.color = "#fff";
@@ -3450,7 +3450,7 @@ class Stage2Puzzle extends PuzzleBase {
       const zoneId = e.currentTarget.id;
       const val = this.selectedCard.getAttribute("data-value");
 
-      e.currentTarget.innerText = val + "°";
+      e.currentTarget.textContent = val + "°";
       e.currentTarget.style.background = "rgba(212,175,55,0.25)";
       e.currentTarget.style.borderColor = "var(--gold-primary)";
       e.currentTarget.style.color = "#fff";
@@ -3854,7 +3854,7 @@ class Stage4Puzzle extends PuzzleBase {
       const zoneId = e.currentTarget.id;
       const val = parseInt(this.selectedCard.getAttribute("data-value"));
 
-      e.currentTarget.innerText = val + "°";
+      e.currentTarget.textContent = val + "°";
       e.currentTarget.style.background = "rgba(212,175,55,0.25)";
       e.currentTarget.style.borderColor = "var(--gold-primary)";
       e.currentTarget.style.color = "#fff";
@@ -4398,7 +4398,7 @@ const PuzzleScene = {
     
     const stageTitleEl = document.getElementById("puzzle-stage-title");
     if (stageTitleEl) {
-      stageTitleEl.innerText = `스테이지 ${stageId} - 방 탈출 퍼즐`;
+      stageTitleEl.textContent = `스테이지 ${stageId} - 방 탈출 퍼즐`;
     }
     
     // 1. PuzzleManager를 통해 퍼즐 인스턴스 기동 및 클리어 핸들러 연결
@@ -4566,17 +4566,18 @@ const EndingScene = {
     // 점수 레코드 바인딩
     const recordEl = document.getElementById("ending-record");
     if (recordEl) {
-      recordEl.innerText = `소요 시간: ${playTimeSec}초 | 오답 횟수: ${PuzzleState.wrongCount}회 | 최종 점수: ${score}점`;
+      recordEl.textContent = `소요 시간: ${playTimeSec}초 | 오답 횟수: ${PuzzleState.wrongCount}회 | 최종 점수: ${score}점`;
     }
     
+    // 기록 전송 버튼 리스너 바인딩
     const submitBtn = document.getElementById("ending-submit-btn");
     if (submitBtn) {
+      submitBtn.textContent = "기록 및 랭킹 등록";
       submitBtn.disabled = false;
-      submitBtn.innerText = "기록 및 랭킹 등록";
       
       this.submitHandler = () => {
         submitBtn.disabled = true;
-        submitBtn.innerText = "제출 중...";
+        submitBtn.textContent = "제출 중...";
         
         const payload = {
           studentNo: UserState.studentNo,
@@ -4620,7 +4621,7 @@ const EndingScene = {
               alert("저장 실패: " + err.message);
             }
             submitBtn.disabled = false;
-            submitBtn.innerText = "다시 기록 제출하기";
+            submitBtn.textContent = "다시 기록 제출하기";
           }
         );
       };

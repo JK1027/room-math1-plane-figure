@@ -9,7 +9,7 @@ const PuzzleScene = {
     
     const stageTitleEl = document.getElementById("puzzle-stage-title");
     if (stageTitleEl) {
-      stageTitleEl.innerText = `스테이지 ${stageId} - 방 탈출 퍼즐`;
+      stageTitleEl.textContent = `스테이지 ${stageId} - 방 탈출 퍼즐`;
     }
     
     // 1. PuzzleManager를 통해 퍼즐 인스턴스 기동 및 클리어 핸들러 연결
