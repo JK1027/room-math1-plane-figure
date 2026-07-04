@@ -73,17 +73,58 @@ const PuzzleScene = {
     const hintBtn = document.getElementById("puzzle-hint-btn");
     if (hintBtn) {
       this.hintHandler = () => {
-        PuzzleState.hintCount += 1;
-        EventBus.publish("stateChange:puzzle", PuzzleState);
+        let npcName = "마도사";
+        if (stageId === 1) npcName = "숲의 정령";
+        if (stageId === 2) npcName = "신전 수호자";
+        if (stageId === 3) npcName = "빛의 현자";
+        if (stageId === 4) npcName = "제단의 영혼";
+
+        let hintMsg = "";
         
-        let hintMsg = "도형의 정의를 찬찬히 살펴보세요.";
-        if (stageId === 1) hintMsg = "맞꼭지각은 두 직선이 만날 때 생기는 서로 마주 보는 두 각이며, 크기가 항상 동일합니다.";
-        if (stageId === 2) hintMsg = "두 선이 평행할 때, 횡단선과의 위치가 동일한 동위각과 서로 지그재그 관계인 엇각의 크기는 같습니다.";
-        if (stageId === 3) hintMsg = "꺾인 점을 가로지르는 제3의 평행 가상 보조선을 그리면 위아래 엇각 관계(45도와 30도)로 쪼개져 합이 75도가 됩니다.";
-        if (stageId === 4) hintMsg = "삼각형 내부의 세 내각의 총합은 언제나 180도입니다. 고정 50도를 제외한 나머지 두 칸의 각도 카드의 합이 130도가 되도록 배치해 보세요.";
-        if (stageId === 5) hintMsg = "평행선 사이의 엇각(45도)을 유추하여 삼각형 내부의 내각(45도)을 얻고, 삼각형의 한 외각은 이웃하지 않는 두 내각의 합과 같으므로 x = 45 + 60 입니다.";
+        if (stageId === 5) {
+          // 5스테이지 단계별 힌트 차감 (최대 3단계)
+          if (PuzzleState.hintCount >= 3) {
+            if (typeof FeedbackSystem !== "undefined") {
+              FeedbackSystem.showWarning("이미 마지막 힌트까지 확인하셨습니다.");
+            }
+            return;
+          }
+          
+          PuzzleState.hintCount += 1;
+          
+          const PENALTIES = [5, 10, 15]; // 누적 차감량: 1단계=5, 2단계=15, 3단계=30
+          const currentPenalty = PENALTIES[PuzzleState.hintCount - 1];
+          PuzzleState.hintPenalty += currentPenalty;
+          
+          EventBus.publish("stateChange:puzzle", PuzzleState);
+          
+          if (PuzzleState.hintCount === 1) {
+            hintMsg = `[1단계 힌트 -5점]\n평행선 L과 M 사이의 관계를 보세요. L선 위 꼭짓점 A의 좌측 엇각 45°가 평행선 M 위에 엇각으로 아래 내각(45°)에 복원됩니다.`;
+          } else if (PuzzleState.hintCount === 2) {
+            hintMsg = `[2단계 힌트 -10점 추가]\n삼각형 한 외각의 성질을 기억하세요! 삼각형 외각 x는 이웃하지 않는 두 내각(엇각으로 구한 45°와 제시된 60°)의 합과 같습니다.`;
+          } else {
+            hintMsg = `[3단계 힌트 -15점 추가]\n최종 해 공식: x = 45 + 60 입니다. 계산해서 답을 얻으세요!`;
+          }
+          
+          // 퍼즐에 실시간 SVG 힌트 레이어 연출을 위한 이벤트 발행
+          EventBus.publish("puzzle:showHint", PuzzleState.hintCount);
+          
+        } else {
+          // 1~4스테이지는 기존처럼 힌트 횟수만 추가 (차감 없음)
+          PuzzleState.hintCount += 1;
+          EventBus.publish("stateChange:puzzle", PuzzleState);
+          
+          if (stageId === 1) hintMsg = "맞꼭지각은 두 직선이 만날 때 생기는 서로 마주 보는 두 각이며, 크기가 항상 동일합니다. 180° 평각에서 135°를 제외한 각도를 찾아보세요.";
+          if (stageId === 2) hintMsg = "두 선이 평행할 때, 횡단선과의 위치가 동일한 동위각과 서로 지그재그 관계인 엇각의 크기는 같습니다.";
+          if (stageId === 3) hintMsg = "꺾인 점 좌우로 수평 보조선을 드래그해 보세요. 엇각 관계(45도와 30도)가 보조선 위아래로 쪼개져 보일 것입니다.";
+          if (stageId === 4) hintMsg = "삼각형 내부의 세 내각의 총합은 언제나 180도입니다. 고정 50도를 제외한 나머지 두 칸의 각도 카드의 합이 130도가 되도록 배치해 보세요.";
+        }
         
-        alert(`[마도사의 힌트]\n${hintMsg} (누적 사용: ${PuzzleState.hintCount}회)`);
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showHint(npcName, hintMsg);
+        } else {
+          alert(`[${npcName}의 힌트]\n${hintMsg}`);
+        }
       };
       hintBtn.addEventListener("click", this.hintHandler);
     }

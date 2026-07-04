@@ -814,6 +814,19 @@ h1 {
         </div>
       </div>
 
+      <!-- 2-1. Tutorial Scene -->
+      <div id="scene-tutorial" class="scene">
+        <div class="puzzle-wrapper">
+          <div class="puzzle-header">
+            <h3>기초 마법 훈련</h3>
+            <button id="tutorial-skip-btn" class="btn-secondary">훈련 건너뛰기</button>
+          </div>
+          <div id="tutorial-board-container" class="puzzle-canvas-area" style="min-height: 280px;">
+            <!-- 튜토리얼 내용이 동적으로 로드됩니다 -->
+          </div>
+        </div>
+      </div>
+
       <!-- 3. Story Scene -->
       <div id="scene-story" class="scene">
         <div class="story-layer-container">
@@ -1596,6 +1609,266 @@ const AnimationManager = (function() {
 })();
 </script>
 
+    <style>
+/* ============================================================
+   FeedbackSystem.html Style
+   SUCCESS, ERROR, WARNING, INFO 피드백 메시지 바 및 NPC 힌트창
+   ============================================================ */
+
+/* 피드백 바 */
+.feedback-bar {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%) translateY(30px);
+  bottom: 20px;
+  width: 90%;
+  max-width: 500px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  z-index: 999;
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.feedback-bar.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 피드백 상태별 색상 */
+.feedback-bar.success {
+  background: rgba(46, 204, 113, 0.95);
+  border: 1px solid #2ecc71;
+  box-shadow: 0 4px 20px rgba(46, 204, 113, 0.4);
+}
+
+.feedback-bar.error {
+  background: rgba(231, 76, 60, 0.95);
+  border: 1px solid #e74c3c;
+  box-shadow: 0 4px 20px rgba(231, 76, 60, 0.4);
+  animation: shakeFeedback 0.4s ease-in-out;
+}
+
+.feedback-bar.warning {
+  background: rgba(241, 196, 15, 0.95);
+  border: 1px solid #f1c40f;
+  color: #0b131f;
+  box-shadow: 0 4px 20px rgba(241, 196, 15, 0.4);
+}
+
+.feedback-bar.info {
+  background: rgba(52, 152, 219, 0.95);
+  border: 1px solid #3498db;
+  box-shadow: 0 4px 20px rgba(52, 152, 219, 0.4);
+}
+
+/* 흔들림 효과 */
+@keyframes shakeFeedback {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  20%, 60% { transform: translateX(-52%) translateY(0); }
+  40%, 80% { transform: translateX(-48%) translateY(0); }
+}
+
+/* NPC 힌트 다이얼로그 모달 */
+.npc-hint-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 10, 18, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  border-radius: 20px;
+}
+
+.npc-hint-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.npc-hint-box {
+  background: rgba(13, 27, 42, 0.95);
+  border: 2px solid var(--gold-primary);
+  border-radius: 16px;
+  width: 85%;
+  max-width: 400px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 20px var(--gold-glow);
+  transform: scale(0.85);
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.npc-hint-overlay.show .npc-hint-box {
+  transform: scale(1);
+}
+
+.npc-avatar-area {
+  font-size: 3rem;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 0 8px var(--gold-primary));
+}
+
+.npc-name-label {
+  font-size: 0.9rem;
+  color: var(--gold-primary);
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.npc-message-text {
+  font-size: 0.95rem;
+  color: var(--text-light);
+  line-height: 1.6;
+  margin-bottom: 20px;
+  white-space: pre-line;
+}
+</style>
+
+<script>
+/* ============================================================
+   FeedbackSystem.html Logic
+   ============================================================ */
+const FeedbackSystem = (function() {
+  "use strict";
+
+  let _barEl = null;
+  let _hintOverlayEl = null;
+  let _hideTimer = null;
+
+  // DOM 요소 준비 및 주입
+  function _ensureElements() {
+    const container = document.getElementById("game-container");
+    if (!container) return;
+
+    // 1. 피드백 바 주입
+    if (!document.getElementById("global-feedback-bar")) {
+      _barEl = document.createElement("div");
+      _barEl.id = "global-feedback-bar";
+      _barEl.className = "feedback-bar";
+      container.appendChild(_barEl);
+    } else {
+      _barEl = document.getElementById("global-feedback-bar");
+    }
+
+    // 2. 힌트 오버레이 주입
+    if (!document.getElementById("global-npc-hint-overlay")) {
+      _hintOverlayEl = document.createElement("div");
+      _hintOverlayEl.id = "global-npc-hint-overlay";
+      _hintOverlayEl.className = "npc-hint-overlay";
+      _hintOverlayEl.innerHTML = [
+        '<div class="npc-hint-box">',
+          '<div class="npc-avatar-area" id="npc-avatar">🔮</div>',
+          '<div class="npc-name-label" id="npc-name">마도사</div>',
+          '<div class="npc-message-text" id="npc-message">정말 모르겠나?</div>',
+          '<button class="btn" id="npc-close-btn" style="padding: 10px 20px; font-size: 0.9rem;">이해했다</button>',
+        '</div>'
+      ].join("");
+      container.appendChild(_hintOverlayEl);
+
+      const closeBtn = _hintOverlayEl.querySelector("#npc-close-btn");
+      if (closeBtn) {
+        closeBtn.addEventListener("click", function() {
+          _hintOverlayEl.classList.remove("show");
+        });
+      }
+    } else {
+      _hintOverlayEl = document.getElementById("global-npc-hint-overlay");
+    }
+  }
+
+  // 메시지 바 띄우기 공통
+  function _showBar(type, message, duration) {
+    _ensureElements();
+    if (!_barEl) return;
+
+    // 타이머 리셋
+    if (_hideTimer) clearTimeout(_hideTimer);
+
+    // 클래스 설정
+    _barEl.className = "feedback-bar " + type;
+    
+    // 아이콘 세팅
+    let icon = "💡";
+    if (type === "success") icon = "✓";
+    if (type === "error") icon = "✗";
+    if (type === "warning") icon = "⚠️";
+
+    _barEl.innerHTML = `<span style="font-size: 1.1rem; font-weight: bold;">${icon}</span> <span>${message}</span>`;
+    
+    // 강제 리플로우 (오답 진동 애니메이션 재실행용)
+    _barEl.style.animation = "none";
+    _barEl.offsetHeight; // reflow
+    if (type === "error") {
+      _barEl.style.animation = "shakeFeedback 0.4s ease-in-out";
+    }
+
+    // 띄우기
+    _barEl.classList.add("show");
+
+    // 시간 후 닫기
+    _hideTimer = setTimeout(function() {
+      _barEl.classList.remove("show");
+    }, duration || 2500);
+  }
+
+  return {
+    showSuccess: function(message, duration) {
+      _showBar("success", message, duration || 2500);
+    },
+    showError: function(message, duration) {
+      _showBar("error", message, duration || 2500);
+    },
+    showWarning: function(message, duration) {
+      _showBar("warning", message, duration || 2500);
+    },
+    showInfo: function(message, duration) {
+      _showBar("info", message, duration || 3000);
+    },
+    
+    // NPC 힌트 모달
+    showHint: function(npcName, message) {
+      _ensureElements();
+      if (!_hintOverlayEl) return;
+
+      const avatarEl  = _hintOverlayEl.querySelector("#npc-avatar");
+      const nameEl    = _hintOverlayEl.querySelector("#npc-name");
+      const messageEl = _hintOverlayEl.querySelector("#npc-message");
+
+      if (nameEl) nameEl.textContent = npcName;
+      if (messageEl) messageEl.textContent = message;
+
+      // NPC 프로필 아이콘 매칭
+      if (avatarEl) {
+        if (npcName === "숲의 정령") avatarEl.textContent = "🌲";
+        else if (npcName === "신전 수호자") avatarEl.textContent = "🏛️";
+        else if (npcName === "빛의 현자") avatarEl.textContent = "✨";
+        else if (npcName === "제단의 영혼") avatarEl.textContent = "🔥";
+        else avatarEl.textContent = "🔮";
+      }
+
+      _hintOverlayEl.classList.add("show");
+    }
+  };
+})();
+</script>
+
 
     <!-- Core Engine Includes -->
     <script>
@@ -1668,14 +1941,16 @@ const GameState = {
   startTime: null,
   endTime: null,
   cleared: false,
-  gameVersion: "1.0.0"
+  gameVersion: "1.0.0",
+  tutorialCompleted: false
 };
 
 const PuzzleState = {
   correctCount: 0,
   wrongCount: 0,
   hintCount: 0,
-  score: 0
+  score: 0,
+  hintPenalty: 0
 };
 
 const UiState = {
@@ -1817,6 +2092,67 @@ const StoryManager = (function() {
   let currentFullText = "";
   let currentEl = null;
 
+  // 선택지 관련 상태
+  let currentStoryData = null;
+  let choiceHandled = false;
+
+  function _showChoiceUI() {
+    const clickArea = document.getElementById("story-click-area");
+    if (!clickArea || !currentStoryData || !currentStoryData.choice) return;
+
+    // 대사 상자 내 탭 인디케이터 숨김
+    const tapIndicator = clickArea.querySelector(".tap-indicator");
+    if (tapIndicator) tapIndicator.style.opacity = "0";
+
+    // 기존의 선택지 박스가 있다면 제거
+    const oldContainer = document.getElementById("story-choices-container");
+    if (oldContainer) oldContainer.remove();
+
+    // 선택지 컨테이너 생성
+    const container = document.createElement("div");
+    container.id = "story-choices-container";
+    container.style.cssText = "margin-top: 15px; display: flex; flex-direction: column; gap: 8px; width: 100%; pointer-events: auto;";
+
+    // 프롬프트가 있으면 상단에 표시
+    if (currentStoryData.choice.prompt) {
+      const promptEl = document.createElement("div");
+      promptEl.style.cssText = "font-size: 0.85rem; color: var(--gold-primary); text-align: center; margin-bottom: 5px; font-weight: bold;";
+      promptEl.textContent = currentStoryData.choice.prompt;
+      container.appendChild(promptEl);
+    }
+
+    currentStoryData.choice.options.forEach(function(opt, index) {
+      const btn = document.createElement("button");
+      btn.className = "btn-secondary";
+      btn.style.cssText = "width: 100%; text-align: left; padding: 10px 14px; font-size: 0.9rem; margin: 0;";
+      btn.textContent = (index + 1) + ". " + opt.text;
+      
+      btn.addEventListener("click", function(e) {
+        e.stopPropagation(); // 클릭 아웃 이벤트 전파 방지
+        container.remove();
+        
+        if (tapIndicator) tapIndicator.style.opacity = "1";
+        
+        // 선택 응답 주입 및 진행
+        choiceHandled = true;
+        
+        // 내 대사 + 마도사 대사 주입
+        dialogueQueue.unshift(opt.reply);
+        dialogueQueue.unshift(UserState.name + ": " + opt.text);
+        
+        // 엔딩 대사들 대기열에 병합
+        if (currentStoryData.ending) {
+          dialogueQueue = dialogueQueue.concat(currentStoryData.ending);
+        }
+        
+        StoryManager.next();
+      });
+      container.appendChild(btn);
+    });
+
+    clickArea.appendChild(container);
+  }
+
   return {
     /**
      * 특정 스테이지의 스토리를 시작합니다.
@@ -1830,8 +2166,19 @@ const StoryManager = (function() {
         return;
       }
       
-      dialogueQueue = [...StoryDictionary[stageId]];
+      const rawData = StoryDictionary[stageId];
       onComplete = onCompleteCallback;
+      choiceHandled = false;
+
+      // 1. 단일 배열 구조 호환 처리
+      if (Array.isArray(rawData)) {
+        currentStoryData = null;
+        dialogueQueue = [...rawData];
+      } else {
+        // 2. 객체 구조 (lines + choice + ending)
+        currentStoryData = rawData;
+        dialogueQueue = [...rawData.lines];
+      }
       
       this.next();
     },
@@ -1848,11 +2195,21 @@ const StoryManager = (function() {
         clearTimeout(typingTimer);
         isTyping = false;
         currentEl.innerText = currentFullText;
+        if (typeof AnimationManager !== "undefined") {
+          AnimationManager.playTypingEnd();
+        }
         return;
       }
 
-      // 2. 대사가 남아있지 않은 경우 완료 함수 트리거
+      // 2. 대사가 남아있지 않은 경우
       if (dialogueQueue.length === 0) {
+        // 객체 구조인데 선택지를 아직 선택 안 했다면 띄움
+        if (currentStoryData && currentStoryData.choice && !choiceHandled) {
+          _showChoiceUI();
+          return;
+        }
+
+        // 선택지 완료 후 엔딩 대사까지 모두 소진 시 최종 완료 콜백
         if (typeof onComplete === "function") {
           onComplete();
         }
@@ -2094,6 +2451,300 @@ const AchievementManager = (function() {
 })();
 </script>
 
+    <script>
+/* ============================================================
+   TutorialEngine.html
+   튜토리얼 진행 로직 제어.
+   ============================================================ */
+const TutorialEngine = (function() {
+  "use strict";
+
+  let _currentStep = 1;
+  let _onComplete = null;
+  let _container = null;
+
+  function _renderStep() {
+    if (!_container) return;
+
+    if (_currentStep === 1) {
+      // Step 1: 대사 상자 클릭 연습
+      _container.innerHTML = [
+        '<div class="card" style="padding: 30px 20px;">',
+          '<h3 style="color: var(--gold-primary); margin-bottom: 15px; font-size: 1.2rem;">마도사의 시뮬레이터: 기초 훈련</h3>',
+          '<p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">이곳은 차원 이동 훈련소입니다. 아래 대사창을 탭하여 마도사의 메시지를 읽으세요.</p>',
+          '<div id="t-story-box" class="story-box" style="min-height: 120px; border-color: var(--gold-hover); padding: 20px;">',
+            '<div id="t-story-text" class="dialog-text" style="font-size: 1rem;">"어리석은 모험가여... 성에 들어오기 전 내 마법 기구들의 사용법을 익히거라."</div>',
+            '<div class="tap-indicator" style="font-size: 0.75rem;">▼ 탭하여 다음 대사</div>',
+          '</div>',
+        '</div>'
+      ].join("");
+
+      const box = _container.querySelector("#t-story-box");
+      const text = _container.querySelector("#t-story-text");
+      let subStep = 0;
+
+      if (box && text) {
+        box.addEventListener("click", function() {
+          if (subStep === 0) {
+            text.textContent = '"잘했다. 대사 상자를 터치하면 다음 이야기로 진행할 수 있지."';
+            subStep = 1;
+          } else if (subStep === 1) {
+            text.textContent = '"이제 다음 기구(카드 배치) 훈련으로 넘어가자. 탭하여 계속."';
+            subStep = 2;
+          } else {
+            _currentStep = 2;
+            _renderStep();
+          }
+        });
+      }
+    } else if (_currentStep === 2) {
+      // Step 2: 카드 배치 연습
+      _container.innerHTML = [
+        '<div class="card" style="padding: 30px 20px; user-select: none;">',
+          '<h3 style="color: var(--gold-primary); margin-bottom: 15px; font-size: 1.2rem;">기초 훈련: 각도 카드 배치</h3>',
+          '<p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">아래 [90°] 카드를 터치하여 선택한 뒤, 점선 빈칸을 터치하여 채워 넣으세요.</p>',
+          
+          '<!-- 더미 보드판 -->',
+          '<div style="position: relative; width: 220px; height: 100px; margin: 0 auto 15px; background: rgba(0,0,0,0.4); border: 1px dashed var(--gold-primary); border-radius: 8px;">',
+            '<div id="t-drop-zone" style="position: absolute; top: 35px; left: 80px; width: 60px; height: 30px; border: 2px dashed var(--gold-primary); border-radius: 4px; color: #a5a5a5; font-size: 0.8rem; text-align: center; line-height: 26px; cursor: pointer;">?</div>',
+          '</div>',
+
+          '<!-- 더미 선택 카드 -->',
+          '<div style="display: flex; justify-content: center; gap: 15px; margin-bottom: 10px;">',
+            '<div id="t-card" style="width: 60px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">90°</div>',
+          '</div>',
+          '<div id="t-feedback" style="font-size: 0.8rem; height: 16px; color: #ff4757; font-weight: bold;"></div>',
+        '</div>'
+      ].join("");
+
+      const card = _container.querySelector("#t-card");
+      const zone = _container.querySelector("#t-drop-zone");
+      const feedback = _container.querySelector("#t-feedback");
+      let cardSelected = false;
+
+      if (card && zone) {
+        card.addEventListener("click", function() {
+          cardSelected = true;
+          card.style.borderColor = "#ff4757";
+          card.style.background = "rgba(255, 71, 87, 0.2)";
+          if (feedback) feedback.textContent = "";
+        });
+
+        zone.addEventListener("click", function() {
+          if (!cardSelected) {
+            if (feedback) feedback.textContent = "먼저 아래 [90°] 카드를 선택하세요!";
+            return;
+          }
+          zone.innerText = "90°";
+          zone.style.background = "rgba(212,175,55,0.25)";
+          zone.style.borderColor = "var(--gold-primary)";
+          zone.style.color = "#fff";
+          zone.style.borderStyle = "solid";
+
+          if (typeof FeedbackSystem !== "undefined") {
+            FeedbackSystem.showSuccess("좋아! 카드 배치를 완벽히 터득했다.");
+          }
+
+          setTimeout(function() {
+            _currentStep = 3;
+            _renderStep();
+          }, 1200);
+        });
+      }
+    } else if (_currentStep === 3) {
+      // Step 3: 각도 입력 연습
+      _container.innerHTML = [
+        '<div class="card" style="padding: 30px 20px;">',
+          '<h3 style="color: var(--gold-primary); margin-bottom: 12px; font-size: 1.2rem;">기초 훈련: 각도 계산 입력</h3>',
+          '<p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;">마지막 훈련이다. 30°와 맞꼭지각인 각도를 아래 입력창에 넣고 입력 버튼을 누르세요.</p>',
+          '<p style="color: var(--gold-light); font-size: 0.8rem; font-weight: bold; margin-bottom: 15px;">문제: 맞꼭지각의 크기는 서로 [  ]다.</p>',
+
+          '<div style="margin-bottom: 15px;">',
+            '<input type="number" id="t-input" placeholder="정답 각도" style="width: 100px; padding: 9px; text-align: center; font-size: 0.95rem; border: 1px solid var(--gold-primary); border-radius: 4px; background: rgba(0,0,0,0.5); color: #fff; outline:none; vertical-align: middle;">',
+            '<button id="t-submit" class="btn" style="width: 70px; padding: 10px; display: inline-block; vertical-align: middle; margin-left: 10px; font-size: 0.85rem;">입력</button>',
+          '</div>',
+          '<div id="t-feedback-3" style="font-size: 0.8rem; height: 16px; color: #ff4757; font-weight: bold;"></div>',
+        '</div>'
+      ].join("");
+
+      const input = _container.querySelector("#t-input");
+      const submit = _container.querySelector("#t-submit");
+      const feedback = _container.querySelector("#t-feedback-3");
+
+      if (submit && input) {
+        submit.addEventListener("click", function() {
+          const val = parseInt(input.value);
+          if (val === 30) {
+            input.disabled = true;
+            submit.disabled = true;
+            if (feedback) {
+              feedback.style.color = "#2ecc71";
+              feedback.textContent = "완벽합니다! 모든 기초 훈련을 수료했습니다.";
+            }
+            if (typeof FeedbackSystem !== "undefined") {
+              FeedbackSystem.showSuccess("훈련 완료! 기하의 성으로 향합니다.");
+            }
+
+            setTimeout(function() {
+              if (typeof _onComplete === "function") {
+                _onComplete();
+              }
+            }, 1500);
+          } else {
+            if (feedback) feedback.textContent = "오답입니다! 맞꼭지각은 서로 크기가 같습니다. (힌트: 30)";
+            if (typeof FeedbackSystem !== "undefined") {
+              FeedbackSystem.showError("틀렸습니다! 다시 생각해 보세요.");
+            }
+          }
+        });
+      }
+    }
+  }
+
+  return {
+    start: function(containerId, onCompleteCallback) {
+      _container = document.getElementById(containerId);
+      _onComplete = onCompleteCallback;
+      _currentStep = 1;
+      _renderStep();
+    }
+  };
+})();
+</script>
+
+    <script>
+/**
+ * ============================================================
+ * QuestionEngine.html
+ * 미래 교육 단원 확장을 위한 범용 퍼즐 추상화 엔진.
+ * ============================================================
+ */
+
+// 퍼즐 타입 정의
+const PuzzleType = {
+  INPUT: "INPUT",               // 1, 5스테이지: 값 직접 입력 방식
+  DRAG_MATCH: "DRAG_MATCH",     // 2, 4스테이지: 카드를 빈 드롭존에 매칭
+  CONSTRUCTION: "CONSTRUCTION", // 3스테이지: 마우스 드래그 보조선 그리기 등 조작형
+  MULTI_CHOICE: "MULTI_CHOICE", // (미래) 객관식 다지선다
+  ORDERING: "ORDERING"          // (미래) 순서 맞추기
+};
+
+/**
+ * 모든 퍼즐 엔진의 부모 추상 클래스
+ */
+class QuestionEngineBase extends PuzzleBase {
+  constructor(containerId, config) {
+    super(containerId);
+    this.config = config || {};
+    this.type = this.config.type || PuzzleType.INPUT;
+    this.questionText = this.config.questionText || "문제를 해결하세요.";
+    this.hints = this.config.hints || [];
+    this.onClearCallback = null;
+  }
+
+  // 힌트 호출 공통 인터페이스
+  showHint(step) {
+    const hintMsg = this.hints[step - 1] || "스스로 생각할 시간입니다.";
+    if (typeof FeedbackSystem !== "undefined") {
+      FeedbackSystem.showHint(this.config.npcName || "마도사", hintMsg);
+    } else {
+      alert(hintMsg);
+    }
+  }
+
+  // 정답 처리 공통 오버라이딩
+  triggerSuccess(successMessage) {
+    if (typeof FeedbackSystem !== "undefined") {
+      FeedbackSystem.showSuccess(successMessage || "성공적으로 복원되었습니다!");
+    }
+    
+    // AnimationManager에 정답 마법진 연출 전달
+    const wrapper = this.container.firstElementChild;
+    if (typeof AnimationManager !== "undefined" && wrapper) {
+      AnimationManager.playSolved(wrapper);
+    }
+
+    setTimeout(() => {
+      if (this.onClearCallback) {
+        this.onClearCallback();
+      }
+    }, 1400);
+  }
+
+  // 오답 처리 공통 인터페이스
+  triggerFailure(errorMessage) {
+    if (typeof FeedbackSystem !== "undefined") {
+      FeedbackSystem.showError(errorMessage || "오답입니다. 다시 한번 분석해 보세요.");
+    }
+    
+    if (typeof PuzzleState !== "undefined") {
+      PuzzleState.wrongCount += 1;
+      EventBus.publish("stateChange:puzzle", PuzzleState);
+    }
+  }
+}
+
+/**
+ * 1. 입력형 퍼즐 표준 엔진 (Stage1, 5 연계 확장용)
+ */
+class GenericInputPuzzle extends QuestionEngineBase {
+  constructor(containerId, config) {
+    super(containerId, config);
+    this.targetAnswer = config.targetAnswer;
+    this.userInput = "";
+  }
+
+  init() {
+    this.container.innerHTML = `
+      <div class="engine-puzzle-wrap" style="text-align: center; width: 100%; padding: 15px;">
+        <p style="color: var(--gold-primary); margin-bottom: 12px; font-size: 0.9rem;">${this.questionText}</p>
+        
+        <!-- 커스텀 SVG 드로잉 영역 -->
+        <div id="engine-svg-container" style="margin-bottom: 15px;"></div>
+        
+        <!-- 입력 패널 -->
+        <div style="display: flex; justify-content: center; align-items: center; gap: 8px;">
+          <input type="number" id="engine-input" placeholder="답안 입력" style="width: 100px; padding: 8px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none;">
+          <button id="engine-submit" class="btn" style="width: 70px; padding: 9px; font-size: 0.85rem; margin:0;">확인</button>
+        </div>
+      </div>
+    `;
+
+    // 커스텀 SVG 주입
+    if (typeof this.config.renderSvgFn === "function") {
+      this.config.renderSvgFn(document.getElementById("engine-svg-container"));
+    }
+
+    this.input = document.getElementById("engine-input");
+    this.submitBtn = document.getElementById("engine-submit");
+  }
+
+  bindEvents() {
+    if (this.input) {
+      this.input.addEventListener("input", (e) => {
+        this.userInput = e.target.value;
+      });
+    }
+
+    if (this.submitBtn) {
+      this.submitBtn.addEventListener("click", () => {
+        if (parseInt(this.userInput) === this.targetAnswer) {
+          this.input.disabled = true;
+          this.submitBtn.disabled = true;
+          this.triggerSuccess(this.config.successMsg);
+        } else {
+          this.triggerFailure(this.config.failMsg);
+        }
+      });
+    }
+  }
+
+  checkAnswer() {
+    return parseInt(this.userInput) === this.targetAnswer;
+  }
+}
+</script>
+
     
     <!-- Services Includes -->
     <script>
@@ -2312,13 +2963,25 @@ if (typeof StoryDictionary === "undefined") {
   window.StoryDictionary = {};
 }
 
-StoryDictionary[1] = [
-  "어두컴컴한 '거울의 숲' 깊은 곳, 거대한 돌문이 앞을 막아섰다.",
-  "돌문 중앙에는 두 개의 교차된 빛의 선이 교각을 이루며 불완전하게 흔들리고 있다.",
-  "문틈으로 음산한 마도사의 속삭임이 들린다...\n\"이 성의 문을 열려거든 엇갈려 마주 보는 빛의 진실을 증명해라.\"",
-  "직선들이 교차할 때 마주 보는 두 각, 즉 '맞꼭지각'은 크기가 서로 같아야 한다.",
-  "빛의 각도를 조절하는 기어 다이얼을 조작하여 맞꼭지각이 서로 일치하도록 회전시켜라!"
-];
+StoryDictionary[1] = {
+  lines: [
+    "어두컴컴한 '거울의 숲' 깊은 곳, 거대한 돌문이 앞을 막아섰다.",
+    "돌문 중앙에는 두 개의 교차된 빛의 선이 교각을 이루며 불완전하게 흔들리고 있다.",
+    "문틈으로 음산한 마도사의 속삭임이 울려 퍼진다...\n\"이 성의 문을 열려거든 엇갈려 마주 보는 빛의 진실을 증명해라.\""
+  ],
+  choice: {
+    prompt: "마도사의 목소리에 어떻게 대응하겠는가?",
+    options: [
+      { text: "\"당연하지, 맞꼭지각은 항상 크기가 같으니까!\"", reply: "마도사: \"흥... 입만 살아있는 녀석이 아니길 바라지.\"" },
+      { text: "\"마주 보는 각도가 똑같다는 것을 보여주면 되지?\"", reply: "마도사: \"그렇다! 도형의 대칭이야말로 기하의 기본 봉인이지.\"" },
+      { text: "\"...맞꼭지각이 대체 무엇인가요?\"", reply: "마도사: \"크큭, 두 직선이 교차하여 마주 보는 각을 뜻한다! 무지가 네 발목을 잡을 것이다.\"" }
+    ]
+  },
+  ending: [
+    "돌문에 새겨진 기하학 무늬가 붉게 충전되며 시뮬레이션 장치가 작동한다.",
+    "빛의 각도를 조절하는 회전 슬라이더를 조작하여 맞꼭지각의 크기가 서로 일치하도록 맞춰라!"
+  ]
+};
 </script>
 
     <script>
@@ -2329,13 +2992,25 @@ if (typeof StoryDictionary === "undefined") {
   window.StoryDictionary = {};
 }
 
-StoryDictionary[2] = [
-  "첫 번째 문이 열리고 고대 그리스 신전 같은 '평행의 회랑'이 나타났다.",
-  "바닥과 천장에는 거대한 두 개의 평행한 레일이 뻗어 있고, 그 사이를 비스듬히 가로지르는 빛의 칼날이 보인다.",
-  "두 평행선이 다른 한 직선과 만날 때 생기는 특별한 각도의 관계를 증명해야 통과할 수 있다.",
-  "위치가 같은 '동위각'과 서로 엇갈린 위치에 있는 '엇각'의 크기는 평행선 사이에서 서로 같다.",
-  "각도 조각들을 클릭하여 동일한 크기를 가진 동위각과 엇각의 위치에 정확히 배치해라!"
-];
+StoryDictionary[2] = {
+  lines: [
+    "첫 번째 문이 열리고 고대 그리스 신전 같은 '평행의 회랑'이 나타났다.",
+    "바닥과 천장에는 거대한 두 개의 평행한 레일이 뻗어 있고, 그 사이를 비스듬히 가로지르는 빛의 칼날이 보인다.",
+    "허공에서 마도사의 목소리가 들린다...\n\"두 평행선이 다른 한 직선과 만날 때 생기는 각의 진리를 아는가?\""
+  ],
+  choice: {
+    prompt: "평행선 사이 각도의 성질을 대답해 보자.",
+    options: [
+      { text: "\"동위각과 엇각의 크기는 항상 서로 같아요!\"", reply: "마도사: \"틀렸다! '평행할 때만' 서로 같다는 단서를 빼놓았군!\"" },
+      { text: "\"두 선이 평행하다면, 동위각과 엇각의 크기가 같아요!\"", reply: "마도사: \"호오... 평행 조건의 중요성을 알고 있군. 제법이다.\"" },
+      { text: "\"동위각과 엇각이 무엇인지 모르겠습니다.\"", reply: "마도사: \"쯧쯧... 같은 위치의 각이 동위각, 엇갈린 위치의 각이 엇각이다!\"" }
+    ]
+  },
+  ending: [
+    "신전 기둥들이 빛의 파장을 방출하기 시작한다.",
+    "각도 카드를 선택해 알맞은 동위각(A)과 엇각(B) 자리에 배치해 봉인을 풀어라!"
+  ]
+};
 </script>
 
     <script>
@@ -2346,13 +3021,25 @@ if (typeof StoryDictionary === "undefined") {
   window.StoryDictionary = {};
 }
 
-StoryDictionary[3] = [
-  "회랑 끝에 도달하자 푸른 보석이 가득한 '빛의 신전'에 진입했다.",
-  "신전 내부에는 두 개의 거대한 평행선 기둥이 서 있고, 중간 부분이 지그재그 모양의 선으로 꺾여 있다.",
-  "중간에 꺾인 점이 있을 때는 평행한 보조선을 그려 동위각과 엇각의 성질을 합쳐 문제를 푸는 것이 열쇠다.",
-  "평행선 사이 꺾임각의 수학적 성질을 유도하여 빛을 목표 지점까지 꺾어 보내야 한다.",
-  "프리즘 거울의 회전 각도를 조작하여 레이저 빛이 꺾임 법칙을 만족하며 반사되도록 유도해라!"
-];
+StoryDictionary[3] = {
+  lines: [
+    "회랑 끝에 도달하자 푸른 보석이 가득한 '빛의 신전'에 진입했다.",
+    "신전 내부에는 두 개의 거대한 평행선 기둥이 서 있고, 그 사이에 지그재그로 꺾인 빛의 길이 보인다.",
+    "방 안의 보석들이 공명하며 속삭인다...\n\"꺾여서 흐트러진 빛을 평행하게 가르는 제3의 길을 보아라.\""
+  ],
+  choice: {
+    prompt: "꺾인 각도를 구하기 위해 어떤 보조 수단을 취해야 할까?",
+    options: [
+      { text: "\"꺾인 점에 두 직선과 평행한 보조선을 그려야 해!\"", reply: "마도사: \"정확한 해법이다! 엇각을 두 개로 쪼개어 합치면 되겠군.\"" },
+      { text: "\"꺾인 곳을 일자로 잡아당겨 평평하게 만들겠어!\"", reply: "마도사: \"어리석은 무대뽀로군! 기하학은 힘이 아니라 논리다!\"" },
+      { text: "\"그냥 감각적으로 반사경 각도를 맞춰보겠어.\"", reply: "마도사: \"하하하, 운에 맡기다간 평생 이 방을 탈출하지 못한다!\"" }
+    ]
+  },
+  ending: [
+    "빛의 경로 중앙에 회전할 수 있는 미러 굴절 장치가 나타난다.",
+    "꺾인 점 좌우로 마우스를 드래그하여 평행 보조선을 만들어 엇각을 유도하고, 거울 각도를 계산해 입력하라!"
+  ]
+};
 </script>
 
     <script>
@@ -2363,13 +3050,25 @@ if (typeof StoryDictionary === "undefined") {
   window.StoryDictionary = {};
 }
 
-StoryDictionary[4] = [
-  "마침내 가장 중요한 제단에 도착했다. 이곳은 거대한 삼각형 문양이 새겨진 '삼각의 제단'이다.",
-  "마도사의 강력한 힘이 깃든 삼각형 보드에는 곳곳에 내각과 외각에 관한 수학적 공식들이 희미하게 빛나고 있다.",
-  "기하학의 영원한 진리: '삼각형의 세 내각의 크기의 합은 항상 180도'이며, '한 외각은 이웃하지 않는 두 내각의 합과 같다.'",
-  "제단 위의 흩어진 세모 조각들을 회전하고 결합하여 완벽한 삼각형의 비밀을 맞추어야 문이 열린다.",
-  "도형 조각들을 제자리에 차례로 배치하여, 합이 180도가 되는 내각의 조화를 이끌어 내라!"
-];
+StoryDictionary[4] = {
+  lines: [
+    "마침내 가장 중요한 제단에 도착했다. 이곳은 거대한 삼각형 문양이 새겨진 '삼각의 제단'이다.",
+    "제단 곳곳에는 내각과 외각에 관한 수학적 공식들이 희미하게 빛나고 있다.",
+    "마도사의 그림자 영혼이 공중에 나타나 비웃는다...\n\"삼각형 내부의 묶여있는 각들의 크기를 전부 밝혀낼 수 있겠느냐?\""
+  ],
+  choice: {
+    prompt: "삼각형의 내각에 대한 절대적 성질은 무엇인가?",
+    options: [
+      { text: "\"삼각형 세 내각의 합은 항상 180도입니다!\"", reply: "마도사: \"그건 기하학의 유클리드적 기본 진리지. 흥, 기본은 하는군.\"" },
+      { text: "\"삼각형의 한 외각은 이웃하지 않는 두 내각의 합과 같아요!\"", reply: "마도사: \"외각의 성질까지 파악하고 있다니, 얕볼 수 없겠군!\"" },
+      { text: "\"삼각형은 각이 세 개라서 삼각형입니다!\"", reply: "마도사: \"동문서답이구나! 내 각도 폭풍을 맞고 싶은 게냐?\"" }
+    ]
+  },
+  ending: [
+    "삼각형 문양의 두 모서리가 비어있으며 불길한 보랏빛이 흘러나온다.",
+    "합이 180도가 되도록 두 빈칸(B, C)에 알맞은 각도 카드를 클릭해 채워라!"
+  ]
+};
 </script>
 
     <script>
@@ -2380,13 +3079,25 @@ if (typeof StoryDictionary === "undefined") {
   window.StoryDictionary = {};
 }
 
-StoryDictionary[5] = [
-  "마침내 차가운 공기가 가득한 알현실, 그림자 마도사가 눈앞에 모습을 드러냈다.",
-  "\"기하학의 진리를 깨달은 꼬마 모험가로구나. 하지만 이 마지막 퍼즐은 결코 풀지 못할 것이다!\"",
-  "방 곳곳에 맞꼭지각, 동위각, 엇각, 삼각형 내각/외각 개념이 융합된 궁극의 기하학 암호 장치가 가동된다.",
-  "마도사의 그림자 장치를 풀기 위해서는 지금까지 배운 평면도형의 모든 성질을 조합해야 한다.",
-  "문제를 분석하여 복합 각도의 수식을 풀고, 그림자 암호를 정확하게 입력하여 마도사의 성을 무너뜨려라!"
-];
+StoryDictionary[5] = {
+  lines: [
+    "마침내 차가운 공기가 가득한 알현실, 그림자 마도사가 눈앞에 실루엣을 드러냈다.",
+    "\"기하학의 진리를 깨달은 꼬마 모험가로구나. 하지만 이 마지막 퍼즐은 결코 풀지 못할 것이다!\"",
+    "방 곳곳에 동위각, 엇각, 삼각형의 외각 개념이 융합된 궁극의 기하학 암호 장치가 가동된다."
+  ],
+  choice: {
+    prompt: "최종 보스 마도사에게 당당하게 맞서자.",
+    options: [
+      { text: "\"각오해라, 마도사! 지금까지 배운 기하학 공식으로 성을 깨부수겠다!\"", reply: "마도사: \"크하하하! 패기는 좋구나. 하지만 이 복합 문양의 수수께끼를 감당할 수 있겠느냐?\"" },
+      { text: "\"도형의 성질을 전부 연계하면 풀릴 텐데, 힌트를 줄 수 있나?\"", reply: "마도사: \"힌트를 원하나? 줄 순 있지... 하지만 네 랭킹 점수가 영구히 차감될 것이다! 후후.\"" },
+      { text: "\"무서우니 문을 열어 주세요...\"", reply: "마도사: \"그럴 순 없다! 기하의 암호를 해독하지 못하면 여기서 나갈 수 없다!\"" }
+    ]
+  },
+  ending: [
+    "마도사의 그림자 제단 중앙에 복합 각도 x를 구하는 암호 패널이 돌출된다.",
+    "도형의 기하학적 성질을 연립하여 최종 각도 x를 계산하고 정확한 숫자를 입력해 성을 탈출하라!"
+  ]
+};
 </script>
 
 
@@ -2449,101 +3160,198 @@ class PuzzleBase {
 
     <script>
 /**
- * 1스테이지 맞꼭지각 회전 퍼즐 클래스.
+ * 1스테이지 맞꼭지각 하이브리드 퍼즐 클래스.
+ * 조작(슬라이더) + 계산(입력창) + 검증(확인버튼) + 애니메이션 연계.
  */
 class Stage1Puzzle extends PuzzleBase {
   constructor(containerId) {
     super(containerId);
-    this.targetAngle = 135;
+    this.targetAngle = 135; // 슬라이더 목표값
+    this.targetInput = 45;  // 입력창 목표값 (180 - 135 = 45)
     this.currentAngle = 90;
+    this.userInput = "";
+    
     this.sliderHandler = null;
+    this.inputHandler = null;
+    this.submitHandler = null;
     this.onClearCallback = null;
   }
 
   init() {
     this.container.innerHTML = `
-      <div style="text-align: center; width: 100%; padding: 15px;">
-        <p style="color: #d4af37; margin-bottom: 15px; font-size: 0.9rem;">마주 보는 두 각(맞꼭지각)이 완벽히 일치하도록 회전 다이얼을 꺾으세요.</p>
-        <div style="position: relative; display: inline-block;">
-          <svg id="stage1-svg" width="220" height="220" style="background:#0b131f; border-radius: 50%; border: 2px solid #d4af37; box-shadow: 0 0 15px rgba(212,175,55,0.2);">
-            <!-- 고정선 -->
+      <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
+        <p style="color: var(--gold-primary); margin-bottom: 12px; font-size: 0.9rem;">
+          빛의 다이얼을 돌려 각도를 맞추고, 마주 보는 <strong>맞꼭지각(x)</strong>을 계산해 봉인을 해제하세요.
+        </p>
+        
+        <!-- SVG 교차 도판 -->
+        <div style="position: relative; display: inline-block; margin-bottom: 10px;">
+          <svg id="stage1-svg" width="220" height="220" style="background:#0b131f; border-radius: 50%; border: 2px solid var(--gold-primary); box-shadow: 0 0 15px var(--gold-glow);">
+            <!-- 빛의 호 (정답 시 노출할 맞꼭지각 호 2개) -->
+            <path id="stage1-arc-top" d="M 110,75 A 35,35 0 0,1 135,85" fill="none" stroke="rgba(212,175,55,0)" stroke-width="3" style="transition: stroke 0.5s ease;" />
+            <path id="stage1-arc-bottom" d="M 110,145 A 35,35 0 0,1 85,135" fill="none" stroke="rgba(212,175,55,0)" stroke-width="3" style="transition: stroke 0.5s ease;" />
+            
+            <!-- 고정선 (수평 L) -->
             <line x1="20" y1="110" x2="200" y2="110" stroke="#a5a5a5" stroke-width="4" stroke-linecap="round" />
-            <!-- 고정 맞꼭지 대칭 안내선 (45도 기울어짐) -->
-            <line x1="46" y1="46" x2="174" y2="174" stroke="rgba(212,175,55,0.2)" stroke-width="2" stroke-dasharray="4" />
             
-            <!-- 조작선 (기본 90도에서 회전) -->
-            <line id="stage1-rotate-line" x1="110" y1="20" x2="110" y2="200" stroke="#d4af37" stroke-width="4" stroke-linecap="round" />
+            <!-- 조작 회전선 (기본 90도) -->
+            <line id="stage1-rotate-line" x1="110" y1="20" x2="110" y2="200" stroke="var(--gold-primary)" stroke-width="4" stroke-linecap="round" style="transition: stroke 0.3s;" />
             
-            <!-- 중심 데코 -->
-            <circle cx="110" cy="110" r="8" fill="#d4af37" />
+            <!-- 중심 피벗 데코 -->
+            <circle cx="110" cy="110" r="8" fill="var(--gold-primary)" />
+            
+            <!-- 라벨 텍스트 -->
+            <text x="115" y="70" fill="#fff" font-size="12" font-weight="bold" id="stage1-top-label">45°</text>
+            <text x="90" y="155" fill="var(--gold-primary)" font-size="12" font-weight="bold" id="stage1-bottom-label">x</text>
           </svg>
         </div>
-        <div style="margin-top: 15px;">
-          <input type="range" id="stage1-slider" min="30" max="150" value="90" style="width: 80%; accent-color: #d4af37;">
-          <div style="margin-top: 8px; font-size: 0.9rem; color: #a5a5a5;" id="stage1-angle-info">
-            조작 각도: 90° | 목표 대칭각: 135°
+        
+        <!-- 슬라이더 조작 영역 -->
+        <div style="margin-bottom: 12px;">
+          <input type="range" id="stage1-slider" min="60" max="160" value="90" style="width: 80%; accent-color: var(--gold-primary); cursor: pointer;">
+          <div style="margin-top: 5px; font-size: 0.85rem; color: var(--text-muted);" id="stage1-angle-info">
+            조작 각도: 90°
           </div>
+        </div>
+
+        <!-- 각도 계산 입력 영역 -->
+        <div style="margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 8px;">
+          <span style="font-size: 0.95rem; color: #fff;">맞꼭지각 x = </span>
+          <input type="number" id="stage1-input" placeholder="각도" style="width: 80px; padding: 8px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none;">
+          <span style="font-size: 0.95rem; color: #fff;">°</span>
+          <button id="stage1-submit-btn" class="btn" style="width: 70px; padding: 9px; font-size: 0.85rem; margin: 0;">확인</button>
         </div>
       </div>
     `;
     this.slider = document.getElementById("stage1-slider");
     this.rotateLine = document.getElementById("stage1-rotate-line");
     this.angleInfo = document.getElementById("stage1-angle-info");
+    this.input = document.getElementById("stage1-input");
+    this.submitBtn = document.getElementById("stage1-submit-btn");
+    
+    this.arcTop = document.getElementById("stage1-arc-top");
+    this.arcBottom = document.getElementById("stage1-arc-bottom");
+    this.topLabel = document.getElementById("stage1-top-label");
+    this.bottomLabel = document.getElementById("stage1-bottom-label");
+
+    this.render();
   }
 
   bindEvents() {
+    // 1. 슬라이더 회전
     this.sliderHandler = (e) => {
       this.currentAngle = parseInt(e.target.value);
       this.render();
-      
-      if (this.checkAnswer()) {
+    };
+
+    // 2. 키보드 입력
+    this.inputHandler = (e) => {
+      this.userInput = e.target.value;
+    };
+
+    // 3. 검증 확인 버튼 클릭
+    this.submitHandler = () => {
+      const isAngleCorrect = Math.abs(this.currentAngle - this.targetAngle) <= 2;
+      const isInputCorrect = parseInt(this.userInput) === this.targetInput;
+
+      if (isAngleCorrect && isInputCorrect) {
+        // 둘 다 맞았을 때 -> 정답 연출 및 완료 처리
         this.slider.disabled = true;
-        // EventBus를 통해 클리어 알림 발행
-        setTimeout(() => {
-          alert("철컥! 맞꼭지각의 대칭성이 복원되며 돌문이 열렸습니다.");
-          if (this.onClearCallback) {
-            this.onClearCallback();
+        this.input.disabled = true;
+        this.submitBtn.disabled = true;
+
+        this.playCorrectAnimation();
+      } else {
+        // 부분 오답 분기 안내
+        if (typeof PuzzleState !== "undefined") {
+          PuzzleState.wrongCount += 1;
+          EventBus.publish("stateChange:puzzle", PuzzleState);
+        }
+
+        if (typeof FeedbackSystem !== "undefined") {
+          if (isAngleCorrect && !isInputCorrect) {
+            FeedbackSystem.showWarning("다이얼 각도는 맞췄으나, 맞꼭지각 x의 올바른 값을 입력해야 합니다.");
+          } else if (!isAngleCorrect && isInputCorrect) {
+            FeedbackSystem.showInfo("계산한 각도는 맞습니다! 다이얼을 조절해 선의 대칭 각도를 맞춰보세요. (목표: 135°)");
           } else {
-            // 직접 PuzzleScene 클리어 동작 트리거용 대체
-            const clearBtn = document.getElementById("mock-puzzle-clear-btn");
-            if (clearBtn) clearBtn.click();
+            FeedbackSystem.showError("다이얼 각도와 입력값 모두 올바르지 않습니다. 다시 계산해 보세요.");
           }
-        }, 300);
+        }
       }
     };
-    if (this.slider) {
-      this.slider.addEventListener("input", this.sliderHandler);
-    }
+
+    if (this.slider) this.slider.addEventListener("input", this.sliderHandler);
+    if (this.input) this.input.addEventListener("input", this.inputHandler);
+    if (this.submitBtn) this.submitBtn.addEventListener("click", this.submitHandler);
   }
 
   render() {
     if (this.rotateLine) {
-      // 중심(110, 110) 기준으로 각도 조절 회전
+      // 중심 (110, 110) 기준으로 회전 변환
       this.rotateLine.setAttribute("transform", `rotate(${this.currentAngle - 90} 110 110)`);
     }
+
     if (this.angleInfo) {
-      this.angleInfo.innerHTML = `조작 각도: <strong style="color:#d4af37;">${this.currentAngle}°</strong> | 목표 대칭각: <strong>135°</strong>`;
+      this.angleInfo.innerHTML = `조작 각도: <strong style="color: var(--gold-primary);">${this.currentAngle}°</strong>`;
     }
+
+    // 슬라이더 변화에 따라 상단 텍스트 레이블의 위치 각도 표시 실시간 동적 갱신
+    if (this.topLabel) {
+      const calculatedTop = 180 - this.currentAngle;
+      this.topLabel.textContent = calculatedTop + "°";
+    }
+  }
+
+  playCorrectAnimation() {
+    // 1. 호(arc) 황금빛 발광 표시
+    if (this.arcTop) this.arcTop.setAttribute("stroke", "var(--gold-primary)");
+    if (this.arcBottom) this.arcBottom.setAttribute("stroke", "var(--gold-primary)");
+    if (this.rotateLine) this.rotateLine.setAttribute("stroke", "var(--gold-light)");
+
+    if (this.bottomLabel) {
+      this.bottomLabel.textContent = "45°";
+      this.bottomLabel.setAttribute("fill", "var(--gold-light)");
+    }
+
+    // 2. 피드백 및 완료 처리 딜레이
+    if (typeof FeedbackSystem !== "undefined") {
+      FeedbackSystem.showSuccess("철컥! 맞꼭지각의 대칭성이 증명되어 돌문이 개방되었습니다!");
+    }
+
+    const svg = document.getElementById("stage1-svg");
+    if (typeof AnimationManager !== "undefined" && svg) {
+      setTimeout(() => {
+        AnimationManager.playSolved(svg.parentNode);
+      }, 300);
+    }
+
+    setTimeout(() => {
+      if (this.onClearCallback) {
+        this.onClearCallback();
+      } else {
+        const clearBtn = document.getElementById("mock-puzzle-clear-btn");
+        if (clearBtn) clearBtn.click();
+      }
+    }, 1400);
   }
 
   checkAnswer() {
-    // 135도에 정확히 도달했는지 오차 1도 이내 판정
-    return Math.abs(this.currentAngle - this.targetAngle) <= 1;
+    const isAngleCorrect = Math.abs(this.currentAngle - this.targetAngle) <= 2;
+    const isInputCorrect = parseInt(this.userInput) === this.targetInput;
+    return isAngleCorrect && isInputCorrect;
   }
 
   reset() {
-    if (this.slider) {
-      this.slider.disabled = false;
-      this.slider.value = 90;
-      this.currentAngle = 90;
-      this.render();
-    }
+    this.currentAngle = 90;
+    this.userInput = "";
+    this.init();
+    this.bindEvents();
   }
 
   destroy() {
-    if (this.slider && this.sliderHandler) {
-      this.slider.removeEventListener("input", this.sliderHandler);
-    }
+    if (this.slider && this.sliderHandler) this.slider.removeEventListener("input", this.sliderHandler);
+    if (this.input && this.inputHandler) this.input.removeEventListener("input", this.inputHandler);
+    if (this.submitBtn && this.submitHandler) this.submitBtn.removeEventListener("click", this.submitHandler);
     this.container.innerHTML = "";
   }
 }
@@ -2554,46 +3362,62 @@ PuzzleManager.register(1, Stage1Puzzle);
 
     <script>
 /**
- * 2스테이지 동위각·엇각 드래그 매칭 퍼즐 클래스.
+ * 2스테이지 동위각·엇각 매칭 퍼즐 클래스.
+ * SVG 평행도판 정렬, 헷갈리는 4선택지 도입, 드롭존 확대 적용.
  */
 class Stage2Puzzle extends PuzzleBase {
   constructor(containerId) {
     super(containerId);
     this.solved = { zoneA: false, zoneB: false };
-    this.draggedValue = null;
     this.onClearCallback = null;
   }
 
   init() {
     this.container.innerHTML = `
       <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
-        <p style="color: #d4af37; margin-bottom: 10px; font-size: 0.9rem;">각도 카드를 클릭한 뒤, 알맞은 동위각(A)과 엇각(B) 자리를 클릭하여 채우세요.</p>
+        <p style="color: var(--gold-primary); margin-bottom: 12px; font-size: 0.9rem;">
+          각도 카드를 선택한 뒤, 알맞은 <strong>동위각(A)</strong>과 <strong>엇각(B)</strong>의 빈칸에 배치하세요.
+        </p>
         
-        <!-- 게임판 -->
-        <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 1px solid #d4af37; border-radius: 8px; overflow: hidden;">
-          <!-- 평행 레일 1 -->
-          <div style="position: absolute; top: 50px; left: 20px; width: 240px; height: 3px; background: #a5a5a5;"></div>
-          <!-- 평행 레일 2 -->
-          <div style="position: absolute; top: 120px; left: 20px; width: 240px; height: 3px; background: #a5a5a5;"></div>
-          <!-- 횡단선 (60도 경사) -->
-          <div style="position: absolute; top: 10px; left: 150px; width: 4px; height: 150px; background: #ff4757; transform: rotate(-30deg); transform-origin: top center;"></div>
+        <!-- 게임판 (SVG 중심 설계) -->
+        <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow); overflow: hidden;">
+          <svg width="280" height="180" style="position: absolute; inset: 0; pointer-events: none;">
+            <!-- 평행선 레일 2선 -->
+            <line x1="20" y1="50" x2="260" y2="50" stroke="#a5a5a5" stroke-width="3" />
+            <line x1="20" y1="130" x2="260" y2="130" stroke="#a5a5a5" stroke-width="3" />
+            
+            <!-- 횡단 빗선 (60도 각도 경사) -->
+            <!-- L선 교차점: (160, 50), M선 교차점: (114, 130) -->
+            <line x1="180" y1="15" x2="95" y2="162" stroke="#ff4757" stroke-width="3.5" />
+            
+            <!-- 기준각 60도 데코 호 및 라벨 -->
+            <path d="M 140,50 A 20,20 0 0,1 150,33" fill="none" stroke="#ff4757" stroke-width="2" />
+            
+            <!-- A(동위각) 안내 가이드 호 -->
+            <path d="M 94,130 A 20,20 0 0,1 104,113" fill="none" stroke="rgba(212,175,55,0.4)" stroke-width="1.5" stroke-dasharray="2" />
+            
+            <!-- B(엇각) 안내 가이드 호 -->
+            <path d="M 124,130 A 20,20 0 0,0 134,147" fill="none" stroke="rgba(212,175,55,0.4)" stroke-width="1.5" stroke-dasharray="2" />
+          </svg>
+
+          <!-- 기준각 라벨 -->
+          <div style="position: absolute; top: 22px; left: 115px; font-size: 0.85rem; color: #ff4757; font-weight: bold;">60°</div>
           
-          <!-- 기준각 (60도) 표시 -->
-          <div style="position: absolute; top: 22px; left: 105px; font-size: 0.85rem; color: #ff4757; font-weight: bold;">60°</div>
+          <!-- 드롭존 A (동위각 자리: M선 좌상단) -->
+          <div id="drop-zone-A" class="dropzone" style="position: absolute; top: 82px; left: 55px; width: 56px; height: 34px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-align: center; line-height: 30px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">A</div>
+          <div style="position: absolute; top: 120px; left: 58px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">동위각</div>
           
-          <!-- 드롭존 A (동위각 자리) -->
-          <div id="drop-zone-A" class="dropzone" style="position: absolute; top: 95px; left: 100px; width: 40px; height: 24px; border: 2px dashed #d4af37; border-radius: 4px; font-size: 0.8rem; text-align: center; line-height: 20px; color: #a5a5a5; background: rgba(0,0,0,0.4); cursor: pointer;">A</div>
-          <div style="position: absolute; top: 76px; left: 104px; font-size: 0.65rem; color: #d4af37; font-weight:bold;">동위각</div>
-          
-          <!-- 드롭존 B (엇각 자리) -->
-          <div id="drop-zone-B" class="dropzone" style="position: absolute; top: 95px; left: 160px; width: 40px; height: 24px; border: 2px dashed #d4af37; border-radius: 4px; font-size: 0.8rem; text-align: center; line-height: 20px; color: #a5a5a5; background: rgba(0,0,0,0.4); cursor: pointer;">B</div>
-          <div style="position: absolute; top: 76px; left: 166px; font-size: 0.65rem; color: #d4af37; font-weight:bold;">엇각</div>
+          <!-- 드롭존 B (엇각 자리: M선 우하단) -->
+          <div id="drop-zone-B" class="dropzone" style="position: absolute; top: 136px; left: 135px; width: 56px; height: 34px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-align: center; line-height: 30px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">B</div>
+          <div style="position: absolute; top: 120px; left: 151px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">엇각</div>
         </div>
         
-        <!-- 선택 카드들 -->
-        <div style="margin-top: 15px; display: flex; justify-content: center; gap: 15px;">
-          <div class="drag-card" data-value="60" style="width: 55px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">60°</div>
-          <div class="drag-card" data-value="120" style="width: 55px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">120°</div>
+        <!-- 선택 카드들 (헷갈리는 4선택지 적용) -->
+        <div style="margin-top: 15px; display: flex; justify-content: center; gap: 10px;">
+          <div class="drag-card" data-value="55" style="width: 50px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">55°</div>
+          <div class="drag-card" data-value="60" style="width: 50px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">60°</div>
+          <div class="drag-card" data-value="65" style="width: 50px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">65°</div>
+          <div class="drag-card" data-value="120" style="width: 50px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">120°</div>
         </div>
       </div>
     `;
@@ -2604,13 +3428,11 @@ class Stage2Puzzle extends PuzzleBase {
 
   bindEvents() {
     this.cardClickHandler = (e) => {
-      // 모든 카드의 선택 스타일 제거
       this.cards.forEach(c => {
-        c.style.borderColor = "#d4af37";
+        c.style.borderColor = "var(--gold-primary)";
         c.style.background = "#1b263b";
         c.style.boxShadow = "0 4px 6px rgba(0,0,0,0.3)";
       });
-      // 선택된 카드 지정 및 스타일 부여
       this.selectedCard = e.currentTarget;
       this.selectedCard.style.borderColor = "#ff4757";
       this.selectedCard.style.background = "rgba(255, 71, 87, 0.2)";
@@ -2619,7 +3441,9 @@ class Stage2Puzzle extends PuzzleBase {
 
     this.zoneClickHandler = (e) => {
       if (!this.selectedCard) {
-        alert("먼저 아래 각도 카드 중 하나를 선택한 뒤 빈칸을 클릭해 주세요.");
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showWarning("먼저 아래 각도 카드 중 하나를 선택한 뒤 빈칸을 클릭해 주세요.");
+        }
         return;
       }
       
@@ -2627,8 +3451,8 @@ class Stage2Puzzle extends PuzzleBase {
       const val = this.selectedCard.getAttribute("data-value");
 
       e.currentTarget.innerText = val + "°";
-      e.currentTarget.style.background = "rgba(212,175,55,0.2)";
-      e.currentTarget.style.borderColor = "#d4af37";
+      e.currentTarget.style.background = "rgba(212,175,55,0.25)";
+      e.currentTarget.style.borderColor = "var(--gold-primary)";
       e.currentTarget.style.color = "#fff";
       e.currentTarget.style.borderStyle = "solid";
       
@@ -2639,17 +3463,25 @@ class Stage2Puzzle extends PuzzleBase {
         if (zoneId === "drop-zone-A") this.solved.zoneA = false;
         if (zoneId === "drop-zone-B") this.solved.zoneB = false;
         
-        // 오답 카운트 기록
         if (typeof PuzzleState !== "undefined") {
           PuzzleState.wrongCount += 1;
           EventBus.publish("stateChange:puzzle", PuzzleState);
         }
-        alert("정답이 아닙니다. 동위각과 엇각은 평행선 조건에서 기준각과 크기가 같습니다.");
+        
+        if (typeof FeedbackSystem !== "undefined") {
+          if (val === "120") {
+            FeedbackSystem.showError("틀렸습니다! 120°는 기준각(60°)의 보각입니다. 동위각과 엇각은 평행선 조건에서 기준각과 크기가 같습니다.");
+          } else {
+            FeedbackSystem.showError(`틀렸습니다! ${val}°는 기준각과 크기가 다릅니다. 동위각과 엇각은 기준각과 크기가 같아야 합니다.`);
+          }
+        }
       }
 
       if (this.checkAnswer()) {
         setTimeout(() => {
-          alert("정답입니다! 동위각과 엇각의 크기가 같음이 입증되어 회랑의 철창이 올라갔습니다.");
+          if (typeof FeedbackSystem !== "undefined") {
+            FeedbackSystem.showSuccess("정답입니다! 동위각과 엇각의 크기가 같음이 입증되어 회랑의 철창이 올라갔습니다.");
+          }
           if (this.onClearCallback) {
             this.onClearCallback();
           } else {
@@ -2700,132 +3532,225 @@ PuzzleManager.register(2, Stage2Puzzle);
 
     <script>
 /**
- * 3스테이지 평행선 성질 레이저 프리즘 굴절 퍼즐 클래스.
+ * 3스테이지 평행선 성질 레이저 프리즘 퍼즐 클래스.
+ * 꺾임점 드래그 보조선 생성 시스템, 확인 입력방식 적용.
  */
 class Stage3Puzzle extends PuzzleBase {
   constructor(containerId) {
     super(containerId);
-    this.targetAngle = 75;
-    this.currentAngle = 45;
-    this.sliderHandler = null;
+    this.targetAngle = 75; // 45 + 30 = 75
+    this.userInput = "";
+    this.hasGuideLine = false; // 보조선 생성 여부
+    
+    // 드래그 조작 관련 변수
+    this.isDragging = false;
+    this.startX = 0;
+    
+    this.inputHandler = null;
+    this.submitHandler = null;
+    
+    this.dragStartHandler = null;
+    this.dragMoveHandler = null;
+    this.dragEndHandler = null;
+    
     this.onClearCallback = null;
   }
 
   init() {
     this.container.innerHTML = `
-      <div style="text-align: center; width: 100%; padding: 15px;">
-        <p style="color: #d4af37; margin-bottom: 10px; font-size: 0.9rem;">평행선 사이에 가상 보조선을 그어 각도를 유추하고 거울 각도를 맞추세요.</p>
+      <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
+        <p style="color: var(--gold-primary); margin-bottom: 10px; font-size: 0.9rem;">
+          꺾임점(★)을 <strong>좌우로 드래그</strong>하여 보조선을 그리고, 거울의 반사각(x)을 계산하세요.
+        </p>
         
-        <div style="position: relative; display: inline-block;">
-          <svg id="stage3-svg" width="260" height="200" style="background:#0b131f; border: 1.5px solid #d4af37; border-radius: 8px;">
+        <div style="position: relative; display: inline-block; margin-bottom: 10px;">
+          <svg id="stage3-svg" width="260" height="200" style="background:#0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow); cursor: crosshair;">
             <!-- 좌측 평행 기둥 -->
             <line x1="40" y1="20" x2="40" y2="180" stroke="#a5a5a5" stroke-width="4" stroke-dasharray="3" />
             <!-- 우측 평행 기둥 -->
             <line x1="220" y1="20" x2="220" y2="180" stroke="#a5a5a5" stroke-width="4" stroke-dasharray="3" />
             
-            <!-- 보조 가이드 평행선 -->
-            <line x1="40" y1="100" x2="220" y2="100" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-dasharray="4" />
+            <!-- 보조 가이드 평행선 (드래그 시 등장) -->
+            <line id="stage3-guide-line" x1="40" y1="100" x2="220" y2="100" stroke="#2ecc71" stroke-width="2" stroke-dasharray="3" style="opacity: 0; transition: opacity 0.4s ease;" />
             
             <!-- 레이저 발사대 및 수신 보석 -->
-            <circle cx="40" cy="40" r="8" fill="#a5a5a5" />
-            <polygon points="220,150 228,158 220,166 212,158" fill="#00d2d3" />
+            <circle cx="40" cy="40" r="8" fill="var(--gold-primary)" />
+            <polygon points="220,150 228,158 220,166 212,158" fill="#00d2d3" id="stage3-target-gem" />
             
             <!-- 꺾임점의 조작 거울 -->
-            <line id="stage3-mirror" x1="120" y1="100" x2="140" y2="100" stroke="#d4af37" stroke-width="5" stroke-linecap="round" />
-            <circle cx="130" cy="100" r="4" fill="#d4af37" />
+            <line id="stage3-mirror" x1="120" y1="100" x2="140" y2="100" stroke="var(--gold-primary)" stroke-width="5" stroke-linecap="round" />
+            <circle cx="130" cy="100" r="6" fill="#ff4757" style="cursor: pointer;" id="stage3-pivot" />
             
             <!-- 레이저 빔 (성공 경로) -->
-            <polyline id="stage3-laser" points="40,40 130,100 220,160" stroke="#ff4757" stroke-width="2" stroke-dasharray="2" style="display:none;" />
-            <!-- 레이저 빔 (실패 시 반사 연출선) -->
-            <line id="stage3-fail-beam" x1="130" y1="100" x2="220" y2="40" stroke="#ff4757" stroke-width="2" stroke-dasharray="2" />
+            <polyline id="stage3-laser" points="40,40 130,100 220,160" stroke="#ff4757" stroke-width="3.5" stroke-dasharray="2" style="display:none;" />
             
-            <!-- 평행선 사이 엇각 유도 텍스트 -->
-            <text x="50" y="36" fill="#a5a5a5" font-size="10">45°</text>
-            <text x="182" y="146" fill="#a5a5a5" font-size="10">30°</text>
+            <!-- 기본 엇각 정보 텍스트 -->
+            <text x="50" y="36" fill="#fff" font-size="10" font-weight="bold">45°</text>
+            <text x="182" y="146" fill="#fff" font-size="10" font-weight="bold">30°</text>
+            
+            <!-- 보조선 상의 엇각 가이드 텍스트 (보조선 등장 시 노출) -->
+            <g id="stage3-hint-angles" style="opacity: 0; transition: opacity 0.5s ease;">
+              <text x="80" y="93" fill="#2ecc71" font-size="9" font-weight="bold">45°(엇각)</text>
+              <text x="145" y="113" fill="#2ecc71" font-size="9" font-weight="bold">30°(엇각)</text>
+            </g>
           </svg>
         </div>
         
-        <div style="margin-top: 10px;">
-          <input type="range" id="stage3-slider" min="15" max="135" value="45" style="width: 80%; accent-color: #d4af37;">
-          <div style="margin-top: 5px; font-size: 0.9rem; color: #a5a5a5;" id="stage3-angle-info">
-            거울 반사각: 45° | 목표각(A+B): 75°
-          </div>
+        <!-- 입력 확인 영역 -->
+        <div style="margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 8px;">
+          <span style="font-size: 0.95rem; color: #fff;">거울 각도 x = </span>
+          <input type="number" id="stage3-input" placeholder="각도" style="width: 80px; padding: 8px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none;">
+          <span style="font-size: 0.95rem; color: #fff;">°</span>
+          <button id="stage3-submit-btn" class="btn" style="width: 70px; padding: 9px; font-size: 0.85rem; margin: 0;">확인</button>
         </div>
       </div>
     `;
-    this.slider = document.getElementById("stage3-slider");
-    this.mirror = document.getElementById("stage3-mirror");
+    this.input = document.getElementById("stage3-input");
+    this.submitBtn = document.getElementById("stage3-submit-btn");
+    this.guideLine = document.getElementById("stage3-guide-line");
+    this.hintAngles = document.getElementById("stage3-hint-angles");
     this.laser = document.getElementById("stage3-laser");
-    this.failBeam = document.getElementById("stage3-fail-beam");
-    this.angleInfo = document.getElementById("stage3-angle-info");
-    
-    // 초기 렌더링 반영
-    this.render();
+    this.mirror = document.getElementById("stage3-mirror");
+    this.pivot = document.getElementById("stage3-pivot");
+    this.svg = document.getElementById("stage3-svg");
+    this.gem = document.getElementById("stage3-target-gem");
   }
 
   bindEvents() {
-    this.sliderHandler = (e) => {
-      this.currentAngle = parseInt(e.target.value);
-      this.render();
-      
-      if (this.checkAnswer()) {
-        this.slider.disabled = true;
-        if (this.laser) this.laser.style.display = "block";
-        if (this.failBeam) this.failBeam.style.display = "none";
+    // 1. 드래그 이벤트 (보조선 생성)
+    this.dragStartHandler = (e) => {
+      this.isDragging = true;
+      this.startX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+    };
+
+    this.dragMoveHandler = (e) => {
+      if (!this.isDragging || this.hasGuideLine) return;
+      const currentX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+      const diff = Math.abs(currentX - this.startX);
+
+      if (diff > 40) {
+        this.hasGuideLine = true;
+        this.guideLine.style.opacity = "1";
+        this.hintAngles.style.opacity = "1";
         
-        setTimeout(() => {
-          alert("거울 각도가 일치하여 레이저가 수신 보석에 명중했습니다! 문이 열립니다.");
-          if (this.onClearCallback) {
-            this.onClearCallback();
-          } else {
-            const clearBtn = document.getElementById("mock-puzzle-clear-btn");
-            if (clearBtn) clearBtn.click();
-          }
-        }, 500);
-      } else {
-        if (this.laser) this.laser.style.display = "none";
-        if (this.failBeam) this.failBeam.style.display = "block";
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showInfo("평행 보조선이 생성되었습니다! 엇각을 관찰해 보세요.");
+        }
       }
     };
-    if (this.slider) {
-      this.slider.addEventListener("input", this.sliderHandler);
+
+    this.dragEndHandler = () => {
+      this.isDragging = false;
+    };
+
+    // 2. 키보드 입력
+    this.inputHandler = (e) => {
+      this.userInput = e.target.value;
+    };
+
+    // 3. 정답 제출
+    this.submitHandler = () => {
+      if (!this.hasGuideLine) {
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showWarning("꺾임점에 수평선이 그려지지 않았습니다. 꺾임점을 좌우로 드래그하여 평행 보조선을 먼저 만드세요.");
+        }
+        return;
+      }
+
+      const val = parseInt(this.userInput);
+      if (val === this.targetAngle) {
+        this.input.disabled = true;
+        this.submitBtn.disabled = true;
+
+        this.playCorrectAnimation();
+      } else {
+        if (typeof PuzzleState !== "undefined") {
+          PuzzleState.wrongCount += 1;
+          EventBus.publish("stateChange:puzzle", PuzzleState);
+        }
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showError("오답입니다! 보조선 위아래의 두 엇각의 크기를 합산해야 합니다.");
+        }
+      }
+    };
+
+    // SVG 혹은 피벗에 드래그 이벤트 연결
+    if (this.svg) {
+      this.svg.addEventListener("mousedown",  this.dragStartHandler);
+      this.svg.addEventListener("touchstart", this.dragStartHandler, { passive: true });
+
+      this.svg.addEventListener("mousemove",  this.dragMoveHandler);
+      this.svg.addEventListener("touchmove",  this.dragMoveHandler, { passive: true });
+
+      window.addEventListener("mouseup",    this.dragEndHandler);
+      window.addEventListener("touchend",   this.dragEndHandler);
     }
+
+    if (this.input) this.input.addEventListener("input", this.inputHandler);
+    if (this.submitBtn) this.submitBtn.addEventListener("click", this.submitHandler);
   }
 
-  render() {
+  playCorrectAnimation() {
+    // 거울 회전 연출
     if (this.mirror) {
-      this.mirror.setAttribute("transform", `rotate(${this.currentAngle - 45} 130 100)`);
+      this.mirror.setAttribute("transform", `rotate(30 130 100)`);
     }
-    if (this.angleInfo) {
-      this.angleInfo.innerHTML = `거울 반사각: <strong style="color:#d4af37;">${this.currentAngle}°</strong> | 목표각(A+B): <strong>75°</strong>`;
+
+    // 레이저 발사
+    if (this.laser) {
+      this.laser.style.display = "block";
     }
-    if (this.failBeam) {
-      // 각도 변화에 따라 실패 반사 빔의 끝점 좌표 변환 연출
-      const angleRad = (this.currentAngle - 45) * Math.PI / 180;
-      const targetX = 130 + Math.cos(angleRad) * 90;
-      const targetY = 100 + Math.sin(angleRad) * 90;
-      this.failBeam.setAttribute("x2", targetX);
-      this.failBeam.setAttribute("y2", targetY);
+
+    // 보석 파랗게 발광
+    if (this.gem) {
+      this.gem.setAttribute("fill", "#54a0ff");
+      this.gem.style.filter = "drop-shadow(0 0 10px #54a0ff)";
     }
+
+    if (typeof FeedbackSystem !== "undefined") {
+      FeedbackSystem.showSuccess("각도가 완벽히 일치하여 빛의 광선이 수신 보석에 조준되었습니다!");
+    }
+
+    if (typeof AnimationManager !== "undefined" && this.svg) {
+      setTimeout(() => {
+        AnimationManager.playSolved(this.svg.parentNode);
+      }, 400);
+    }
+
+    setTimeout(() => {
+      if (this.onClearCallback) {
+        this.onClearCallback();
+      } else {
+        const clearBtn = document.getElementById("mock-puzzle-clear-btn");
+        if (clearBtn) clearBtn.click();
+      }
+    }, 1500);
   }
 
   checkAnswer() {
-    return Math.abs(this.currentAngle - this.targetAngle) <= 1;
+    return parseInt(this.userInput) === this.targetAngle;
   }
 
   reset() {
-    if (this.slider) {
-      this.slider.disabled = false;
-      this.slider.value = 45;
-      this.currentAngle = 45;
-      this.render();
-    }
+    this.hasGuideLine = false;
+    this.userInput = "";
+    this.init();
+    this.bindEvents();
   }
 
   destroy() {
-    if (this.slider && this.sliderHandler) {
-      this.slider.removeEventListener("input", this.sliderHandler);
+    if (this.svg) {
+      this.svg.removeEventListener("mousedown",  this.dragStartHandler);
+      this.svg.removeEventListener("touchstart", this.dragStartHandler);
+      this.svg.removeEventListener("mousemove",  this.dragMoveHandler);
+      this.svg.removeEventListener("touchmove",  this.dragMoveHandler);
     }
+    window.removeEventListener("mouseup",  this.dragEndHandler);
+    window.removeEventListener("touchend", this.dragEndHandler);
+
+    if (this.input && this.inputHandler) this.input.removeEventListener("input", this.inputHandler);
+    if (this.submitBtn && this.submitHandler) this.submitBtn.removeEventListener("click", this.submitHandler);
+    
     this.container.innerHTML = "";
   }
 }
@@ -2836,51 +3761,64 @@ PuzzleManager.register(3, Stage3Puzzle);
 
     <script>
 /**
- * 4스테이지 삼각형 내각의 합 조각 맞추기 퍼즐 클래스.
+ * 4스테이지 삼각형 내각의 합 퍼즐 클래스.
+ * 대형 드롭존(64x38px), 6선택지, 꼭짓점 밀착 정렬, 중앙 실시간 합계(glow) 가이드 적용.
  */
 class Stage4Puzzle extends PuzzleBase {
   constructor(containerId) {
     super(containerId);
     this.fixedAngle = 50;
+    // 정답 조합: B=60, C=70 (도형의 비대칭 예각 형태에 정밀 매칭)
     this.solved = { zoneB: null, zoneC: null };
-    this.draggedValue = null;
     this.onClearCallback = null;
+    this.selectedCard = null;
   }
 
   init() {
     this.container.innerHTML = `
       <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
-        <p style="color: #d4af37; margin-bottom: 10px; font-size: 0.9rem;">각도 카드를 클릭한 뒤, 빈칸(각 B 또는 각 C)을 클릭하여 채워 넣으세요.</p>
+        <p style="color: var(--gold-primary); margin-bottom: 12px; font-size: 0.9rem;">
+          각도 카드를 선택한 뒤, 빈칸(각 B 또는 각 C)을 클릭하여 채워 넣으세요.
+        </p>
         
         <!-- 삼각형 보드판 -->
-        <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 1px solid #d4af37; border-radius: 8px;">
-          <!-- SVG 삼각형 외곽선 -->
-          <svg width="280" height="180" style="position: absolute; top:0; left:0;">
-            <polygon points="140,20 40,145 240,145" fill="none" stroke="#d4af37" stroke-width="3" />
+        <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
+          <!-- SVG 삼각형 외곽선 및 호 데코 -->
+          <svg width="280" height="180" style="position: absolute; top:0; left:0; pointer-events: none;">
+            <polygon points="140,20 40,145 240,145" fill="none" stroke="var(--gold-primary)" stroke-width="3" />
+            <!-- 각 A(50) 가이드 호 -->
+            <path d="M 125,40 A 20,20 0 0,0 155,40" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" />
+            <!-- 각 B 가이드 호 -->
+            <path d="M 58,145 A 20,20 0 0,0 52,128" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" />
+            <!-- 각 C 가이드 호 -->
+            <path d="M 222,145 A 20,20 0 0,1 228,128" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" />
           </svg>
           
           <!-- 각 A (고정 50도) -->
-          <div style="position: absolute; top: 32px; left: 128px; font-size: 0.95rem; color: #fff; font-weight: bold;">50°</div>
+          <div style="position: absolute; top: 38px; left: 128px; font-size: 0.95rem; color: #fff; font-weight: bold;">50°</div>
           
-          <!-- 각 B 드롭존 -->
-          <div id="drop-zone-B" class="dropzone" style="position: absolute; top: 110px; left: 55px; width: 44px; height: 26px; border: 2px dashed #d4af37; border-radius: 4px; font-size: 0.8rem; text-align: center; line-height: 22px; color: #a5a5a5; background: rgba(0,0,0,0.5); cursor: pointer;">B</div>
-          <div style="position: absolute; top: 140px; left: 63px; font-size: 0.65rem; color: #d4af37; font-weight:bold;">각 B</div>
+          <!-- 각 B 드롭존 (꼭짓점 B 주변 배치) -->
+          <div id="drop-zone-B" class="dropzone" style="position: absolute; top: 104px; left: 24px; width: 64px; height: 38px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.9rem; font-weight: bold; text-align: center; line-height: 34px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">B</div>
+          <div style="position: absolute; top: 144px; left: 42px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">각 B</div>
           
-          <!-- 각 C 드롭존 -->
-          <div id="drop-zone-C" class="dropzone" style="position: absolute; top: 110px; left: 181px; width: 44px; height: 26px; border: 2px dashed #d4af37; border-radius: 4px; font-size: 0.8rem; text-align: center; line-height: 22px; color: #a5a5a5; background: rgba(0,0,0,0.5); cursor: pointer;">C</div>
-          <div style="position: absolute; top: 140px; left: 190px; font-size: 0.65rem; color: #d4af37; font-weight:bold;">각 C</div>
+          <!-- 각 C 드롭존 (꼭짓점 C 주변 배치) -->
+          <div id="drop-zone-C" class="dropzone" style="position: absolute; top: 104px; left: 192px; width: 64px; height: 38px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.9rem; font-weight: bold; text-align: center; line-height: 34px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">C</div>
+          <div style="position: absolute; top: 144px; left: 211px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">각 C</div>
           
-          <div id="sum-formula" style="position: absolute; top: 156px; left: 0; width: 100%; text-align: center; font-size: 0.75rem; color: #a5a5a5;">
-            식: 50° + B + C = 180°
+          <!-- 중앙 실시간 합계 디스플레이 (Glow 효과 추가) -->
+          <div id="sum-formula" style="position: absolute; top: 62px; left: 0; width: 100%; text-align: center; font-size: 0.85rem; font-weight: bold;">
+            식: 50° + B + C = 0°
           </div>
         </div>
         
-        <!-- 카드 후보 -->
-        <div style="margin-top: 15px; display: flex; justify-content: center; gap: 10px;">
-          <div class="drag-card" data-value="40" style="width: 45px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">40°</div>
-          <div class="drag-card" data-value="60" style="width: 45px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">60°</div>
-          <div class="drag-card" data-value="70" style="width: 45px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">70°</div>
-          <div class="drag-card" data-value="90" style="width: 45px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">90°</div>
+        <!-- 카드 후보 (6종으로 확대) -->
+        <div style="margin-top: 15px; display: flex; justify-content: center; gap: 8px;">
+          <div class="drag-card" data-value="40" style="width: 42px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s; font-size: 0.85rem;">40°</div>
+          <div class="drag-card" data-value="60" style="width: 42px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s; font-size: 0.85rem;">60°</div>
+          <div class="drag-card" data-value="70" style="width: 42px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s; font-size: 0.85rem;">70°</div>
+          <div class="drag-card" data-value="80" style="width: 42px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s; font-size: 0.85rem;">80°</div>
+          <div class="drag-card" data-value="90" style="width: 42px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s; font-size: 0.85rem;">90°</div>
+          <div class="drag-card" data-value="100" style="width: 42px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s; font-size: 0.85rem;">100°</div>
         </div>
       </div>
     `;
@@ -2888,17 +3826,17 @@ class Stage4Puzzle extends PuzzleBase {
     this.zones = this.container.querySelectorAll(".dropzone");
     this.formula = document.getElementById("sum-formula");
     this.selectedCard = null;
+    
+    this.render();
   }
 
   bindEvents() {
     this.cardClickHandler = (e) => {
-      // 모든 카드의 선택 스타일 제거
       this.cards.forEach(c => {
-        c.style.borderColor = "#d4af37";
+        c.style.borderColor = "var(--gold-primary)";
         c.style.background = "#1b263b";
         c.style.boxShadow = "0 4px 6px rgba(0,0,0,0.3)";
       });
-      // 선택 카드 지정 및 스타일 적용
       this.selectedCard = e.currentTarget;
       this.selectedCard.style.borderColor = "#ff4757";
       this.selectedCard.style.background = "rgba(255, 71, 87, 0.2)";
@@ -2907,7 +3845,9 @@ class Stage4Puzzle extends PuzzleBase {
 
     this.zoneClickHandler = (e) => {
       if (!this.selectedCard) {
-        alert("먼저 아래 각도 카드 중 하나를 선택한 뒤 빈칸을 클릭해 주세요.");
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showWarning("먼저 아래 각도 카드 중 하나를 선택한 뒤 빈칸을 클릭해 주세요.");
+        }
         return;
       }
 
@@ -2915,8 +3855,8 @@ class Stage4Puzzle extends PuzzleBase {
       const val = parseInt(this.selectedCard.getAttribute("data-value"));
 
       e.currentTarget.innerText = val + "°";
-      e.currentTarget.style.background = "rgba(212,175,55,0.2)";
-      e.currentTarget.style.borderColor = "#d4af37";
+      e.currentTarget.style.background = "rgba(212,175,55,0.25)";
+      e.currentTarget.style.borderColor = "var(--gold-primary)";
       e.currentTarget.style.color = "#fff";
       e.currentTarget.style.borderStyle = "solid";
 
@@ -2926,8 +3866,12 @@ class Stage4Puzzle extends PuzzleBase {
       this.render();
 
       if (this.checkAnswer()) {
+        this.zones.forEach(z => z.style.borderColor = "#2ecc71");
+        
         setTimeout(() => {
-          alert(`축하합니다! 50° + ${this.solved.zoneB}° + ${this.solved.zoneC}° = 180°가 완성되어 제단의 봉인이 풀렸습니다.`);
+          if (typeof FeedbackSystem !== "undefined") {
+            FeedbackSystem.showSuccess(`정답입니다! 50° + ${this.solved.zoneB}° + ${this.solved.zoneC}° = 180°가 완성되어 제단의 봉인이 풀렸습니다.`);
+          }
           if (this.onClearCallback) {
             this.onClearCallback();
           } else {
@@ -2936,13 +3880,23 @@ class Stage4Puzzle extends PuzzleBase {
           }
         }, 300);
       } else {
-        // 둘 다 값이 차있는데 틀린 경우 오답 카운팅 및 안내
+        // 둘 다 값이 찼을 때 오답인 경우 판정 안내
         if (this.solved.zoneB && this.solved.zoneC) {
           if (typeof PuzzleState !== "undefined") {
             PuzzleState.wrongCount += 1;
             EventBus.publish("stateChange:puzzle", PuzzleState);
           }
-          alert("세 내각의 크기의 합이 180°가 되지 않습니다. 다시 구성해 보세요.");
+
+          const sum = 50 + this.solved.zoneB + this.solved.zoneC;
+          
+          if (typeof FeedbackSystem !== "undefined") {
+            if (sum === 180) {
+              // 40 + 90과 같이 180은 맞지만 도형 형태(비대칭 예각삼각형)상 안 맞는 함정
+              FeedbackSystem.showError(`세 각의 합(${sum}°)은 맞으나, 도형의 생김새(예각삼각형)를 보세요. 직각(90°)이나 둔각 카드는 각 B나 C에 적합하지 않습니다. 다시 조합해 보세요.`);
+            } else {
+              FeedbackSystem.showError(`틀렸습니다! 세 각의 합이 ${sum}°입니다. 삼각형 내각의 합은 항상 180°가 되어야 합니다.`);
+            }
+          }
         }
       }
     };
@@ -2960,14 +3914,38 @@ class Stage4Puzzle extends PuzzleBase {
     if (this.formula) {
       const bStr = this.solved.zoneB ? `${this.solved.zoneB}°` : "B";
       const cStr = this.solved.zoneC ? `${this.solved.zoneC}°` : "C";
-      const total = this.fixedAngle + (this.solved.zoneB || 0) + (this.solved.zoneC || 0);
-      this.formula.innerHTML = `식: 50° + ${bStr} + ${cStr} = <strong style="color: ${total === 180 ? '#2ecc71' : '#ff4757'}">${total}°</strong>`;
+      const total = 50 + (this.solved.zoneB || 0) + (this.solved.zoneC || 0);
+      
+      let color = "var(--text-muted)";
+      let glow = "none";
+      if (this.solved.zoneB && this.solved.zoneC) {
+        if (total === 180) {
+          // B=60, C=70 일 때만 최종 녹색 처리
+          const isValidShape = (this.solved.zoneB === 60 && this.solved.zoneC === 70) || (this.solved.zoneB === 70 && this.solved.zoneC === 60);
+          color = isValidShape ? "#2ecc71" : "#f1c40f"; // 합만 맞으면 주황, 형태도 맞으면 초록
+          glow = isValidShape ? "0 0 10px rgba(46,204,113,0.5)" : "none";
+        } else {
+          color = "#ff4757";
+          glow = "0 0 10px rgba(255,71,87,0.5)";
+        }
+      }
+      
+      this.formula.innerHTML = `
+        <span style="color: #fff;">∑ = </span>
+        <span style="color: ${color}; text-shadow: ${glow}; font-size: 1.15rem;">${total}°</span>
+        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">
+          50° + ${bStr} + ${cStr} = 180°
+        </div>
+      `;
     }
   }
 
   checkAnswer() {
     if (!this.solved.zoneB || !this.solved.zoneC) return false;
-    return (this.fixedAngle + this.solved.zoneB + this.solved.zoneC) === 180;
+    // 50 + B + C = 180 이면서, 예각삼각형 형태 제약 (B=60, C=70 또는 B=70, C=60)
+    const isSumCorrect = (50 + this.solved.zoneB + this.solved.zoneC) === 180;
+    const isShapeCorrect = (this.solved.zoneB === 60 && this.solved.zoneC === 70) || (this.solved.zoneB === 70 && this.solved.zoneC === 60);
+    return isSumCorrect && isShapeCorrect;
   }
 
   reset() {
@@ -2998,50 +3976,86 @@ PuzzleManager.register(4, Stage4Puzzle);
     <script>
 /**
  * 5스테이지 종합 문제 (그림자 마도사) 퍼즐 클래스.
+ * SVG 문제도 시각 개선 및 단계별 힌트 시각 가이드(EventBus) 연계.
  */
 class Stage5Puzzle extends PuzzleBase {
   constructor(containerId) {
     super(containerId);
-    this.targetAnswer = 105;
+    this.targetAnswer = 105; // 45 (엇각) + 60 (내각) = 105
     this.userAnswer = "";
+    
     this.inputHandler = null;
     this.submitHandler = null;
+    this.hintSubscription = null;
     this.onClearCallback = null;
   }
 
   init() {
     this.container.innerHTML = `
-      <div style="text-align: center; width: 100%; padding: 15px;">
-        <p style="color: #d4af37; margin-bottom: 10px; font-size: 0.9rem;">마도사의 마지막 장치를 해제하기 위해 기하학 복합 수식의 정답(x)을 입력하세요.</p>
+      <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
+        <p style="color: var(--gold-primary); margin-bottom: 10px; font-size: 0.9rem;">
+          마도사의 마지막 봉인 장치입니다. 기하학 수식의 최종 각도 <strong>x</strong>를 입력하세요.
+        </p>
         
-        <!-- 복합 기하 문제 판넬 (SVG) -->
-        <div style="position: relative; display: inline-block;">
-          <svg id="stage5-svg" width="280" height="180" style="background:#0b131f; border: 1.5px solid #d4af37; border-radius: 8px;">
-            <!-- 평행선 2선 L, M -->
+        <!-- 보드판 (SVG) -->
+        <div style="position: relative; display: inline-block; margin-bottom: 10px;">
+          <svg id="stage5-svg" width="280" height="190" style="background:#0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
+            <!-- 평행선 L, M -->
             <line x1="20" y1="40" x2="260" y2="40" stroke="#a5a5a5" stroke-width="2" />
             <line x1="20" y1="140" x2="260" y2="140" stroke="#a5a5a5" stroke-width="2" />
             
-            <!-- 삼각형 조합선 -->
-            <polygon points="80,140 180,40 180,140" fill="none" stroke="#e0e1dd" stroke-width="2" />
-            <line x1="180" y1="40" x2="230" y2="140" stroke="#ff4757" stroke-width="2" />
+            <!-- 평행 라벨 -->
+            <text x="30" y="25" fill="var(--gold-primary)" font-size="9" font-weight="bold">L // M (평행)</text>
+            <text x="245" y="35" fill="#a5a5a5" font-size="9">L</text>
+            <text x="245" y="135" fill="#a5a5a5" font-size="9">M</text>
             
-            <!-- 수치 라벨 -->
-            <text x="95" y="132" fill="#a5a5a5" font-size="10">45°</text>
-            <text x="186" y="56" fill="#ff4757" font-size="11" font-weight="bold">x</text>
-            <text x="210" y="130" fill="#a5a5a5" font-size="10">60°</text>
+            <!-- 삼각형 ABC 구성선 -->
+            <!-- A: (140, 40), B: (70, 140), C: (200, 140) -->
+            <polygon points="140,40 70,140 200,140" fill="none" stroke="#e0e1dd" stroke-width="2" />
             
-            <!-- 보조선 정보 -->
-            <text x="30" y="25" fill="#d4af37" font-size="9" font-weight="bold">평행 가이드: L // M</text>
+            <!-- 외각선 (AC 연장선) -->
+            <!-- (140,40)에서 (200,140) 방향 벡터: (60,100). 연장하여 (230, 190)까지 그리기 -->
+            <line x1="200" y1="140" x2="230" y2="190" stroke="#ff4757" stroke-width="2" stroke-dasharray="2" />
+            
+            <!-- 기본 고정 각도 표시 -->
+            <!-- 1) A의 왼쪽 각도 (L선과 AB선 사이) = 45° -->
+            <path d="M 115,40 A 25,25 0 0,0 123,58" fill="none" stroke="var(--gold-primary)" stroke-width="1.5" />
+            <text x="95" y="55" fill="#fff" font-size="10" font-weight="bold">45°</text>
+            
+            <!-- 2) C의 내각 (삼각형 내부 우측 각) = 60° -->
+            <path d="M 175,140 A 25,25 0 0,1 188,122" fill="none" stroke="var(--gold-primary)" stroke-width="1.5" />
+            <text x="168" y="132" fill="#fff" font-size="10" font-weight="bold">60°</text>
+            
+            <!-- 3) 외각 x 표시 (M선과 AC연장선 사이) -->
+            <path d="M 215,140 A 20,20 0 0,1 213,162" fill="none" stroke="#ff4757" stroke-width="2" />
+            <text x="222" y="152" fill="#ff4757" font-size="12" font-weight="bold">x</text>
+            
+            <!-- ── 실시간 힌트 가이드 레이어 (기본 display: none) ── -->
+            <!-- 힌트 1단계: B 내각 엇각 표시 -->
+            <g id="h5-step1" style="display: none;">
+              <path d="M 85,140 A 20,20 0 0,0 80,126" fill="none" stroke="#2ecc71" stroke-width="2" />
+              <text x="84" y="130" fill="#2ecc71" font-size="10" font-weight="bold">45°(엇각)</text>
+              <!-- 엇각 점선 가이드 -->
+              <path d="M 125,55 L 85,125" stroke="#2ecc71" stroke-width="1.5" stroke-dasharray="2" fill="none" />
+            </g>
+            
+            <!-- 힌트 2단계: 외각 공식 가이드 -->
+            <g id="h5-step2" style="display: none;">
+              <rect x="50" y="85" width="180" height="22" rx="4" fill="rgba(13,27,42,0.95)" stroke="var(--gold-primary)" stroke-width="1" />
+              <text x="140" y="100" fill="var(--gold-light)" font-size="9" text-anchor="middle" font-weight="bold">외각 x = 이웃하지 않는 두 내각의 합</text>
+            </g>
           </svg>
         </div>
         
-        <!-- 정답 입력부 -->
-        <div style="margin-top: 15px;">
-          <input type="number" id="stage5-input" placeholder="x의 각도 입력" style="width: 120px; padding: 9px; text-align: center; font-size: 1rem; border: 1px solid #d4af37; border-radius: 4px; background: rgba(0,0,0,0.5); color: #fff; outline:none; vertical-align: middle;">
+        <!-- 힌트 3단계 안내선 박스 -->
+        <div id="h5-step3-text" style="font-size: 0.85rem; color: #2ecc71; font-weight: bold; margin-bottom: 8px; display: none;">
+          힌트 공식: x = 45° + 60°
+        </div>
+        
+        <!-- 입력창 영역 -->
+        <div style="margin-top: 10px;">
+          <input type="number" id="stage5-input" placeholder="x의 각도" style="width: 120px; padding: 9px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none; vertical-align: middle;">
           <button id="stage5-submit-btn" class="btn" style="width: 80px; padding: 10px; display: inline-block; vertical-align: middle; margin-left: 10px; font-size: 0.9rem;">입력</button>
-          <div style="font-size:0.75rem; color:#a5a5a5; margin-top:8px;">
-            (힌트: 평행선의 동위각/엇각의 성질과 삼각형 한 외각의 성질을 결합하세요)
-          </div>
         </div>
       </div>
     `;
@@ -3058,19 +4072,31 @@ class Stage5Puzzle extends PuzzleBase {
       if (this.checkAnswer()) {
         this.input.disabled = true;
         this.submitBtn.disabled = true;
+        
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showSuccess("성공! 기하학의 모든 봉인을 해제해 냈습니다!");
+        }
+
+        const svg = document.getElementById("stage5-svg");
+        if (typeof AnimationManager !== "undefined" && svg) {
+          setTimeout(() => {
+            AnimationManager.playSolved(svg.parentNode);
+          }, 300);
+        }
+
         setTimeout(() => {
-          alert("콰콰콰콰광! 그림자 마도사의 암호가 풀리며 성이 무너지고 출구가 나타났습니다.");
           if (this.onClearCallback) {
             this.onClearCallback();
           } else {
             const clearBtn = document.getElementById("mock-puzzle-clear-btn");
             if (clearBtn) clearBtn.click();
           }
-        }, 300);
+        }, 1400);
       } else {
-        alert("마도사의 그림자 파동이 울립니다...\n\"어리석구나, 오답이다!\"");
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showError("마도사의 그림자 장치가 요동칩니다!\n\"어림없는 계산이다, 오답이다!\"");
+        }
         
-        // 오답 카운트 기록 갱신 트리거
         if (typeof PuzzleState !== "undefined") {
           PuzzleState.wrongCount += 1;
           EventBus.publish("stateChange:puzzle", PuzzleState);
@@ -3080,6 +4106,29 @@ class Stage5Puzzle extends PuzzleBase {
     
     if (this.input) this.input.addEventListener("input", this.inputHandler);
     if (this.submitBtn) this.submitBtn.addEventListener("click", this.submitHandler);
+
+    // 힌트 수신 이벤트 구독 (실시간 SVG 가이드 반영)
+    if (typeof EventBus !== "undefined") {
+      this.hintSubscription = (step) => {
+        this.showSvgHint(step);
+      };
+      EventBus.subscribe("puzzle:showHint", this.hintSubscription);
+      
+      // 이미 힌트를 쓴 채 새로고침 복구된 경우 대응
+      if (typeof PuzzleState !== "undefined" && PuzzleState.hintCount > 0) {
+        this.showSvgHint(PuzzleState.hintCount);
+      }
+    }
+  }
+
+  showSvgHint(step) {
+    const s1 = document.getElementById("h5-step1");
+    const s2 = document.getElementById("h5-step2");
+    const s3 = document.getElementById("h5-step3-text");
+    
+    if (step >= 1 && s1) s1.style.display = "block";
+    if (step >= 2 && s2) s2.style.display = "block";
+    if (step >= 3 && s3) s3.style.display = "block";
   }
 
   checkAnswer() {
@@ -3093,14 +4142,21 @@ class Stage5Puzzle extends PuzzleBase {
     }
     if (this.submitBtn) this.submitBtn.disabled = false;
     this.userAnswer = "";
+    
+    // 힌트 엘리먼트 가리기
+    const s1 = document.getElementById("h5-step1");
+    const s2 = document.getElementById("h5-step2");
+    const s3 = document.getElementById("h5-step3-text");
+    if (s1) s1.style.display = "none";
+    if (s2) s2.style.display = "none";
+    if (s3) s3.style.display = "none";
   }
 
   destroy() {
-    if (this.input && this.inputHandler) {
-      this.input.removeEventListener("input", this.inputHandler);
-    }
-    if (this.submitBtn && this.submitHandler) {
-      this.submitBtn.removeEventListener("click", this.submitHandler);
+    if (this.input && this.inputHandler) this.input.removeEventListener("input", this.inputHandler);
+    if (this.submitBtn && this.submitHandler) this.submitBtn.removeEventListener("click", this.submitHandler);
+    if (typeof EventBus !== "undefined" && this.hintSubscription) {
+      EventBus.unsubscribe("puzzle:showHint", this.hintSubscription);
     }
     this.container.innerHTML = "";
   }
@@ -3163,11 +4219,19 @@ const InputScene = {
         
         // 정규식: 학번 4~5자리 숫자 (예: 1011 또는 10101)
         if (!/^\d{4,5}$/.test(studentNo)) {
-          alert("학번은 4~5자리 숫자로 입력해 주세요. (예: 1011 또는 10101)");
+          if (typeof FeedbackSystem !== "undefined") {
+            FeedbackSystem.showWarning("학번은 4~5자리 숫자로 입력해 주세요. (예: 1011 또는 10101)");
+          } else {
+            alert("학번은 4~5자리 숫자로 입력해 주세요. (예: 1011 또는 10101)");
+          }
           return;
         }
         if (!name) {
-          alert("이름을 입력해 주세요.");
+          if (typeof FeedbackSystem !== "undefined") {
+            FeedbackSystem.showWarning("이름을 입력해 주세요.");
+          } else {
+            alert("이름을 입력해 주세요.");
+          }
           return;
         }
         
@@ -3189,8 +4253,12 @@ const InputScene = {
           StateStore.saveToLocalStorage();
         }
         
-        // 다음 스토리 씬으로 전환
-        SceneManager.showScene("story", { stageId: GameState.currentStage });
+        // 튜토리얼 완료 여부에 따라 다음 씬 결정
+        if (GameState.tutorialCompleted) {
+          SceneManager.showScene("story", { stageId: GameState.currentStage });
+        } else {
+          SceneManager.showScene("tutorial");
+        }
       };
       
       const form = document.getElementById("input-form");
@@ -3210,6 +4278,65 @@ const InputScene = {
 
 // 씬 등록
 SceneManager.register("input", InputScene);
+</script>
+
+    <script>
+/**
+ * 튜토리얼 화면 씬 객체.
+ */
+const TutorialScene = {
+  enter: function(data) {
+    console.log("[TutorialScene] 진입");
+
+    // 건너뛰기 버튼이나 튜토리얼 레이아웃 초기화
+    const boardContainer = document.getElementById("tutorial-board-container");
+    if (boardContainer) {
+      // 튜토리얼 엔진 시작
+      TutorialEngine.start("tutorial-board-container", () => {
+        this.completeTutorial();
+      });
+    }
+
+    const skipBtn = document.getElementById("tutorial-skip-btn");
+    if (skipBtn) {
+      this.skipHandler = () => {
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showInfo("훈련을 건너뛰고 성에 진입합니다.");
+        }
+        this.completeTutorial();
+      };
+      skipBtn.addEventListener("click", this.skipHandler);
+    }
+  },
+
+  completeTutorial: function() {
+    // 튜토리얼 완료 플래그 활성화
+    GameState.tutorialCompleted = true;
+    EventBus.publish("stateChange:game", GameState);
+
+    if (typeof StateStore !== "undefined") {
+      StateStore.saveToLocalStorage();
+    }
+
+    // 첫 스테이지 스토리로 전환
+    SceneManager.showScene("story", { stageId: GameState.currentStage });
+  },
+
+  exit: function() {
+    console.log("[TutorialScene] 이탈");
+    const skipBtn = document.getElementById("tutorial-skip-btn");
+    if (skipBtn && this.skipHandler) {
+      skipBtn.removeEventListener("click", this.skipHandler);
+    }
+    const boardContainer = document.getElementById("tutorial-board-container");
+    if (boardContainer) {
+      boardContainer.innerHTML = "";
+    }
+  }
+};
+
+// 씬 등록
+SceneManager.register("tutorial", TutorialScene);
 </script>
 
     <script>
@@ -3251,6 +4378,8 @@ const StoryScene = {
     if (clickArea && this.clickHandler) {
       clickArea.removeEventListener("click", this.clickHandler);
     }
+    const choices = document.getElementById("story-choices-container");
+    if (choices) choices.remove();
   }
 };
 
@@ -3333,17 +4462,58 @@ const PuzzleScene = {
     const hintBtn = document.getElementById("puzzle-hint-btn");
     if (hintBtn) {
       this.hintHandler = () => {
-        PuzzleState.hintCount += 1;
-        EventBus.publish("stateChange:puzzle", PuzzleState);
+        let npcName = "마도사";
+        if (stageId === 1) npcName = "숲의 정령";
+        if (stageId === 2) npcName = "신전 수호자";
+        if (stageId === 3) npcName = "빛의 현자";
+        if (stageId === 4) npcName = "제단의 영혼";
+
+        let hintMsg = "";
         
-        let hintMsg = "도형의 정의를 찬찬히 살펴보세요.";
-        if (stageId === 1) hintMsg = "맞꼭지각은 두 직선이 만날 때 생기는 서로 마주 보는 두 각이며, 크기가 항상 동일합니다.";
-        if (stageId === 2) hintMsg = "두 선이 평행할 때, 횡단선과의 위치가 동일한 동위각과 서로 지그재그 관계인 엇각의 크기는 같습니다.";
-        if (stageId === 3) hintMsg = "꺾인 점을 가로지르는 제3의 평행 가상 보조선을 그리면 위아래 엇각 관계(45도와 30도)로 쪼개져 합이 75도가 됩니다.";
-        if (stageId === 4) hintMsg = "삼각형 내부의 세 내각의 총합은 언제나 180도입니다. 고정 50도를 제외한 나머지 두 칸의 각도 카드의 합이 130도가 되도록 배치해 보세요.";
-        if (stageId === 5) hintMsg = "평행선 사이의 엇각(45도)을 유추하여 삼각형 내부의 내각(45도)을 얻고, 삼각형의 한 외각은 이웃하지 않는 두 내각의 합과 같으므로 x = 45 + 60 입니다.";
+        if (stageId === 5) {
+          // 5스테이지 단계별 힌트 차감 (최대 3단계)
+          if (PuzzleState.hintCount >= 3) {
+            if (typeof FeedbackSystem !== "undefined") {
+              FeedbackSystem.showWarning("이미 마지막 힌트까지 확인하셨습니다.");
+            }
+            return;
+          }
+          
+          PuzzleState.hintCount += 1;
+          
+          const PENALTIES = [5, 10, 15]; // 누적 차감량: 1단계=5, 2단계=15, 3단계=30
+          const currentPenalty = PENALTIES[PuzzleState.hintCount - 1];
+          PuzzleState.hintPenalty += currentPenalty;
+          
+          EventBus.publish("stateChange:puzzle", PuzzleState);
+          
+          if (PuzzleState.hintCount === 1) {
+            hintMsg = `[1단계 힌트 -5점]\n평행선 L과 M 사이의 관계를 보세요. L선 위 꼭짓점 A의 좌측 엇각 45°가 평행선 M 위에 엇각으로 아래 내각(45°)에 복원됩니다.`;
+          } else if (PuzzleState.hintCount === 2) {
+            hintMsg = `[2단계 힌트 -10점 추가]\n삼각형 한 외각의 성질을 기억하세요! 삼각형 외각 x는 이웃하지 않는 두 내각(엇각으로 구한 45°와 제시된 60°)의 합과 같습니다.`;
+          } else {
+            hintMsg = `[3단계 힌트 -15점 추가]\n최종 해 공식: x = 45 + 60 입니다. 계산해서 답을 얻으세요!`;
+          }
+          
+          // 퍼즐에 실시간 SVG 힌트 레이어 연출을 위한 이벤트 발행
+          EventBus.publish("puzzle:showHint", PuzzleState.hintCount);
+          
+        } else {
+          // 1~4스테이지는 기존처럼 힌트 횟수만 추가 (차감 없음)
+          PuzzleState.hintCount += 1;
+          EventBus.publish("stateChange:puzzle", PuzzleState);
+          
+          if (stageId === 1) hintMsg = "맞꼭지각은 두 직선이 만날 때 생기는 서로 마주 보는 두 각이며, 크기가 항상 동일합니다. 180° 평각에서 135°를 제외한 각도를 찾아보세요.";
+          if (stageId === 2) hintMsg = "두 선이 평행할 때, 횡단선과의 위치가 동일한 동위각과 서로 지그재그 관계인 엇각의 크기는 같습니다.";
+          if (stageId === 3) hintMsg = "꺾인 점 좌우로 수평 보조선을 드래그해 보세요. 엇각 관계(45도와 30도)가 보조선 위아래로 쪼개져 보일 것입니다.";
+          if (stageId === 4) hintMsg = "삼각형 내부의 세 내각의 총합은 언제나 180도입니다. 고정 50도를 제외한 나머지 두 칸의 각도 카드의 합이 130도가 되도록 배치해 보세요.";
+        }
         
-        alert(`[마도사의 힌트]\n${hintMsg} (누적 사용: ${PuzzleState.hintCount}회)`);
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showHint(npcName, hintMsg);
+        } else {
+          alert(`[${npcName}의 힌트]\n${hintMsg}`);
+        }
       };
       hintBtn.addEventListener("click", this.hintHandler);
     }
@@ -3383,7 +4553,8 @@ const EndingScene = {
     
     // 소요시간 및 최종 점수 연산
     const playTimeSec = Math.round((new Date(GameState.endTime) - new Date(GameState.startTime)) / 1000);
-    const score = Math.max(0, 100 - (PuzzleState.wrongCount * 5));
+    const penalty = (PuzzleState.hintPenalty || 0);
+    const score = Math.max(0, 100 - (PuzzleState.wrongCount * 5) - penalty);
     PuzzleState.score = score;
     EventBus.publish("stateChange:puzzle", PuzzleState);
     
@@ -3428,14 +4599,26 @@ const EndingScene = {
         ResultRepository.saveResult(
           payload,
           function(response) {
-            alert(response.message || "성공적으로 저장되었습니다.");
+            if (typeof FeedbackSystem !== "undefined") {
+              FeedbackSystem.showSuccess(response.message || "성공적으로 저장되었습니다.");
+            } else {
+              alert(response.message || "성공적으로 저장되었습니다.");
+            }
+            
             if (typeof StateStore !== "undefined") {
               StateStore.clearStorage();
             }
-            SceneManager.showScene("ranking");
+            
+            setTimeout(function() {
+              SceneManager.showScene("ranking");
+            }, 2000);
           },
           function(err) {
-            alert("저장 실패: " + err.message + "\n인터넷 연결 상태를 확인 후 다시 시도해 주세요.");
+            if (typeof FeedbackSystem !== "undefined") {
+              FeedbackSystem.showError("저장 실패: " + err.message + "\n다시 시도해 주세요.");
+            } else {
+              alert("저장 실패: " + err.message);
+            }
             submitBtn.disabled = false;
             submitBtn.innerText = "다시 기록 제출하기";
           }

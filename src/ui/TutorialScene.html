@@ -1,0 +1,58 @@
+<script>
+/**
+ * 튜토리얼 화면 씬 객체.
+ */
+const TutorialScene = {
+  enter: function(data) {
+    console.log("[TutorialScene] 진입");
+
+    // 건너뛰기 버튼이나 튜토리얼 레이아웃 초기화
+    const boardContainer = document.getElementById("tutorial-board-container");
+    if (boardContainer) {
+      // 튜토리얼 엔진 시작
+      TutorialEngine.start("tutorial-board-container", () => {
+        this.completeTutorial();
+      });
+    }
+
+    const skipBtn = document.getElementById("tutorial-skip-btn");
+    if (skipBtn) {
+      this.skipHandler = () => {
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showInfo("훈련을 건너뛰고 성에 진입합니다.");
+        }
+        this.completeTutorial();
+      };
+      skipBtn.addEventListener("click", this.skipHandler);
+    }
+  },
+
+  completeTutorial: function() {
+    // 튜토리얼 완료 플래그 활성화
+    GameState.tutorialCompleted = true;
+    EventBus.publish("stateChange:game", GameState);
+
+    if (typeof StateStore !== "undefined") {
+      StateStore.saveToLocalStorage();
+    }
+
+    // 첫 스테이지 스토리로 전환
+    SceneManager.showScene("story", { stageId: GameState.currentStage });
+  },
+
+  exit: function() {
+    console.log("[TutorialScene] 이탈");
+    const skipBtn = document.getElementById("tutorial-skip-btn");
+    if (skipBtn && this.skipHandler) {
+      skipBtn.removeEventListener("click", this.skipHandler);
+    }
+    const boardContainer = document.getElementById("tutorial-board-container");
+    if (boardContainer) {
+      boardContainer.innerHTML = "";
+    }
+  }
+};
+
+// 씬 등록
+SceneManager.register("tutorial", TutorialScene);
+</script>

@@ -8,7 +8,8 @@ const EndingScene = {
     
     // 소요시간 및 최종 점수 연산
     const playTimeSec = Math.round((new Date(GameState.endTime) - new Date(GameState.startTime)) / 1000);
-    const score = Math.max(0, 100 - (PuzzleState.wrongCount * 5));
+    const penalty = (PuzzleState.hintPenalty || 0);
+    const score = Math.max(0, 100 - (PuzzleState.wrongCount * 5) - penalty);
     PuzzleState.score = score;
     EventBus.publish("stateChange:puzzle", PuzzleState);
     
@@ -53,14 +54,26 @@ const EndingScene = {
         ResultRepository.saveResult(
           payload,
           function(response) {
-            alert(response.message || "성공적으로 저장되었습니다.");
+            if (typeof FeedbackSystem !== "undefined") {
+              FeedbackSystem.showSuccess(response.message || "성공적으로 저장되었습니다.");
+            } else {
+              alert(response.message || "성공적으로 저장되었습니다.");
+            }
+            
             if (typeof StateStore !== "undefined") {
               StateStore.clearStorage();
             }
-            SceneManager.showScene("ranking");
+            
+            setTimeout(function() {
+              SceneManager.showScene("ranking");
+            }, 2000);
           },
           function(err) {
-            alert("저장 실패: " + err.message + "\n인터넷 연결 상태를 확인 후 다시 시도해 주세요.");
+            if (typeof FeedbackSystem !== "undefined") {
+              FeedbackSystem.showError("저장 실패: " + err.message + "\n다시 시도해 주세요.");
+            } else {
+              alert("저장 실패: " + err.message);
+            }
             submitBtn.disabled = false;
             submitBtn.innerText = "다시 기록 제출하기";
           }

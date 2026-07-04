@@ -1,0 +1,259 @@
+<style>
+/* ============================================================
+   FeedbackSystem.html Style
+   SUCCESS, ERROR, WARNING, INFO 피드백 메시지 바 및 NPC 힌트창
+   ============================================================ */
+
+/* 피드백 바 */
+.feedback-bar {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%) translateY(30px);
+  bottom: 20px;
+  width: 90%;
+  max-width: 500px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  z-index: 999;
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.feedback-bar.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 피드백 상태별 색상 */
+.feedback-bar.success {
+  background: rgba(46, 204, 113, 0.95);
+  border: 1px solid #2ecc71;
+  box-shadow: 0 4px 20px rgba(46, 204, 113, 0.4);
+}
+
+.feedback-bar.error {
+  background: rgba(231, 76, 60, 0.95);
+  border: 1px solid #e74c3c;
+  box-shadow: 0 4px 20px rgba(231, 76, 60, 0.4);
+  animation: shakeFeedback 0.4s ease-in-out;
+}
+
+.feedback-bar.warning {
+  background: rgba(241, 196, 15, 0.95);
+  border: 1px solid #f1c40f;
+  color: #0b131f;
+  box-shadow: 0 4px 20px rgba(241, 196, 15, 0.4);
+}
+
+.feedback-bar.info {
+  background: rgba(52, 152, 219, 0.95);
+  border: 1px solid #3498db;
+  box-shadow: 0 4px 20px rgba(52, 152, 219, 0.4);
+}
+
+/* 흔들림 효과 */
+@keyframes shakeFeedback {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  20%, 60% { transform: translateX(-52%) translateY(0); }
+  40%, 80% { transform: translateX(-48%) translateY(0); }
+}
+
+/* NPC 힌트 다이얼로그 모달 */
+.npc-hint-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 10, 18, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  border-radius: 20px;
+}
+
+.npc-hint-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.npc-hint-box {
+  background: rgba(13, 27, 42, 0.95);
+  border: 2px solid var(--gold-primary);
+  border-radius: 16px;
+  width: 85%;
+  max-width: 400px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 20px var(--gold-glow);
+  transform: scale(0.85);
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.npc-hint-overlay.show .npc-hint-box {
+  transform: scale(1);
+}
+
+.npc-avatar-area {
+  font-size: 3rem;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 0 8px var(--gold-primary));
+}
+
+.npc-name-label {
+  font-size: 0.9rem;
+  color: var(--gold-primary);
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.npc-message-text {
+  font-size: 0.95rem;
+  color: var(--text-light);
+  line-height: 1.6;
+  margin-bottom: 20px;
+  white-space: pre-line;
+}
+</style>
+
+<script>
+/* ============================================================
+   FeedbackSystem.html Logic
+   ============================================================ */
+const FeedbackSystem = (function() {
+  "use strict";
+
+  let _barEl = null;
+  let _hintOverlayEl = null;
+  let _hideTimer = null;
+
+  // DOM 요소 준비 및 주입
+  function _ensureElements() {
+    const container = document.getElementById("game-container");
+    if (!container) return;
+
+    // 1. 피드백 바 주입
+    if (!document.getElementById("global-feedback-bar")) {
+      _barEl = document.createElement("div");
+      _barEl.id = "global-feedback-bar";
+      _barEl.className = "feedback-bar";
+      container.appendChild(_barEl);
+    } else {
+      _barEl = document.getElementById("global-feedback-bar");
+    }
+
+    // 2. 힌트 오버레이 주입
+    if (!document.getElementById("global-npc-hint-overlay")) {
+      _hintOverlayEl = document.createElement("div");
+      _hintOverlayEl.id = "global-npc-hint-overlay";
+      _hintOverlayEl.className = "npc-hint-overlay";
+      _hintOverlayEl.innerHTML = [
+        '<div class="npc-hint-box">',
+          '<div class="npc-avatar-area" id="npc-avatar">🔮</div>',
+          '<div class="npc-name-label" id="npc-name">마도사</div>',
+          '<div class="npc-message-text" id="npc-message">정말 모르겠나?</div>',
+          '<button class="btn" id="npc-close-btn" style="padding: 10px 20px; font-size: 0.9rem;">이해했다</button>',
+        '</div>'
+      ].join("");
+      container.appendChild(_hintOverlayEl);
+
+      const closeBtn = _hintOverlayEl.querySelector("#npc-close-btn");
+      if (closeBtn) {
+        closeBtn.addEventListener("click", function() {
+          _hintOverlayEl.classList.remove("show");
+        });
+      }
+    } else {
+      _hintOverlayEl = document.getElementById("global-npc-hint-overlay");
+    }
+  }
+
+  // 메시지 바 띄우기 공통
+  function _showBar(type, message, duration) {
+    _ensureElements();
+    if (!_barEl) return;
+
+    // 타이머 리셋
+    if (_hideTimer) clearTimeout(_hideTimer);
+
+    // 클래스 설정
+    _barEl.className = "feedback-bar " + type;
+    
+    // 아이콘 세팅
+    let icon = "💡";
+    if (type === "success") icon = "✓";
+    if (type === "error") icon = "✗";
+    if (type === "warning") icon = "⚠️";
+
+    _barEl.innerHTML = `<span style="font-size: 1.1rem; font-weight: bold;">${icon}</span> <span>${message}</span>`;
+    
+    // 강제 리플로우 (오답 진동 애니메이션 재실행용)
+    _barEl.style.animation = "none";
+    _barEl.offsetHeight; // reflow
+    if (type === "error") {
+      _barEl.style.animation = "shakeFeedback 0.4s ease-in-out";
+    }
+
+    // 띄우기
+    _barEl.classList.add("show");
+
+    // 시간 후 닫기
+    _hideTimer = setTimeout(function() {
+      _barEl.classList.remove("show");
+    }, duration || 2500);
+  }
+
+  return {
+    showSuccess: function(message, duration) {
+      _showBar("success", message, duration || 2500);
+    },
+    showError: function(message, duration) {
+      _showBar("error", message, duration || 2500);
+    },
+    showWarning: function(message, duration) {
+      _showBar("warning", message, duration || 2500);
+    },
+    showInfo: function(message, duration) {
+      _showBar("info", message, duration || 3000);
+    },
+    
+    // NPC 힌트 모달
+    showHint: function(npcName, message) {
+      _ensureElements();
+      if (!_hintOverlayEl) return;
+
+      const avatarEl  = _hintOverlayEl.querySelector("#npc-avatar");
+      const nameEl    = _hintOverlayEl.querySelector("#npc-name");
+      const messageEl = _hintOverlayEl.querySelector("#npc-message");
+
+      if (nameEl) nameEl.textContent = npcName;
+      if (messageEl) messageEl.textContent = message;
+
+      // NPC 프로필 아이콘 매칭
+      if (avatarEl) {
+        if (npcName === "숲의 정령") avatarEl.textContent = "🌲";
+        else if (npcName === "신전 수호자") avatarEl.textContent = "🏛️";
+        else if (npcName === "빛의 현자") avatarEl.textContent = "✨";
+        else if (npcName === "제단의 영혼") avatarEl.textContent = "🔥";
+        else avatarEl.textContent = "🔮";
+      }
+
+      _hintOverlayEl.classList.add("show");
+    }
+  };
+})();
+</script>

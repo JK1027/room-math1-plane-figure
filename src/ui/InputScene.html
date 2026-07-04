@@ -18,11 +18,19 @@ const InputScene = {
         
         // 정규식: 학번 4~5자리 숫자 (예: 1011 또는 10101)
         if (!/^\d{4,5}$/.test(studentNo)) {
-          alert("학번은 4~5자리 숫자로 입력해 주세요. (예: 1011 또는 10101)");
+          if (typeof FeedbackSystem !== "undefined") {
+            FeedbackSystem.showWarning("학번은 4~5자리 숫자로 입력해 주세요. (예: 1011 또는 10101)");
+          } else {
+            alert("학번은 4~5자리 숫자로 입력해 주세요. (예: 1011 또는 10101)");
+          }
           return;
         }
         if (!name) {
-          alert("이름을 입력해 주세요.");
+          if (typeof FeedbackSystem !== "undefined") {
+            FeedbackSystem.showWarning("이름을 입력해 주세요.");
+          } else {
+            alert("이름을 입력해 주세요.");
+          }
           return;
         }
         
@@ -44,8 +52,12 @@ const InputScene = {
           StateStore.saveToLocalStorage();
         }
         
-        // 다음 스토리 씬으로 전환
-        SceneManager.showScene("story", { stageId: GameState.currentStage });
+        // 튜토리얼 완료 여부에 따라 다음 씬 결정
+        if (GameState.tutorialCompleted) {
+          SceneManager.showScene("story", { stageId: GameState.currentStage });
+        } else {
+          SceneManager.showScene("tutorial");
+        }
       };
       
       const form = document.getElementById("input-form");

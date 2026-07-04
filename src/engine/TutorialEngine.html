@@ -1,0 +1,160 @@
+<script>
+/* ============================================================
+   TutorialEngine.html
+   튜토리얼 진행 로직 제어.
+   ============================================================ */
+const TutorialEngine = (function() {
+  "use strict";
+
+  let _currentStep = 1;
+  let _onComplete = null;
+  let _container = null;
+
+  function _renderStep() {
+    if (!_container) return;
+
+    if (_currentStep === 1) {
+      // Step 1: 대사 상자 클릭 연습
+      _container.innerHTML = [
+        '<div class="card" style="padding: 30px 20px;">',
+          '<h3 style="color: var(--gold-primary); margin-bottom: 15px; font-size: 1.2rem;">마도사의 시뮬레이터: 기초 훈련</h3>',
+          '<p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">이곳은 차원 이동 훈련소입니다. 아래 대사창을 탭하여 마도사의 메시지를 읽으세요.</p>',
+          '<div id="t-story-box" class="story-box" style="min-height: 120px; border-color: var(--gold-hover); padding: 20px;">',
+            '<div id="t-story-text" class="dialog-text" style="font-size: 1rem;">"어리석은 모험가여... 성에 들어오기 전 내 마법 기구들의 사용법을 익히거라."</div>',
+            '<div class="tap-indicator" style="font-size: 0.75rem;">▼ 탭하여 다음 대사</div>',
+          '</div>',
+        '</div>'
+      ].join("");
+
+      const box = _container.querySelector("#t-story-box");
+      const text = _container.querySelector("#t-story-text");
+      let subStep = 0;
+
+      if (box && text) {
+        box.addEventListener("click", function() {
+          if (subStep === 0) {
+            text.textContent = '"잘했다. 대사 상자를 터치하면 다음 이야기로 진행할 수 있지."';
+            subStep = 1;
+          } else if (subStep === 1) {
+            text.textContent = '"이제 다음 기구(카드 배치) 훈련으로 넘어가자. 탭하여 계속."';
+            subStep = 2;
+          } else {
+            _currentStep = 2;
+            _renderStep();
+          }
+        });
+      }
+    } else if (_currentStep === 2) {
+      // Step 2: 카드 배치 연습
+      _container.innerHTML = [
+        '<div class="card" style="padding: 30px 20px; user-select: none;">',
+          '<h3 style="color: var(--gold-primary); margin-bottom: 15px; font-size: 1.2rem;">기초 훈련: 각도 카드 배치</h3>',
+          '<p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">아래 [90°] 카드를 터치하여 선택한 뒤, 점선 빈칸을 터치하여 채워 넣으세요.</p>',
+          
+          '<!-- 더미 보드판 -->',
+          '<div style="position: relative; width: 220px; height: 100px; margin: 0 auto 15px; background: rgba(0,0,0,0.4); border: 1px dashed var(--gold-primary); border-radius: 8px;">',
+            '<div id="t-drop-zone" style="position: absolute; top: 35px; left: 80px; width: 60px; height: 30px; border: 2px dashed var(--gold-primary); border-radius: 4px; color: #a5a5a5; font-size: 0.8rem; text-align: center; line-height: 26px; cursor: pointer;">?</div>',
+          '</div>',
+
+          '<!-- 더미 선택 카드 -->',
+          '<div style="display: flex; justify-content: center; gap: 15px; margin-bottom: 10px;">',
+            '<div id="t-card" style="width: 60px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">90°</div>',
+          '</div>',
+          '<div id="t-feedback" style="font-size: 0.8rem; height: 16px; color: #ff4757; font-weight: bold;"></div>',
+        '</div>'
+      ].join("");
+
+      const card = _container.querySelector("#t-card");
+      const zone = _container.querySelector("#t-drop-zone");
+      const feedback = _container.querySelector("#t-feedback");
+      let cardSelected = false;
+
+      if (card && zone) {
+        card.addEventListener("click", function() {
+          cardSelected = true;
+          card.style.borderColor = "#ff4757";
+          card.style.background = "rgba(255, 71, 87, 0.2)";
+          if (feedback) feedback.textContent = "";
+        });
+
+        zone.addEventListener("click", function() {
+          if (!cardSelected) {
+            if (feedback) feedback.textContent = "먼저 아래 [90°] 카드를 선택하세요!";
+            return;
+          }
+          zone.innerText = "90°";
+          zone.style.background = "rgba(212,175,55,0.25)";
+          zone.style.borderColor = "var(--gold-primary)";
+          zone.style.color = "#fff";
+          zone.style.borderStyle = "solid";
+
+          if (typeof FeedbackSystem !== "undefined") {
+            FeedbackSystem.showSuccess("좋아! 카드 배치를 완벽히 터득했다.");
+          }
+
+          setTimeout(function() {
+            _currentStep = 3;
+            _renderStep();
+          }, 1200);
+        });
+      }
+    } else if (_currentStep === 3) {
+      // Step 3: 각도 입력 연습
+      _container.innerHTML = [
+        '<div class="card" style="padding: 30px 20px;">',
+          '<h3 style="color: var(--gold-primary); margin-bottom: 12px; font-size: 1.2rem;">기초 훈련: 각도 계산 입력</h3>',
+          '<p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;">마지막 훈련이다. 30°와 맞꼭지각인 각도를 아래 입력창에 넣고 입력 버튼을 누르세요.</p>',
+          '<p style="color: var(--gold-light); font-size: 0.8rem; font-weight: bold; margin-bottom: 15px;">문제: 맞꼭지각의 크기는 서로 [  ]다.</p>',
+
+          '<div style="margin-bottom: 15px;">',
+            '<input type="number" id="t-input" placeholder="정답 각도" style="width: 100px; padding: 9px; text-align: center; font-size: 0.95rem; border: 1px solid var(--gold-primary); border-radius: 4px; background: rgba(0,0,0,0.5); color: #fff; outline:none; vertical-align: middle;">',
+            '<button id="t-submit" class="btn" style="width: 70px; padding: 10px; display: inline-block; vertical-align: middle; margin-left: 10px; font-size: 0.85rem;">입력</button>',
+          '</div>',
+          '<div id="t-feedback-3" style="font-size: 0.8rem; height: 16px; color: #ff4757; font-weight: bold;"></div>',
+        '</div>'
+      ].join("");
+
+      const input = _container.querySelector("#t-input");
+      const submit = _container.querySelector("#t-submit");
+      const feedback = _container.querySelector("#t-feedback-3");
+
+      if (submit && input) {
+        submit.addEventListener("click", function() {
+          const val = parseInt(input.value);
+          if (val === 30) {
+            input.disabled = true;
+            submit.disabled = true;
+            if (feedback) {
+              feedback.style.color = "#2ecc71";
+              feedback.textContent = "완벽합니다! 모든 기초 훈련을 수료했습니다.";
+            }
+            if (typeof FeedbackSystem !== "undefined") {
+              FeedbackSystem.showSuccess("훈련 완료! 기하의 성으로 향합니다.");
+            }
+
+            setTimeout(function() {
+              if (typeof _onComplete === "function") {
+                _onComplete();
+              }
+            }, 1500);
+          } else {
+            if (feedback) feedback.textContent = "오답입니다! 맞꼭지각은 서로 크기가 같습니다. (힌트: 30)";
+            if (typeof FeedbackSystem !== "undefined") {
+              FeedbackSystem.showError("틀렸습니다! 다시 생각해 보세요.");
+            }
+          }
+        });
+      }
+    }
+  }
+
+  return {
+    start: function(containerId, onCompleteCallback) {
+      _container = document.getElementById(containerId);
+      _onComplete = onCompleteCallback;
+      _currentStep = 1;
+      _renderStep();
+    }
+  };
+})();
+</script>

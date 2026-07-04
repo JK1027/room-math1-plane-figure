@@ -37,6 +37,8 @@ const StoryScene = {
     if (clickArea && this.clickHandler) {
       clickArea.removeEventListener("click", this.clickHandler);
     }
+    const choices = document.getElementById("story-choices-container");
+    if (choices) choices.remove();
   }
 };
 

@@ -1,0 +1,132 @@
+<script>
+/**
+ * ============================================================
+ * QuestionEngine.html
+ * 미래 교육 단원 확장을 위한 범용 퍼즐 추상화 엔진.
+ * ============================================================
+ */
+
+// 퍼즐 타입 정의
+const PuzzleType = {
+  INPUT: "INPUT",               // 1, 5스테이지: 값 직접 입력 방식
+  DRAG_MATCH: "DRAG_MATCH",     // 2, 4스테이지: 카드를 빈 드롭존에 매칭
+  CONSTRUCTION: "CONSTRUCTION", // 3스테이지: 마우스 드래그 보조선 그리기 등 조작형
+  MULTI_CHOICE: "MULTI_CHOICE", // (미래) 객관식 다지선다
+  ORDERING: "ORDERING"          // (미래) 순서 맞추기
+};
+
+/**
+ * 모든 퍼즐 엔진의 부모 추상 클래스
+ */
+class QuestionEngineBase extends PuzzleBase {
+  constructor(containerId, config) {
+    super(containerId);
+    this.config = config || {};
+    this.type = this.config.type || PuzzleType.INPUT;
+    this.questionText = this.config.questionText || "문제를 해결하세요.";
+    this.hints = this.config.hints || [];
+    this.onClearCallback = null;
+  }
+
+  // 힌트 호출 공통 인터페이스
+  showHint(step) {
+    const hintMsg = this.hints[step - 1] || "스스로 생각할 시간입니다.";
+    if (typeof FeedbackSystem !== "undefined") {
+      FeedbackSystem.showHint(this.config.npcName || "마도사", hintMsg);
+    } else {
+      alert(hintMsg);
+    }
+  }
+
+  // 정답 처리 공통 오버라이딩
+  triggerSuccess(successMessage) {
+    if (typeof FeedbackSystem !== "undefined") {
+      FeedbackSystem.showSuccess(successMessage || "성공적으로 복원되었습니다!");
+    }
+    
+    // AnimationManager에 정답 마법진 연출 전달
+    const wrapper = this.container.firstElementChild;
+    if (typeof AnimationManager !== "undefined" && wrapper) {
+      AnimationManager.playSolved(wrapper);
+    }
+
+    setTimeout(() => {
+      if (this.onClearCallback) {
+        this.onClearCallback();
+      }
+    }, 1400);
+  }
+
+  // 오답 처리 공통 인터페이스
+  triggerFailure(errorMessage) {
+    if (typeof FeedbackSystem !== "undefined") {
+      FeedbackSystem.showError(errorMessage || "오답입니다. 다시 한번 분석해 보세요.");
+    }
+    
+    if (typeof PuzzleState !== "undefined") {
+      PuzzleState.wrongCount += 1;
+      EventBus.publish("stateChange:puzzle", PuzzleState);
+    }
+  }
+}
+
+/**
+ * 1. 입력형 퍼즐 표준 엔진 (Stage1, 5 연계 확장용)
+ */
+class GenericInputPuzzle extends QuestionEngineBase {
+  constructor(containerId, config) {
+    super(containerId, config);
+    this.targetAnswer = config.targetAnswer;
+    this.userInput = "";
+  }
+
+  init() {
+    this.container.innerHTML = `
+      <div class="engine-puzzle-wrap" style="text-align: center; width: 100%; padding: 15px;">
+        <p style="color: var(--gold-primary); margin-bottom: 12px; font-size: 0.9rem;">${this.questionText}</p>
+        
+        <!-- 커스텀 SVG 드로잉 영역 -->
+        <div id="engine-svg-container" style="margin-bottom: 15px;"></div>
+        
+        <!-- 입력 패널 -->
+        <div style="display: flex; justify-content: center; align-items: center; gap: 8px;">
+          <input type="number" id="engine-input" placeholder="답안 입력" style="width: 100px; padding: 8px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none;">
+          <button id="engine-submit" class="btn" style="width: 70px; padding: 9px; font-size: 0.85rem; margin:0;">확인</button>
+        </div>
+      </div>
+    `;
+
+    // 커스텀 SVG 주입
+    if (typeof this.config.renderSvgFn === "function") {
+      this.config.renderSvgFn(document.getElementById("engine-svg-container"));
+    }
+
+    this.input = document.getElementById("engine-input");
+    this.submitBtn = document.getElementById("engine-submit");
+  }
+
+  bindEvents() {
+    if (this.input) {
+      this.input.addEventListener("input", (e) => {
+        this.userInput = e.target.value;
+      });
+    }
+
+    if (this.submitBtn) {
+      this.submitBtn.addEventListener("click", () => {
+        if (parseInt(this.userInput) === this.targetAnswer) {
+          this.input.disabled = true;
+          this.submitBtn.disabled = true;
+          this.triggerSuccess(this.config.successMsg);
+        } else {
+          this.triggerFailure(this.config.failMsg);
+        }
+      });
+    }
+  }
+
+  checkAnswer() {
+    return parseInt(this.userInput) === this.targetAnswer;
+  }
+}
+</script>

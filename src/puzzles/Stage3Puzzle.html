@@ -1,131 +1,224 @@
 <script>
 /**
- * 3스테이지 평행선 성질 레이저 프리즘 굴절 퍼즐 클래스.
+ * 3스테이지 평행선 성질 레이저 프리즘 퍼즐 클래스.
+ * 꺾임점 드래그 보조선 생성 시스템, 확인 입력방식 적용.
  */
 class Stage3Puzzle extends PuzzleBase {
   constructor(containerId) {
     super(containerId);
-    this.targetAngle = 75;
-    this.currentAngle = 45;
-    this.sliderHandler = null;
+    this.targetAngle = 75; // 45 + 30 = 75
+    this.userInput = "";
+    this.hasGuideLine = false; // 보조선 생성 여부
+    
+    // 드래그 조작 관련 변수
+    this.isDragging = false;
+    this.startX = 0;
+    
+    this.inputHandler = null;
+    this.submitHandler = null;
+    
+    this.dragStartHandler = null;
+    this.dragMoveHandler = null;
+    this.dragEndHandler = null;
+    
     this.onClearCallback = null;
   }
 
   init() {
     this.container.innerHTML = `
-      <div style="text-align: center; width: 100%; padding: 15px;">
-        <p style="color: #d4af37; margin-bottom: 10px; font-size: 0.9rem;">평행선 사이에 가상 보조선을 그어 각도를 유추하고 거울 각도를 맞추세요.</p>
+      <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
+        <p style="color: var(--gold-primary); margin-bottom: 10px; font-size: 0.9rem;">
+          꺾임점(★)을 <strong>좌우로 드래그</strong>하여 보조선을 그리고, 거울의 반사각(x)을 계산하세요.
+        </p>
         
-        <div style="position: relative; display: inline-block;">
-          <svg id="stage3-svg" width="260" height="200" style="background:#0b131f; border: 1.5px solid #d4af37; border-radius: 8px;">
+        <div style="position: relative; display: inline-block; margin-bottom: 10px;">
+          <svg id="stage3-svg" width="260" height="200" style="background:#0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow); cursor: crosshair;">
             <!-- 좌측 평행 기둥 -->
             <line x1="40" y1="20" x2="40" y2="180" stroke="#a5a5a5" stroke-width="4" stroke-dasharray="3" />
             <!-- 우측 평행 기둥 -->
             <line x1="220" y1="20" x2="220" y2="180" stroke="#a5a5a5" stroke-width="4" stroke-dasharray="3" />
             
-            <!-- 보조 가이드 평행선 -->
-            <line x1="40" y1="100" x2="220" y2="100" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" stroke-dasharray="4" />
+            <!-- 보조 가이드 평행선 (드래그 시 등장) -->
+            <line id="stage3-guide-line" x1="40" y1="100" x2="220" y2="100" stroke="#2ecc71" stroke-width="2" stroke-dasharray="3" style="opacity: 0; transition: opacity 0.4s ease;" />
             
             <!-- 레이저 발사대 및 수신 보석 -->
-            <circle cx="40" cy="40" r="8" fill="#a5a5a5" />
-            <polygon points="220,150 228,158 220,166 212,158" fill="#00d2d3" />
+            <circle cx="40" cy="40" r="8" fill="var(--gold-primary)" />
+            <polygon points="220,150 228,158 220,166 212,158" fill="#00d2d3" id="stage3-target-gem" />
             
             <!-- 꺾임점의 조작 거울 -->
-            <line id="stage3-mirror" x1="120" y1="100" x2="140" y2="100" stroke="#d4af37" stroke-width="5" stroke-linecap="round" />
-            <circle cx="130" cy="100" r="4" fill="#d4af37" />
+            <line id="stage3-mirror" x1="120" y1="100" x2="140" y2="100" stroke="var(--gold-primary)" stroke-width="5" stroke-linecap="round" />
+            <circle cx="130" cy="100" r="6" fill="#ff4757" style="cursor: pointer;" id="stage3-pivot" />
             
             <!-- 레이저 빔 (성공 경로) -->
-            <polyline id="stage3-laser" points="40,40 130,100 220,160" stroke="#ff4757" stroke-width="2" stroke-dasharray="2" style="display:none;" />
-            <!-- 레이저 빔 (실패 시 반사 연출선) -->
-            <line id="stage3-fail-beam" x1="130" y1="100" x2="220" y2="40" stroke="#ff4757" stroke-width="2" stroke-dasharray="2" />
+            <polyline id="stage3-laser" points="40,40 130,100 220,160" stroke="#ff4757" stroke-width="3.5" stroke-dasharray="2" style="display:none;" />
             
-            <!-- 평행선 사이 엇각 유도 텍스트 -->
-            <text x="50" y="36" fill="#a5a5a5" font-size="10">45°</text>
-            <text x="182" y="146" fill="#a5a5a5" font-size="10">30°</text>
+            <!-- 기본 엇각 정보 텍스트 -->
+            <text x="50" y="36" fill="#fff" font-size="10" font-weight="bold">45°</text>
+            <text x="182" y="146" fill="#fff" font-size="10" font-weight="bold">30°</text>
+            
+            <!-- 보조선 상의 엇각 가이드 텍스트 (보조선 등장 시 노출) -->
+            <g id="stage3-hint-angles" style="opacity: 0; transition: opacity 0.5s ease;">
+              <text x="80" y="93" fill="#2ecc71" font-size="9" font-weight="bold">45°(엇각)</text>
+              <text x="145" y="113" fill="#2ecc71" font-size="9" font-weight="bold">30°(엇각)</text>
+            </g>
           </svg>
         </div>
         
-        <div style="margin-top: 10px;">
-          <input type="range" id="stage3-slider" min="15" max="135" value="45" style="width: 80%; accent-color: #d4af37;">
-          <div style="margin-top: 5px; font-size: 0.9rem; color: #a5a5a5;" id="stage3-angle-info">
-            거울 반사각: 45° | 목표각(A+B): 75°
-          </div>
+        <!-- 입력 확인 영역 -->
+        <div style="margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 8px;">
+          <span style="font-size: 0.95rem; color: #fff;">거울 각도 x = </span>
+          <input type="number" id="stage3-input" placeholder="각도" style="width: 80px; padding: 8px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none;">
+          <span style="font-size: 0.95rem; color: #fff;">°</span>
+          <button id="stage3-submit-btn" class="btn" style="width: 70px; padding: 9px; font-size: 0.85rem; margin: 0;">확인</button>
         </div>
       </div>
     `;
-    this.slider = document.getElementById("stage3-slider");
-    this.mirror = document.getElementById("stage3-mirror");
+    this.input = document.getElementById("stage3-input");
+    this.submitBtn = document.getElementById("stage3-submit-btn");
+    this.guideLine = document.getElementById("stage3-guide-line");
+    this.hintAngles = document.getElementById("stage3-hint-angles");
     this.laser = document.getElementById("stage3-laser");
-    this.failBeam = document.getElementById("stage3-fail-beam");
-    this.angleInfo = document.getElementById("stage3-angle-info");
-    
-    // 초기 렌더링 반영
-    this.render();
+    this.mirror = document.getElementById("stage3-mirror");
+    this.pivot = document.getElementById("stage3-pivot");
+    this.svg = document.getElementById("stage3-svg");
+    this.gem = document.getElementById("stage3-target-gem");
   }
 
   bindEvents() {
-    this.sliderHandler = (e) => {
-      this.currentAngle = parseInt(e.target.value);
-      this.render();
-      
-      if (this.checkAnswer()) {
-        this.slider.disabled = true;
-        if (this.laser) this.laser.style.display = "block";
-        if (this.failBeam) this.failBeam.style.display = "none";
+    // 1. 드래그 이벤트 (보조선 생성)
+    this.dragStartHandler = (e) => {
+      this.isDragging = true;
+      this.startX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+    };
+
+    this.dragMoveHandler = (e) => {
+      if (!this.isDragging || this.hasGuideLine) return;
+      const currentX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+      const diff = Math.abs(currentX - this.startX);
+
+      if (diff > 40) {
+        this.hasGuideLine = true;
+        this.guideLine.style.opacity = "1";
+        this.hintAngles.style.opacity = "1";
         
-        setTimeout(() => {
-          alert("거울 각도가 일치하여 레이저가 수신 보석에 명중했습니다! 문이 열립니다.");
-          if (this.onClearCallback) {
-            this.onClearCallback();
-          } else {
-            const clearBtn = document.getElementById("mock-puzzle-clear-btn");
-            if (clearBtn) clearBtn.click();
-          }
-        }, 500);
-      } else {
-        if (this.laser) this.laser.style.display = "none";
-        if (this.failBeam) this.failBeam.style.display = "block";
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showInfo("평행 보조선이 생성되었습니다! 엇각을 관찰해 보세요.");
+        }
       }
     };
-    if (this.slider) {
-      this.slider.addEventListener("input", this.sliderHandler);
+
+    this.dragEndHandler = () => {
+      this.isDragging = false;
+    };
+
+    // 2. 키보드 입력
+    this.inputHandler = (e) => {
+      this.userInput = e.target.value;
+    };
+
+    // 3. 정답 제출
+    this.submitHandler = () => {
+      if (!this.hasGuideLine) {
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showWarning("꺾임점에 수평선이 그려지지 않았습니다. 꺾임점을 좌우로 드래그하여 평행 보조선을 먼저 만드세요.");
+        }
+        return;
+      }
+
+      const val = parseInt(this.userInput);
+      if (val === this.targetAngle) {
+        this.input.disabled = true;
+        this.submitBtn.disabled = true;
+
+        this.playCorrectAnimation();
+      } else {
+        if (typeof PuzzleState !== "undefined") {
+          PuzzleState.wrongCount += 1;
+          EventBus.publish("stateChange:puzzle", PuzzleState);
+        }
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showError("오답입니다! 보조선 위아래의 두 엇각의 크기를 합산해야 합니다.");
+        }
+      }
+    };
+
+    // SVG 혹은 피벗에 드래그 이벤트 연결
+    if (this.svg) {
+      this.svg.addEventListener("mousedown",  this.dragStartHandler);
+      this.svg.addEventListener("touchstart", this.dragStartHandler, { passive: true });
+
+      this.svg.addEventListener("mousemove",  this.dragMoveHandler);
+      this.svg.addEventListener("touchmove",  this.dragMoveHandler, { passive: true });
+
+      window.addEventListener("mouseup",    this.dragEndHandler);
+      window.addEventListener("touchend",   this.dragEndHandler);
     }
+
+    if (this.input) this.input.addEventListener("input", this.inputHandler);
+    if (this.submitBtn) this.submitBtn.addEventListener("click", this.submitHandler);
   }
 
-  render() {
+  playCorrectAnimation() {
+    // 거울 회전 연출
     if (this.mirror) {
-      this.mirror.setAttribute("transform", `rotate(${this.currentAngle - 45} 130 100)`);
+      this.mirror.setAttribute("transform", `rotate(30 130 100)`);
     }
-    if (this.angleInfo) {
-      this.angleInfo.innerHTML = `거울 반사각: <strong style="color:#d4af37;">${this.currentAngle}°</strong> | 목표각(A+B): <strong>75°</strong>`;
+
+    // 레이저 발사
+    if (this.laser) {
+      this.laser.style.display = "block";
     }
-    if (this.failBeam) {
-      // 각도 변화에 따라 실패 반사 빔의 끝점 좌표 변환 연출
-      const angleRad = (this.currentAngle - 45) * Math.PI / 180;
-      const targetX = 130 + Math.cos(angleRad) * 90;
-      const targetY = 100 + Math.sin(angleRad) * 90;
-      this.failBeam.setAttribute("x2", targetX);
-      this.failBeam.setAttribute("y2", targetY);
+
+    // 보석 파랗게 발광
+    if (this.gem) {
+      this.gem.setAttribute("fill", "#54a0ff");
+      this.gem.style.filter = "drop-shadow(0 0 10px #54a0ff)";
     }
+
+    if (typeof FeedbackSystem !== "undefined") {
+      FeedbackSystem.showSuccess("각도가 완벽히 일치하여 빛의 광선이 수신 보석에 조준되었습니다!");
+    }
+
+    if (typeof AnimationManager !== "undefined" && this.svg) {
+      setTimeout(() => {
+        AnimationManager.playSolved(this.svg.parentNode);
+      }, 400);
+    }
+
+    setTimeout(() => {
+      if (this.onClearCallback) {
+        this.onClearCallback();
+      } else {
+        const clearBtn = document.getElementById("mock-puzzle-clear-btn");
+        if (clearBtn) clearBtn.click();
+      }
+    }, 1500);
   }
 
   checkAnswer() {
-    return Math.abs(this.currentAngle - this.targetAngle) <= 1;
+    return parseInt(this.userInput) === this.targetAngle;
   }
 
   reset() {
-    if (this.slider) {
-      this.slider.disabled = false;
-      this.slider.value = 45;
-      this.currentAngle = 45;
-      this.render();
-    }
+    this.hasGuideLine = false;
+    this.userInput = "";
+    this.init();
+    this.bindEvents();
   }
 
   destroy() {
-    if (this.slider && this.sliderHandler) {
-      this.slider.removeEventListener("input", this.sliderHandler);
+    if (this.svg) {
+      this.svg.removeEventListener("mousedown",  this.dragStartHandler);
+      this.svg.removeEventListener("touchstart", this.dragStartHandler);
+      this.svg.removeEventListener("mousemove",  this.dragMoveHandler);
+      this.svg.removeEventListener("touchmove",  this.dragMoveHandler);
     }
+    window.removeEventListener("mouseup",  this.dragEndHandler);
+    window.removeEventListener("touchend", this.dragEndHandler);
+
+    if (this.input && this.inputHandler) this.input.removeEventListener("input", this.inputHandler);
+    if (this.submitBtn && this.submitHandler) this.submitBtn.removeEventListener("click", this.submitHandler);
+    
     this.container.innerHTML = "";
   }
 }

@@ -1,50 +1,86 @@
 <script>
 /**
  * 5스테이지 종합 문제 (그림자 마도사) 퍼즐 클래스.
+ * SVG 문제도 시각 개선 및 단계별 힌트 시각 가이드(EventBus) 연계.
  */
 class Stage5Puzzle extends PuzzleBase {
   constructor(containerId) {
     super(containerId);
-    this.targetAnswer = 105;
+    this.targetAnswer = 105; // 45 (엇각) + 60 (내각) = 105
     this.userAnswer = "";
+    
     this.inputHandler = null;
     this.submitHandler = null;
+    this.hintSubscription = null;
     this.onClearCallback = null;
   }
 
   init() {
     this.container.innerHTML = `
-      <div style="text-align: center; width: 100%; padding: 15px;">
-        <p style="color: #d4af37; margin-bottom: 10px; font-size: 0.9rem;">마도사의 마지막 장치를 해제하기 위해 기하학 복합 수식의 정답(x)을 입력하세요.</p>
+      <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
+        <p style="color: var(--gold-primary); margin-bottom: 10px; font-size: 0.9rem;">
+          마도사의 마지막 봉인 장치입니다. 기하학 수식의 최종 각도 <strong>x</strong>를 입력하세요.
+        </p>
         
-        <!-- 복합 기하 문제 판넬 (SVG) -->
-        <div style="position: relative; display: inline-block;">
-          <svg id="stage5-svg" width="280" height="180" style="background:#0b131f; border: 1.5px solid #d4af37; border-radius: 8px;">
-            <!-- 평행선 2선 L, M -->
+        <!-- 보드판 (SVG) -->
+        <div style="position: relative; display: inline-block; margin-bottom: 10px;">
+          <svg id="stage5-svg" width="280" height="190" style="background:#0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
+            <!-- 평행선 L, M -->
             <line x1="20" y1="40" x2="260" y2="40" stroke="#a5a5a5" stroke-width="2" />
             <line x1="20" y1="140" x2="260" y2="140" stroke="#a5a5a5" stroke-width="2" />
             
-            <!-- 삼각형 조합선 -->
-            <polygon points="80,140 180,40 180,140" fill="none" stroke="#e0e1dd" stroke-width="2" />
-            <line x1="180" y1="40" x2="230" y2="140" stroke="#ff4757" stroke-width="2" />
+            <!-- 평행 라벨 -->
+            <text x="30" y="25" fill="var(--gold-primary)" font-size="9" font-weight="bold">L // M (평행)</text>
+            <text x="245" y="35" fill="#a5a5a5" font-size="9">L</text>
+            <text x="245" y="135" fill="#a5a5a5" font-size="9">M</text>
             
-            <!-- 수치 라벨 -->
-            <text x="95" y="132" fill="#a5a5a5" font-size="10">45°</text>
-            <text x="186" y="56" fill="#ff4757" font-size="11" font-weight="bold">x</text>
-            <text x="210" y="130" fill="#a5a5a5" font-size="10">60°</text>
+            <!-- 삼각형 ABC 구성선 -->
+            <!-- A: (140, 40), B: (70, 140), C: (200, 140) -->
+            <polygon points="140,40 70,140 200,140" fill="none" stroke="#e0e1dd" stroke-width="2" />
             
-            <!-- 보조선 정보 -->
-            <text x="30" y="25" fill="#d4af37" font-size="9" font-weight="bold">평행 가이드: L // M</text>
+            <!-- 외각선 (AC 연장선) -->
+            <!-- (140,40)에서 (200,140) 방향 벡터: (60,100). 연장하여 (230, 190)까지 그리기 -->
+            <line x1="200" y1="140" x2="230" y2="190" stroke="#ff4757" stroke-width="2" stroke-dasharray="2" />
+            
+            <!-- 기본 고정 각도 표시 -->
+            <!-- 1) A의 왼쪽 각도 (L선과 AB선 사이) = 45° -->
+            <path d="M 115,40 A 25,25 0 0,0 123,58" fill="none" stroke="var(--gold-primary)" stroke-width="1.5" />
+            <text x="95" y="55" fill="#fff" font-size="10" font-weight="bold">45°</text>
+            
+            <!-- 2) C의 내각 (삼각형 내부 우측 각) = 60° -->
+            <path d="M 175,140 A 25,25 0 0,1 188,122" fill="none" stroke="var(--gold-primary)" stroke-width="1.5" />
+            <text x="168" y="132" fill="#fff" font-size="10" font-weight="bold">60°</text>
+            
+            <!-- 3) 외각 x 표시 (M선과 AC연장선 사이) -->
+            <path d="M 215,140 A 20,20 0 0,1 213,162" fill="none" stroke="#ff4757" stroke-width="2" />
+            <text x="222" y="152" fill="#ff4757" font-size="12" font-weight="bold">x</text>
+            
+            <!-- ── 실시간 힌트 가이드 레이어 (기본 display: none) ── -->
+            <!-- 힌트 1단계: B 내각 엇각 표시 -->
+            <g id="h5-step1" style="display: none;">
+              <path d="M 85,140 A 20,20 0 0,0 80,126" fill="none" stroke="#2ecc71" stroke-width="2" />
+              <text x="84" y="130" fill="#2ecc71" font-size="10" font-weight="bold">45°(엇각)</text>
+              <!-- 엇각 점선 가이드 -->
+              <path d="M 125,55 L 85,125" stroke="#2ecc71" stroke-width="1.5" stroke-dasharray="2" fill="none" />
+            </g>
+            
+            <!-- 힌트 2단계: 외각 공식 가이드 -->
+            <g id="h5-step2" style="display: none;">
+              <rect x="50" y="85" width="180" height="22" rx="4" fill="rgba(13,27,42,0.95)" stroke="var(--gold-primary)" stroke-width="1" />
+              <text x="140" y="100" fill="var(--gold-light)" font-size="9" text-anchor="middle" font-weight="bold">외각 x = 이웃하지 않는 두 내각의 합</text>
+            </g>
           </svg>
         </div>
         
-        <!-- 정답 입력부 -->
-        <div style="margin-top: 15px;">
-          <input type="number" id="stage5-input" placeholder="x의 각도 입력" style="width: 120px; padding: 9px; text-align: center; font-size: 1rem; border: 1px solid #d4af37; border-radius: 4px; background: rgba(0,0,0,0.5); color: #fff; outline:none; vertical-align: middle;">
+        <!-- 힌트 3단계 안내선 박스 -->
+        <div id="h5-step3-text" style="font-size: 0.85rem; color: #2ecc71; font-weight: bold; margin-bottom: 8px; display: none;">
+          힌트 공식: x = 45° + 60°
+        </div>
+        
+        <!-- 입력창 영역 -->
+        <div style="margin-top: 10px;">
+          <input type="number" id="stage5-input" placeholder="x의 각도" style="width: 120px; padding: 9px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none; vertical-align: middle;">
           <button id="stage5-submit-btn" class="btn" style="width: 80px; padding: 10px; display: inline-block; vertical-align: middle; margin-left: 10px; font-size: 0.9rem;">입력</button>
-          <div style="font-size:0.75rem; color:#a5a5a5; margin-top:8px;">
-            (힌트: 평행선의 동위각/엇각의 성질과 삼각형 한 외각의 성질을 결합하세요)
-          </div>
         </div>
       </div>
     `;
@@ -61,19 +97,31 @@ class Stage5Puzzle extends PuzzleBase {
       if (this.checkAnswer()) {
         this.input.disabled = true;
         this.submitBtn.disabled = true;
+        
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showSuccess("성공! 기하학의 모든 봉인을 해제해 냈습니다!");
+        }
+
+        const svg = document.getElementById("stage5-svg");
+        if (typeof AnimationManager !== "undefined" && svg) {
+          setTimeout(() => {
+            AnimationManager.playSolved(svg.parentNode);
+          }, 300);
+        }
+
         setTimeout(() => {
-          alert("콰콰콰콰광! 그림자 마도사의 암호가 풀리며 성이 무너지고 출구가 나타났습니다.");
           if (this.onClearCallback) {
             this.onClearCallback();
           } else {
             const clearBtn = document.getElementById("mock-puzzle-clear-btn");
             if (clearBtn) clearBtn.click();
           }
-        }, 300);
+        }, 1400);
       } else {
-        alert("마도사의 그림자 파동이 울립니다...\n\"어리석구나, 오답이다!\"");
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showError("마도사의 그림자 장치가 요동칩니다!\n\"어림없는 계산이다, 오답이다!\"");
+        }
         
-        // 오답 카운트 기록 갱신 트리거
         if (typeof PuzzleState !== "undefined") {
           PuzzleState.wrongCount += 1;
           EventBus.publish("stateChange:puzzle", PuzzleState);
@@ -83,6 +131,29 @@ class Stage5Puzzle extends PuzzleBase {
     
     if (this.input) this.input.addEventListener("input", this.inputHandler);
     if (this.submitBtn) this.submitBtn.addEventListener("click", this.submitHandler);
+
+    // 힌트 수신 이벤트 구독 (실시간 SVG 가이드 반영)
+    if (typeof EventBus !== "undefined") {
+      this.hintSubscription = (step) => {
+        this.showSvgHint(step);
+      };
+      EventBus.subscribe("puzzle:showHint", this.hintSubscription);
+      
+      // 이미 힌트를 쓴 채 새로고침 복구된 경우 대응
+      if (typeof PuzzleState !== "undefined" && PuzzleState.hintCount > 0) {
+        this.showSvgHint(PuzzleState.hintCount);
+      }
+    }
+  }
+
+  showSvgHint(step) {
+    const s1 = document.getElementById("h5-step1");
+    const s2 = document.getElementById("h5-step2");
+    const s3 = document.getElementById("h5-step3-text");
+    
+    if (step >= 1 && s1) s1.style.display = "block";
+    if (step >= 2 && s2) s2.style.display = "block";
+    if (step >= 3 && s3) s3.style.display = "block";
   }
 
   checkAnswer() {
@@ -96,14 +167,21 @@ class Stage5Puzzle extends PuzzleBase {
     }
     if (this.submitBtn) this.submitBtn.disabled = false;
     this.userAnswer = "";
+    
+    // 힌트 엘리먼트 가리기
+    const s1 = document.getElementById("h5-step1");
+    const s2 = document.getElementById("h5-step2");
+    const s3 = document.getElementById("h5-step3-text");
+    if (s1) s1.style.display = "none";
+    if (s2) s2.style.display = "none";
+    if (s3) s3.style.display = "none";
   }
 
   destroy() {
-    if (this.input && this.inputHandler) {
-      this.input.removeEventListener("input", this.inputHandler);
-    }
-    if (this.submitBtn && this.submitHandler) {
-      this.submitBtn.removeEventListener("click", this.submitHandler);
+    if (this.input && this.inputHandler) this.input.removeEventListener("input", this.inputHandler);
+    if (this.submitBtn && this.submitHandler) this.submitBtn.removeEventListener("click", this.submitHandler);
+    if (typeof EventBus !== "undefined" && this.hintSubscription) {
+      EventBus.unsubscribe("puzzle:showHint", this.hintSubscription);
     }
     this.container.innerHTML = "";
   }

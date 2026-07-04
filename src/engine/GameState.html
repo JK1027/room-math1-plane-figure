@@ -14,14 +14,16 @@ const GameState = {
   startTime: null,
   endTime: null,
   cleared: false,
-  gameVersion: "1.0.0"
+  gameVersion: "1.0.0",
+  tutorialCompleted: false
 };
 
 const PuzzleState = {
   correctCount: 0,
   wrongCount: 0,
   hintCount: 0,
-  score: 0
+  score: 0,
+  hintPenalty: 0
 };
 
 const UiState = {

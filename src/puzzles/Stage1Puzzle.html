@@ -1,100 +1,197 @@
 <script>
 /**
- * 1스테이지 맞꼭지각 회전 퍼즐 클래스.
+ * 1스테이지 맞꼭지각 하이브리드 퍼즐 클래스.
+ * 조작(슬라이더) + 계산(입력창) + 검증(확인버튼) + 애니메이션 연계.
  */
 class Stage1Puzzle extends PuzzleBase {
   constructor(containerId) {
     super(containerId);
-    this.targetAngle = 135;
+    this.targetAngle = 135; // 슬라이더 목표값
+    this.targetInput = 45;  // 입력창 목표값 (180 - 135 = 45)
     this.currentAngle = 90;
+    this.userInput = "";
+    
     this.sliderHandler = null;
+    this.inputHandler = null;
+    this.submitHandler = null;
     this.onClearCallback = null;
   }
 
   init() {
     this.container.innerHTML = `
-      <div style="text-align: center; width: 100%; padding: 15px;">
-        <p style="color: #d4af37; margin-bottom: 15px; font-size: 0.9rem;">마주 보는 두 각(맞꼭지각)이 완벽히 일치하도록 회전 다이얼을 꺾으세요.</p>
-        <div style="position: relative; display: inline-block;">
-          <svg id="stage1-svg" width="220" height="220" style="background:#0b131f; border-radius: 50%; border: 2px solid #d4af37; box-shadow: 0 0 15px rgba(212,175,55,0.2);">
-            <!-- 고정선 -->
+      <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
+        <p style="color: var(--gold-primary); margin-bottom: 12px; font-size: 0.9rem;">
+          빛의 다이얼을 돌려 각도를 맞추고, 마주 보는 <strong>맞꼭지각(x)</strong>을 계산해 봉인을 해제하세요.
+        </p>
+        
+        <!-- SVG 교차 도판 -->
+        <div style="position: relative; display: inline-block; margin-bottom: 10px;">
+          <svg id="stage1-svg" width="220" height="220" style="background:#0b131f; border-radius: 50%; border: 2px solid var(--gold-primary); box-shadow: 0 0 15px var(--gold-glow);">
+            <!-- 빛의 호 (정답 시 노출할 맞꼭지각 호 2개) -->
+            <path id="stage1-arc-top" d="M 110,75 A 35,35 0 0,1 135,85" fill="none" stroke="rgba(212,175,55,0)" stroke-width="3" style="transition: stroke 0.5s ease;" />
+            <path id="stage1-arc-bottom" d="M 110,145 A 35,35 0 0,1 85,135" fill="none" stroke="rgba(212,175,55,0)" stroke-width="3" style="transition: stroke 0.5s ease;" />
+            
+            <!-- 고정선 (수평 L) -->
             <line x1="20" y1="110" x2="200" y2="110" stroke="#a5a5a5" stroke-width="4" stroke-linecap="round" />
-            <!-- 고정 맞꼭지 대칭 안내선 (45도 기울어짐) -->
-            <line x1="46" y1="46" x2="174" y2="174" stroke="rgba(212,175,55,0.2)" stroke-width="2" stroke-dasharray="4" />
             
-            <!-- 조작선 (기본 90도에서 회전) -->
-            <line id="stage1-rotate-line" x1="110" y1="20" x2="110" y2="200" stroke="#d4af37" stroke-width="4" stroke-linecap="round" />
+            <!-- 조작 회전선 (기본 90도) -->
+            <line id="stage1-rotate-line" x1="110" y1="20" x2="110" y2="200" stroke="var(--gold-primary)" stroke-width="4" stroke-linecap="round" style="transition: stroke 0.3s;" />
             
-            <!-- 중심 데코 -->
-            <circle cx="110" cy="110" r="8" fill="#d4af37" />
+            <!-- 중심 피벗 데코 -->
+            <circle cx="110" cy="110" r="8" fill="var(--gold-primary)" />
+            
+            <!-- 라벨 텍스트 -->
+            <text x="115" y="70" fill="#fff" font-size="12" font-weight="bold" id="stage1-top-label">45°</text>
+            <text x="90" y="155" fill="var(--gold-primary)" font-size="12" font-weight="bold" id="stage1-bottom-label">x</text>
           </svg>
         </div>
-        <div style="margin-top: 15px;">
-          <input type="range" id="stage1-slider" min="30" max="150" value="90" style="width: 80%; accent-color: #d4af37;">
-          <div style="margin-top: 8px; font-size: 0.9rem; color: #a5a5a5;" id="stage1-angle-info">
-            조작 각도: 90° | 목표 대칭각: 135°
+        
+        <!-- 슬라이더 조작 영역 -->
+        <div style="margin-bottom: 12px;">
+          <input type="range" id="stage1-slider" min="60" max="160" value="90" style="width: 80%; accent-color: var(--gold-primary); cursor: pointer;">
+          <div style="margin-top: 5px; font-size: 0.85rem; color: var(--text-muted);" id="stage1-angle-info">
+            조작 각도: 90°
           </div>
+        </div>
+
+        <!-- 각도 계산 입력 영역 -->
+        <div style="margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 8px;">
+          <span style="font-size: 0.95rem; color: #fff;">맞꼭지각 x = </span>
+          <input type="number" id="stage1-input" placeholder="각도" style="width: 80px; padding: 8px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none;">
+          <span style="font-size: 0.95rem; color: #fff;">°</span>
+          <button id="stage1-submit-btn" class="btn" style="width: 70px; padding: 9px; font-size: 0.85rem; margin: 0;">확인</button>
         </div>
       </div>
     `;
     this.slider = document.getElementById("stage1-slider");
     this.rotateLine = document.getElementById("stage1-rotate-line");
     this.angleInfo = document.getElementById("stage1-angle-info");
+    this.input = document.getElementById("stage1-input");
+    this.submitBtn = document.getElementById("stage1-submit-btn");
+    
+    this.arcTop = document.getElementById("stage1-arc-top");
+    this.arcBottom = document.getElementById("stage1-arc-bottom");
+    this.topLabel = document.getElementById("stage1-top-label");
+    this.bottomLabel = document.getElementById("stage1-bottom-label");
+
+    this.render();
   }
 
   bindEvents() {
+    // 1. 슬라이더 회전
     this.sliderHandler = (e) => {
       this.currentAngle = parseInt(e.target.value);
       this.render();
-      
-      if (this.checkAnswer()) {
+    };
+
+    // 2. 키보드 입력
+    this.inputHandler = (e) => {
+      this.userInput = e.target.value;
+    };
+
+    // 3. 검증 확인 버튼 클릭
+    this.submitHandler = () => {
+      const isAngleCorrect = Math.abs(this.currentAngle - this.targetAngle) <= 2;
+      const isInputCorrect = parseInt(this.userInput) === this.targetInput;
+
+      if (isAngleCorrect && isInputCorrect) {
+        // 둘 다 맞았을 때 -> 정답 연출 및 완료 처리
         this.slider.disabled = true;
-        // EventBus를 통해 클리어 알림 발행
-        setTimeout(() => {
-          alert("철컥! 맞꼭지각의 대칭성이 복원되며 돌문이 열렸습니다.");
-          if (this.onClearCallback) {
-            this.onClearCallback();
+        this.input.disabled = true;
+        this.submitBtn.disabled = true;
+
+        this.playCorrectAnimation();
+      } else {
+        // 부분 오답 분기 안내
+        if (typeof PuzzleState !== "undefined") {
+          PuzzleState.wrongCount += 1;
+          EventBus.publish("stateChange:puzzle", PuzzleState);
+        }
+
+        if (typeof FeedbackSystem !== "undefined") {
+          if (isAngleCorrect && !isInputCorrect) {
+            FeedbackSystem.showWarning("다이얼 각도는 맞췄으나, 맞꼭지각 x의 올바른 값을 입력해야 합니다.");
+          } else if (!isAngleCorrect && isInputCorrect) {
+            FeedbackSystem.showInfo("계산한 각도는 맞습니다! 다이얼을 조절해 선의 대칭 각도를 맞춰보세요. (목표: 135°)");
           } else {
-            // 직접 PuzzleScene 클리어 동작 트리거용 대체
-            const clearBtn = document.getElementById("mock-puzzle-clear-btn");
-            if (clearBtn) clearBtn.click();
+            FeedbackSystem.showError("다이얼 각도와 입력값 모두 올바르지 않습니다. 다시 계산해 보세요.");
           }
-        }, 300);
+        }
       }
     };
-    if (this.slider) {
-      this.slider.addEventListener("input", this.sliderHandler);
-    }
+
+    if (this.slider) this.slider.addEventListener("input", this.sliderHandler);
+    if (this.input) this.input.addEventListener("input", this.inputHandler);
+    if (this.submitBtn) this.submitBtn.addEventListener("click", this.submitHandler);
   }
 
   render() {
     if (this.rotateLine) {
-      // 중심(110, 110) 기준으로 각도 조절 회전
+      // 중심 (110, 110) 기준으로 회전 변환
       this.rotateLine.setAttribute("transform", `rotate(${this.currentAngle - 90} 110 110)`);
     }
+
     if (this.angleInfo) {
-      this.angleInfo.innerHTML = `조작 각도: <strong style="color:#d4af37;">${this.currentAngle}°</strong> | 목표 대칭각: <strong>135°</strong>`;
+      this.angleInfo.innerHTML = `조작 각도: <strong style="color: var(--gold-primary);">${this.currentAngle}°</strong>`;
     }
+
+    // 슬라이더 변화에 따라 상단 텍스트 레이블의 위치 각도 표시 실시간 동적 갱신
+    if (this.topLabel) {
+      const calculatedTop = 180 - this.currentAngle;
+      this.topLabel.textContent = calculatedTop + "°";
+    }
+  }
+
+  playCorrectAnimation() {
+    // 1. 호(arc) 황금빛 발광 표시
+    if (this.arcTop) this.arcTop.setAttribute("stroke", "var(--gold-primary)");
+    if (this.arcBottom) this.arcBottom.setAttribute("stroke", "var(--gold-primary)");
+    if (this.rotateLine) this.rotateLine.setAttribute("stroke", "var(--gold-light)");
+
+    if (this.bottomLabel) {
+      this.bottomLabel.textContent = "45°";
+      this.bottomLabel.setAttribute("fill", "var(--gold-light)");
+    }
+
+    // 2. 피드백 및 완료 처리 딜레이
+    if (typeof FeedbackSystem !== "undefined") {
+      FeedbackSystem.showSuccess("철컥! 맞꼭지각의 대칭성이 증명되어 돌문이 개방되었습니다!");
+    }
+
+    const svg = document.getElementById("stage1-svg");
+    if (typeof AnimationManager !== "undefined" && svg) {
+      setTimeout(() => {
+        AnimationManager.playSolved(svg.parentNode);
+      }, 300);
+    }
+
+    setTimeout(() => {
+      if (this.onClearCallback) {
+        this.onClearCallback();
+      } else {
+        const clearBtn = document.getElementById("mock-puzzle-clear-btn");
+        if (clearBtn) clearBtn.click();
+      }
+    }, 1400);
   }
 
   checkAnswer() {
-    // 135도에 정확히 도달했는지 오차 1도 이내 판정
-    return Math.abs(this.currentAngle - this.targetAngle) <= 1;
+    const isAngleCorrect = Math.abs(this.currentAngle - this.targetAngle) <= 2;
+    const isInputCorrect = parseInt(this.userInput) === this.targetInput;
+    return isAngleCorrect && isInputCorrect;
   }
 
   reset() {
-    if (this.slider) {
-      this.slider.disabled = false;
-      this.slider.value = 90;
-      this.currentAngle = 90;
-      this.render();
-    }
+    this.currentAngle = 90;
+    this.userInput = "";
+    this.init();
+    this.bindEvents();
   }
 
   destroy() {
-    if (this.slider && this.sliderHandler) {
-      this.slider.removeEventListener("input", this.sliderHandler);
-    }
+    if (this.slider && this.sliderHandler) this.slider.removeEventListener("input", this.sliderHandler);
+    if (this.input && this.inputHandler) this.input.removeEventListener("input", this.inputHandler);
+    if (this.submitBtn && this.submitHandler) this.submitBtn.removeEventListener("click", this.submitHandler);
     this.container.innerHTML = "";
   }
 }

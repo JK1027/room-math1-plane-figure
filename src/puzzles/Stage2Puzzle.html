@@ -1,45 +1,61 @@
 <script>
 /**
- * 2스테이지 동위각·엇각 드래그 매칭 퍼즐 클래스.
+ * 2스테이지 동위각·엇각 매칭 퍼즐 클래스.
+ * SVG 평행도판 정렬, 헷갈리는 4선택지 도입, 드롭존 확대 적용.
  */
 class Stage2Puzzle extends PuzzleBase {
   constructor(containerId) {
     super(containerId);
     this.solved = { zoneA: false, zoneB: false };
-    this.draggedValue = null;
     this.onClearCallback = null;
   }
 
   init() {
     this.container.innerHTML = `
       <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
-        <p style="color: #d4af37; margin-bottom: 10px; font-size: 0.9rem;">각도 카드를 클릭한 뒤, 알맞은 동위각(A)과 엇각(B) 자리를 클릭하여 채우세요.</p>
+        <p style="color: var(--gold-primary); margin-bottom: 12px; font-size: 0.9rem;">
+          각도 카드를 선택한 뒤, 알맞은 <strong>동위각(A)</strong>과 <strong>엇각(B)</strong>의 빈칸에 배치하세요.
+        </p>
         
-        <!-- 게임판 -->
-        <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 1px solid #d4af37; border-radius: 8px; overflow: hidden;">
-          <!-- 평행 레일 1 -->
-          <div style="position: absolute; top: 50px; left: 20px; width: 240px; height: 3px; background: #a5a5a5;"></div>
-          <!-- 평행 레일 2 -->
-          <div style="position: absolute; top: 120px; left: 20px; width: 240px; height: 3px; background: #a5a5a5;"></div>
-          <!-- 횡단선 (60도 경사) -->
-          <div style="position: absolute; top: 10px; left: 150px; width: 4px; height: 150px; background: #ff4757; transform: rotate(-30deg); transform-origin: top center;"></div>
+        <!-- 게임판 (SVG 중심 설계) -->
+        <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow); overflow: hidden;">
+          <svg width="280" height="180" style="position: absolute; inset: 0; pointer-events: none;">
+            <!-- 평행선 레일 2선 -->
+            <line x1="20" y1="50" x2="260" y2="50" stroke="#a5a5a5" stroke-width="3" />
+            <line x1="20" y1="130" x2="260" y2="130" stroke="#a5a5a5" stroke-width="3" />
+            
+            <!-- 횡단 빗선 (60도 각도 경사) -->
+            <!-- L선 교차점: (160, 50), M선 교차점: (114, 130) -->
+            <line x1="180" y1="15" x2="95" y2="162" stroke="#ff4757" stroke-width="3.5" />
+            
+            <!-- 기준각 60도 데코 호 및 라벨 -->
+            <path d="M 140,50 A 20,20 0 0,1 150,33" fill="none" stroke="#ff4757" stroke-width="2" />
+            
+            <!-- A(동위각) 안내 가이드 호 -->
+            <path d="M 94,130 A 20,20 0 0,1 104,113" fill="none" stroke="rgba(212,175,55,0.4)" stroke-width="1.5" stroke-dasharray="2" />
+            
+            <!-- B(엇각) 안내 가이드 호 -->
+            <path d="M 124,130 A 20,20 0 0,0 134,147" fill="none" stroke="rgba(212,175,55,0.4)" stroke-width="1.5" stroke-dasharray="2" />
+          </svg>
+
+          <!-- 기준각 라벨 -->
+          <div style="position: absolute; top: 22px; left: 115px; font-size: 0.85rem; color: #ff4757; font-weight: bold;">60°</div>
           
-          <!-- 기준각 (60도) 표시 -->
-          <div style="position: absolute; top: 22px; left: 105px; font-size: 0.85rem; color: #ff4757; font-weight: bold;">60°</div>
+          <!-- 드롭존 A (동위각 자리: M선 좌상단) -->
+          <div id="drop-zone-A" class="dropzone" style="position: absolute; top: 82px; left: 55px; width: 56px; height: 34px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-align: center; line-height: 30px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">A</div>
+          <div style="position: absolute; top: 120px; left: 58px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">동위각</div>
           
-          <!-- 드롭존 A (동위각 자리) -->
-          <div id="drop-zone-A" class="dropzone" style="position: absolute; top: 95px; left: 100px; width: 40px; height: 24px; border: 2px dashed #d4af37; border-radius: 4px; font-size: 0.8rem; text-align: center; line-height: 20px; color: #a5a5a5; background: rgba(0,0,0,0.4); cursor: pointer;">A</div>
-          <div style="position: absolute; top: 76px; left: 104px; font-size: 0.65rem; color: #d4af37; font-weight:bold;">동위각</div>
-          
-          <!-- 드롭존 B (엇각 자리) -->
-          <div id="drop-zone-B" class="dropzone" style="position: absolute; top: 95px; left: 160px; width: 40px; height: 24px; border: 2px dashed #d4af37; border-radius: 4px; font-size: 0.8rem; text-align: center; line-height: 20px; color: #a5a5a5; background: rgba(0,0,0,0.4); cursor: pointer;">B</div>
-          <div style="position: absolute; top: 76px; left: 166px; font-size: 0.65rem; color: #d4af37; font-weight:bold;">엇각</div>
+          <!-- 드롭존 B (엇각 자리: M선 우하단) -->
+          <div id="drop-zone-B" class="dropzone" style="position: absolute; top: 136px; left: 135px; width: 56px; height: 34px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-align: center; line-height: 30px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">B</div>
+          <div style="position: absolute; top: 120px; left: 151px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">엇각</div>
         </div>
         
-        <!-- 선택 카드들 -->
-        <div style="margin-top: 15px; display: flex; justify-content: center; gap: 15px;">
-          <div class="drag-card" data-value="60" style="width: 55px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">60°</div>
-          <div class="drag-card" data-value="120" style="width: 55px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">120°</div>
+        <!-- 선택 카드들 (헷갈리는 4선택지 적용) -->
+        <div style="margin-top: 15px; display: flex; justify-content: center; gap: 10px;">
+          <div class="drag-card" data-value="55" style="width: 50px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">55°</div>
+          <div class="drag-card" data-value="60" style="width: 50px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">60°</div>
+          <div class="drag-card" data-value="65" style="width: 50px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">65°</div>
+          <div class="drag-card" data-value="120" style="width: 50px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">120°</div>
         </div>
       </div>
     `;
@@ -50,13 +66,11 @@ class Stage2Puzzle extends PuzzleBase {
 
   bindEvents() {
     this.cardClickHandler = (e) => {
-      // 모든 카드의 선택 스타일 제거
       this.cards.forEach(c => {
-        c.style.borderColor = "#d4af37";
+        c.style.borderColor = "var(--gold-primary)";
         c.style.background = "#1b263b";
         c.style.boxShadow = "0 4px 6px rgba(0,0,0,0.3)";
       });
-      // 선택된 카드 지정 및 스타일 부여
       this.selectedCard = e.currentTarget;
       this.selectedCard.style.borderColor = "#ff4757";
       this.selectedCard.style.background = "rgba(255, 71, 87, 0.2)";
@@ -65,7 +79,9 @@ class Stage2Puzzle extends PuzzleBase {
 
     this.zoneClickHandler = (e) => {
       if (!this.selectedCard) {
-        alert("먼저 아래 각도 카드 중 하나를 선택한 뒤 빈칸을 클릭해 주세요.");
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showWarning("먼저 아래 각도 카드 중 하나를 선택한 뒤 빈칸을 클릭해 주세요.");
+        }
         return;
       }
       
@@ -73,8 +89,8 @@ class Stage2Puzzle extends PuzzleBase {
       const val = this.selectedCard.getAttribute("data-value");
 
       e.currentTarget.innerText = val + "°";
-      e.currentTarget.style.background = "rgba(212,175,55,0.2)";
-      e.currentTarget.style.borderColor = "#d4af37";
+      e.currentTarget.style.background = "rgba(212,175,55,0.25)";
+      e.currentTarget.style.borderColor = "var(--gold-primary)";
       e.currentTarget.style.color = "#fff";
       e.currentTarget.style.borderStyle = "solid";
       
@@ -85,17 +101,25 @@ class Stage2Puzzle extends PuzzleBase {
         if (zoneId === "drop-zone-A") this.solved.zoneA = false;
         if (zoneId === "drop-zone-B") this.solved.zoneB = false;
         
-        // 오답 카운트 기록
         if (typeof PuzzleState !== "undefined") {
           PuzzleState.wrongCount += 1;
           EventBus.publish("stateChange:puzzle", PuzzleState);
         }
-        alert("정답이 아닙니다. 동위각과 엇각은 평행선 조건에서 기준각과 크기가 같습니다.");
+        
+        if (typeof FeedbackSystem !== "undefined") {
+          if (val === "120") {
+            FeedbackSystem.showError("틀렸습니다! 120°는 기준각(60°)의 보각입니다. 동위각과 엇각은 평행선 조건에서 기준각과 크기가 같습니다.");
+          } else {
+            FeedbackSystem.showError(`틀렸습니다! ${val}°는 기준각과 크기가 다릅니다. 동위각과 엇각은 기준각과 크기가 같아야 합니다.`);
+          }
+        }
       }
 
       if (this.checkAnswer()) {
         setTimeout(() => {
-          alert("정답입니다! 동위각과 엇각의 크기가 같음이 입증되어 회랑의 철창이 올라갔습니다.");
+          if (typeof FeedbackSystem !== "undefined") {
+            FeedbackSystem.showSuccess("정답입니다! 동위각과 엇각의 크기가 같음이 입증되어 회랑의 철창이 올라갔습니다.");
+          }
           if (this.onClearCallback) {
             this.onClearCallback();
           } else {

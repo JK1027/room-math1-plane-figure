@@ -10,6 +10,67 @@ const StoryManager = (function() {
   let currentFullText = "";
   let currentEl = null;
 
+  // 선택지 관련 상태
+  let currentStoryData = null;
+  let choiceHandled = false;
+
+  function _showChoiceUI() {
+    const clickArea = document.getElementById("story-click-area");
+    if (!clickArea || !currentStoryData || !currentStoryData.choice) return;
+
+    // 대사 상자 내 탭 인디케이터 숨김
+    const tapIndicator = clickArea.querySelector(".tap-indicator");
+    if (tapIndicator) tapIndicator.style.opacity = "0";
+
+    // 기존의 선택지 박스가 있다면 제거
+    const oldContainer = document.getElementById("story-choices-container");
+    if (oldContainer) oldContainer.remove();
+
+    // 선택지 컨테이너 생성
+    const container = document.createElement("div");
+    container.id = "story-choices-container";
+    container.style.cssText = "margin-top: 15px; display: flex; flex-direction: column; gap: 8px; width: 100%; pointer-events: auto;";
+
+    // 프롬프트가 있으면 상단에 표시
+    if (currentStoryData.choice.prompt) {
+      const promptEl = document.createElement("div");
+      promptEl.style.cssText = "font-size: 0.85rem; color: var(--gold-primary); text-align: center; margin-bottom: 5px; font-weight: bold;";
+      promptEl.textContent = currentStoryData.choice.prompt;
+      container.appendChild(promptEl);
+    }
+
+    currentStoryData.choice.options.forEach(function(opt, index) {
+      const btn = document.createElement("button");
+      btn.className = "btn-secondary";
+      btn.style.cssText = "width: 100%; text-align: left; padding: 10px 14px; font-size: 0.9rem; margin: 0;";
+      btn.textContent = (index + 1) + ". " + opt.text;
+      
+      btn.addEventListener("click", function(e) {
+        e.stopPropagation(); // 클릭 아웃 이벤트 전파 방지
+        container.remove();
+        
+        if (tapIndicator) tapIndicator.style.opacity = "1";
+        
+        // 선택 응답 주입 및 진행
+        choiceHandled = true;
+        
+        // 내 대사 + 마도사 대사 주입
+        dialogueQueue.unshift(opt.reply);
+        dialogueQueue.unshift(UserState.name + ": " + opt.text);
+        
+        // 엔딩 대사들 대기열에 병합
+        if (currentStoryData.ending) {
+          dialogueQueue = dialogueQueue.concat(currentStoryData.ending);
+        }
+        
+        StoryManager.next();
+      });
+      container.appendChild(btn);
+    });
+
+    clickArea.appendChild(container);
+  }
+
   return {
     /**
      * 특정 스테이지의 스토리를 시작합니다.
@@ -23,8 +84,19 @@ const StoryManager = (function() {
         return;
       }
       
-      dialogueQueue = [...StoryDictionary[stageId]];
+      const rawData = StoryDictionary[stageId];
       onComplete = onCompleteCallback;
+      choiceHandled = false;
+
+      // 1. 단일 배열 구조 호환 처리
+      if (Array.isArray(rawData)) {
+        currentStoryData = null;
+        dialogueQueue = [...rawData];
+      } else {
+        // 2. 객체 구조 (lines + choice + ending)
+        currentStoryData = rawData;
+        dialogueQueue = [...rawData.lines];
+      }
       
       this.next();
     },
@@ -41,11 +113,21 @@ const StoryManager = (function() {
         clearTimeout(typingTimer);
         isTyping = false;
         currentEl.innerText = currentFullText;
+        if (typeof AnimationManager !== "undefined") {
+          AnimationManager.playTypingEnd();
+        }
         return;
       }
 
-      // 2. 대사가 남아있지 않은 경우 완료 함수 트리거
+      // 2. 대사가 남아있지 않은 경우
       if (dialogueQueue.length === 0) {
+        // 객체 구조인데 선택지를 아직 선택 안 했다면 띄움
+        if (currentStoryData && currentStoryData.choice && !choiceHandled) {
+          _showChoiceUI();
+          return;
+        }
+
+        // 선택지 완료 후 엔딩 대사까지 모두 소진 시 최종 완료 콜백
         if (typeof onComplete === "function") {
           onComplete();
         }

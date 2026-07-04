@@ -1,50 +1,63 @@
 <script>
 /**
- * 4스테이지 삼각형 내각의 합 조각 맞추기 퍼즐 클래스.
+ * 4스테이지 삼각형 내각의 합 퍼즐 클래스.
+ * 대형 드롭존(64x38px), 6선택지, 꼭짓점 밀착 정렬, 중앙 실시간 합계(glow) 가이드 적용.
  */
 class Stage4Puzzle extends PuzzleBase {
   constructor(containerId) {
     super(containerId);
     this.fixedAngle = 50;
+    // 정답 조합: B=60, C=70 (도형의 비대칭 예각 형태에 정밀 매칭)
     this.solved = { zoneB: null, zoneC: null };
-    this.draggedValue = null;
     this.onClearCallback = null;
+    this.selectedCard = null;
   }
 
   init() {
     this.container.innerHTML = `
       <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
-        <p style="color: #d4af37; margin-bottom: 10px; font-size: 0.9rem;">각도 카드를 클릭한 뒤, 빈칸(각 B 또는 각 C)을 클릭하여 채워 넣으세요.</p>
+        <p style="color: var(--gold-primary); margin-bottom: 12px; font-size: 0.9rem;">
+          각도 카드를 선택한 뒤, 빈칸(각 B 또는 각 C)을 클릭하여 채워 넣으세요.
+        </p>
         
         <!-- 삼각형 보드판 -->
-        <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 1px solid #d4af37; border-radius: 8px;">
-          <!-- SVG 삼각형 외곽선 -->
-          <svg width="280" height="180" style="position: absolute; top:0; left:0;">
-            <polygon points="140,20 40,145 240,145" fill="none" stroke="#d4af37" stroke-width="3" />
+        <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
+          <!-- SVG 삼각형 외곽선 및 호 데코 -->
+          <svg width="280" height="180" style="position: absolute; top:0; left:0; pointer-events: none;">
+            <polygon points="140,20 40,145 240,145" fill="none" stroke="var(--gold-primary)" stroke-width="3" />
+            <!-- 각 A(50) 가이드 호 -->
+            <path d="M 125,40 A 20,20 0 0,0 155,40" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" />
+            <!-- 각 B 가이드 호 -->
+            <path d="M 58,145 A 20,20 0 0,0 52,128" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" />
+            <!-- 각 C 가이드 호 -->
+            <path d="M 222,145 A 20,20 0 0,1 228,128" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" />
           </svg>
           
           <!-- 각 A (고정 50도) -->
-          <div style="position: absolute; top: 32px; left: 128px; font-size: 0.95rem; color: #fff; font-weight: bold;">50°</div>
+          <div style="position: absolute; top: 38px; left: 128px; font-size: 0.95rem; color: #fff; font-weight: bold;">50°</div>
           
-          <!-- 각 B 드롭존 -->
-          <div id="drop-zone-B" class="dropzone" style="position: absolute; top: 110px; left: 55px; width: 44px; height: 26px; border: 2px dashed #d4af37; border-radius: 4px; font-size: 0.8rem; text-align: center; line-height: 22px; color: #a5a5a5; background: rgba(0,0,0,0.5); cursor: pointer;">B</div>
-          <div style="position: absolute; top: 140px; left: 63px; font-size: 0.65rem; color: #d4af37; font-weight:bold;">각 B</div>
+          <!-- 각 B 드롭존 (꼭짓점 B 주변 배치) -->
+          <div id="drop-zone-B" class="dropzone" style="position: absolute; top: 104px; left: 24px; width: 64px; height: 38px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.9rem; font-weight: bold; text-align: center; line-height: 34px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">B</div>
+          <div style="position: absolute; top: 144px; left: 42px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">각 B</div>
           
-          <!-- 각 C 드롭존 -->
-          <div id="drop-zone-C" class="dropzone" style="position: absolute; top: 110px; left: 181px; width: 44px; height: 26px; border: 2px dashed #d4af37; border-radius: 4px; font-size: 0.8rem; text-align: center; line-height: 22px; color: #a5a5a5; background: rgba(0,0,0,0.5); cursor: pointer;">C</div>
-          <div style="position: absolute; top: 140px; left: 190px; font-size: 0.65rem; color: #d4af37; font-weight:bold;">각 C</div>
+          <!-- 각 C 드롭존 (꼭짓점 C 주변 배치) -->
+          <div id="drop-zone-C" class="dropzone" style="position: absolute; top: 104px; left: 192px; width: 64px; height: 38px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.9rem; font-weight: bold; text-align: center; line-height: 34px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">C</div>
+          <div style="position: absolute; top: 144px; left: 211px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">각 C</div>
           
-          <div id="sum-formula" style="position: absolute; top: 156px; left: 0; width: 100%; text-align: center; font-size: 0.75rem; color: #a5a5a5;">
-            식: 50° + B + C = 180°
+          <!-- 중앙 실시간 합계 디스플레이 (Glow 효과 추가) -->
+          <div id="sum-formula" style="position: absolute; top: 62px; left: 0; width: 100%; text-align: center; font-size: 0.85rem; font-weight: bold;">
+            식: 50° + B + C = 0°
           </div>
         </div>
         
-        <!-- 카드 후보 -->
-        <div style="margin-top: 15px; display: flex; justify-content: center; gap: 10px;">
-          <div class="drag-card" data-value="40" style="width: 45px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">40°</div>
-          <div class="drag-card" data-value="60" style="width: 45px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">60°</div>
-          <div class="drag-card" data-value="70" style="width: 45px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">70°</div>
-          <div class="drag-card" data-value="90" style="width: 45px; height: 35px; background: #1b263b; border: 2px solid #d4af37; border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">90°</div>
+        <!-- 카드 후보 (6종으로 확대) -->
+        <div style="margin-top: 15px; display: flex; justify-content: center; gap: 8px;">
+          <div class="drag-card" data-value="40" style="width: 42px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s; font-size: 0.85rem;">40°</div>
+          <div class="drag-card" data-value="60" style="width: 42px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s; font-size: 0.85rem;">60°</div>
+          <div class="drag-card" data-value="70" style="width: 42px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s; font-size: 0.85rem;">70°</div>
+          <div class="drag-card" data-value="80" style="width: 42px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s; font-size: 0.85rem;">80°</div>
+          <div class="drag-card" data-value="90" style="width: 42px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s; font-size: 0.85rem;">90°</div>
+          <div class="drag-card" data-value="100" style="width: 42px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s; font-size: 0.85rem;">100°</div>
         </div>
       </div>
     `;
@@ -52,17 +65,17 @@ class Stage4Puzzle extends PuzzleBase {
     this.zones = this.container.querySelectorAll(".dropzone");
     this.formula = document.getElementById("sum-formula");
     this.selectedCard = null;
+    
+    this.render();
   }
 
   bindEvents() {
     this.cardClickHandler = (e) => {
-      // 모든 카드의 선택 스타일 제거
       this.cards.forEach(c => {
-        c.style.borderColor = "#d4af37";
+        c.style.borderColor = "var(--gold-primary)";
         c.style.background = "#1b263b";
         c.style.boxShadow = "0 4px 6px rgba(0,0,0,0.3)";
       });
-      // 선택 카드 지정 및 스타일 적용
       this.selectedCard = e.currentTarget;
       this.selectedCard.style.borderColor = "#ff4757";
       this.selectedCard.style.background = "rgba(255, 71, 87, 0.2)";
@@ -71,7 +84,9 @@ class Stage4Puzzle extends PuzzleBase {
 
     this.zoneClickHandler = (e) => {
       if (!this.selectedCard) {
-        alert("먼저 아래 각도 카드 중 하나를 선택한 뒤 빈칸을 클릭해 주세요.");
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showWarning("먼저 아래 각도 카드 중 하나를 선택한 뒤 빈칸을 클릭해 주세요.");
+        }
         return;
       }
 
@@ -79,8 +94,8 @@ class Stage4Puzzle extends PuzzleBase {
       const val = parseInt(this.selectedCard.getAttribute("data-value"));
 
       e.currentTarget.innerText = val + "°";
-      e.currentTarget.style.background = "rgba(212,175,55,0.2)";
-      e.currentTarget.style.borderColor = "#d4af37";
+      e.currentTarget.style.background = "rgba(212,175,55,0.25)";
+      e.currentTarget.style.borderColor = "var(--gold-primary)";
       e.currentTarget.style.color = "#fff";
       e.currentTarget.style.borderStyle = "solid";
 
@@ -90,8 +105,12 @@ class Stage4Puzzle extends PuzzleBase {
       this.render();
 
       if (this.checkAnswer()) {
+        this.zones.forEach(z => z.style.borderColor = "#2ecc71");
+        
         setTimeout(() => {
-          alert(`축하합니다! 50° + ${this.solved.zoneB}° + ${this.solved.zoneC}° = 180°가 완성되어 제단의 봉인이 풀렸습니다.`);
+          if (typeof FeedbackSystem !== "undefined") {
+            FeedbackSystem.showSuccess(`정답입니다! 50° + ${this.solved.zoneB}° + ${this.solved.zoneC}° = 180°가 완성되어 제단의 봉인이 풀렸습니다.`);
+          }
           if (this.onClearCallback) {
             this.onClearCallback();
           } else {
@@ -100,13 +119,23 @@ class Stage4Puzzle extends PuzzleBase {
           }
         }, 300);
       } else {
-        // 둘 다 값이 차있는데 틀린 경우 오답 카운팅 및 안내
+        // 둘 다 값이 찼을 때 오답인 경우 판정 안내
         if (this.solved.zoneB && this.solved.zoneC) {
           if (typeof PuzzleState !== "undefined") {
             PuzzleState.wrongCount += 1;
             EventBus.publish("stateChange:puzzle", PuzzleState);
           }
-          alert("세 내각의 크기의 합이 180°가 되지 않습니다. 다시 구성해 보세요.");
+
+          const sum = 50 + this.solved.zoneB + this.solved.zoneC;
+          
+          if (typeof FeedbackSystem !== "undefined") {
+            if (sum === 180) {
+              // 40 + 90과 같이 180은 맞지만 도형 형태(비대칭 예각삼각형)상 안 맞는 함정
+              FeedbackSystem.showError(`세 각의 합(${sum}°)은 맞으나, 도형의 생김새(예각삼각형)를 보세요. 직각(90°)이나 둔각 카드는 각 B나 C에 적합하지 않습니다. 다시 조합해 보세요.`);
+            } else {
+              FeedbackSystem.showError(`틀렸습니다! 세 각의 합이 ${sum}°입니다. 삼각형 내각의 합은 항상 180°가 되어야 합니다.`);
+            }
+          }
         }
       }
     };
@@ -124,14 +153,38 @@ class Stage4Puzzle extends PuzzleBase {
     if (this.formula) {
       const bStr = this.solved.zoneB ? `${this.solved.zoneB}°` : "B";
       const cStr = this.solved.zoneC ? `${this.solved.zoneC}°` : "C";
-      const total = this.fixedAngle + (this.solved.zoneB || 0) + (this.solved.zoneC || 0);
-      this.formula.innerHTML = `식: 50° + ${bStr} + ${cStr} = <strong style="color: ${total === 180 ? '#2ecc71' : '#ff4757'}">${total}°</strong>`;
+      const total = 50 + (this.solved.zoneB || 0) + (this.solved.zoneC || 0);
+      
+      let color = "var(--text-muted)";
+      let glow = "none";
+      if (this.solved.zoneB && this.solved.zoneC) {
+        if (total === 180) {
+          // B=60, C=70 일 때만 최종 녹색 처리
+          const isValidShape = (this.solved.zoneB === 60 && this.solved.zoneC === 70) || (this.solved.zoneB === 70 && this.solved.zoneC === 60);
+          color = isValidShape ? "#2ecc71" : "#f1c40f"; // 합만 맞으면 주황, 형태도 맞으면 초록
+          glow = isValidShape ? "0 0 10px rgba(46,204,113,0.5)" : "none";
+        } else {
+          color = "#ff4757";
+          glow = "0 0 10px rgba(255,71,87,0.5)";
+        }
+      }
+      
+      this.formula.innerHTML = `
+        <span style="color: #fff;">∑ = </span>
+        <span style="color: ${color}; text-shadow: ${glow}; font-size: 1.15rem;">${total}°</span>
+        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">
+          50° + ${bStr} + ${cStr} = 180°
+        </div>
+      `;
     }
   }
 
   checkAnswer() {
     if (!this.solved.zoneB || !this.solved.zoneC) return false;
-    return (this.fixedAngle + this.solved.zoneB + this.solved.zoneC) === 180;
+    // 50 + B + C = 180 이면서, 예각삼각형 형태 제약 (B=60, C=70 또는 B=70, C=60)
+    const isSumCorrect = (50 + this.solved.zoneB + this.solved.zoneC) === 180;
+    const isShapeCorrect = (this.solved.zoneB === 60 && this.solved.zoneC === 70) || (this.solved.zoneB === 70 && this.solved.zoneC === 60);
+    return isSumCorrect && isShapeCorrect;
   }
 
   reset() {

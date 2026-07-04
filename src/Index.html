@@ -58,6 +58,19 @@
         </div>
       </div>
 
+      <!-- 2-1. Tutorial Scene -->
+      <div id="scene-tutorial" class="scene">
+        <div class="puzzle-wrapper">
+          <div class="puzzle-header">
+            <h3>기초 마법 훈련</h3>
+            <button id="tutorial-skip-btn" class="btn-secondary">훈련 건너뛰기</button>
+          </div>
+          <div id="tutorial-board-container" class="puzzle-canvas-area" style="min-height: 280px;">
+            <!-- 튜토리얼 내용이 동적으로 로드됩니다 -->
+          </div>
+        </div>
+      </div>
+
       <!-- 3. Story Scene -->
       <div id="scene-story" class="scene">
         <div class="story-layer-container">
@@ -150,6 +163,7 @@
     <?!= include("effects/GlowEffects"); ?>
     <?!= include("effects/ParticleEffects"); ?>
     <?!= include("effects/AnimationManager"); ?>
+    <?!= include("engine/FeedbackSystem"); ?>
 
     <!-- Core Engine Includes -->
     <?!= include("engine/EventBus"); ?>
@@ -158,6 +172,8 @@
     <?!= include("engine/StoryEngine"); ?>
     <?!= include("engine/PuzzleManager"); ?>
     <?!= include("engine/AchievementManager"); ?>
+    <?!= include("engine/TutorialEngine"); ?>
+    <?!= include("engine/QuestionEngine"); ?>
     
     <!-- Services Includes -->
     <?!= include("services/DbService"); ?>
@@ -182,6 +198,7 @@
     <!-- UI Scenes Includes -->
     <?!= include("ui/IntroScene"); ?>
     <?!= include("ui/InputScene"); ?>
+    <?!= include("ui/TutorialScene"); ?>
     <?!= include("ui/StoryScene"); ?>
     <?!= include("ui/PuzzleScene"); ?>
     <?!= include("ui/EndingScene"); ?>
