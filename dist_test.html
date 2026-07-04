@@ -1027,8 +1027,8 @@ if (typeof StoryDictionary === "undefined") {
 StoryDictionary[1] = [
   "어두컴컴한 '거울의 숲' 깊은 곳, 거대한 돌문이 앞을 막아섰다.",
   "돌문 중앙에는 두 개의 교차된 빛의 선이 교각을 이루며 불완전하게 흔들리고 있다.",
-  "문 틈새로 음산한 마도사의 속삭임이 들린다...\n\"이 성의 문을 열려거든 엇갈려 마주보는 빛의 진실을 증명해라.\"",
-  "직선들이 교차할 때 마주보는 두 각, 즉 '맞꼭지각'은 크기가 서로 같아야 한다.",
+  "문틈으로 음산한 마도사의 속삭임이 들린다...\n\"이 성의 문을 열려거든 엇갈려 마주 보는 빛의 진실을 증명해라.\"",
+  "직선들이 교차할 때 마주 보는 두 각, 즉 '맞꼭지각'은 크기가 서로 같아야 한다.",
   "빛의 각도를 조절하는 기어 다이얼을 조작하여 맞꼭지각이 서로 일치하도록 회전시켜라!"
 ];
 </script>
@@ -1046,7 +1046,7 @@ StoryDictionary[2] = [
   "바닥과 천장에는 거대한 두 개의 평행한 레일이 뻗어 있고, 그 사이를 비스듬히 가로지르는 빛의 칼날이 보인다.",
   "두 평행선이 다른 한 직선과 만날 때 생기는 특별한 각도의 관계를 증명해야 통과할 수 있다.",
   "위치가 같은 '동위각'과 서로 엇갈린 위치에 있는 '엇각'의 크기는 평행선 사이에서 서로 같다.",
-  "각도 조각들을 레일 위에 드래그 앤 드롭하여 동일한 크기를 가진 동위각과 엇각 위치에 정확히 배치해라!"
+  "각도 조각들을 클릭하여 동일한 크기를 가진 동위각과 엇각의 위치에 정확히 배치해라!"
 ];
 </script>
 
@@ -1080,7 +1080,7 @@ StoryDictionary[4] = [
   "마도사의 강력한 힘이 깃든 삼각형 보드에는 곳곳에 내각과 외각에 관한 수학적 공식들이 희미하게 빛나고 있다.",
   "기하학의 영원한 진리: '삼각형의 세 내각의 크기의 합은 항상 180도'이며, '한 외각은 이웃하지 않는 두 내각의 합과 같다.'",
   "제단 위의 흩어진 세모 조각들을 회전하고 결합하여 완벽한 삼각형의 비밀을 맞추어야 문이 열린다.",
-  "도형 조각들을 제자리로 드래그하고 회전시켜, 합이 180도가 되는 내각의 조화를 이끌어내라!"
+  "도형 조각들을 제자리에 차례로 배치하여, 합이 180도가 되는 내각의 조화를 이끌어 내라!"
 ];
 </script>
 
@@ -1175,7 +1175,7 @@ class Stage1Puzzle extends PuzzleBase {
   init() {
     this.container.innerHTML = `
       <div style="text-align: center; width: 100%; padding: 15px;">
-        <p style="color: #d4af37; margin-bottom: 15px; font-size: 0.9rem;">마주보는 두 각(맞꼭지각)이 완벽히 일치하도록 회전 다이얼을 꺾으세요.</p>
+        <p style="color: #d4af37; margin-bottom: 15px; font-size: 0.9rem;">마주 보는 두 각(맞꼭지각)이 완벽히 일치하도록 회전 다이얼을 꺾으세요.</p>
         <div style="position: relative; display: inline-block;">
           <svg id="stage1-svg" width="220" height="220" style="background:#0b131f; border-radius: 50%; border: 2px solid #d4af37; box-shadow: 0 0 15px rgba(212,175,55,0.2);">
             <!-- 고정선 -->
@@ -1331,7 +1331,7 @@ class Stage2Puzzle extends PuzzleBase {
 
     this.zoneClickHandler = (e) => {
       if (!this.selectedCard) {
-        alert("먼저 아래 각도 카드 중 하나를 선택한 뒤 빈 칸을 클릭해 주세요.");
+        alert("먼저 아래 각도 카드 중 하나를 선택한 뒤 빈칸을 클릭해 주세요.");
         return;
       }
       
@@ -1562,7 +1562,7 @@ class Stage4Puzzle extends PuzzleBase {
   init() {
     this.container.innerHTML = `
       <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
-        <p style="color: #d4af37; margin-bottom: 10px; font-size: 0.9rem;">각도 카드를 클릭한 뒤, 빈 칸(각 B 또는 각 C)을 클릭하여 채워 넣으세요.</p>
+        <p style="color: #d4af37; margin-bottom: 10px; font-size: 0.9rem;">각도 카드를 클릭한 뒤, 빈칸(각 B 또는 각 C)을 클릭하여 채워 넣으세요.</p>
         
         <!-- 삼각형 보드판 -->
         <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 1px solid #d4af37; border-radius: 8px;">
@@ -1619,7 +1619,7 @@ class Stage4Puzzle extends PuzzleBase {
 
     this.zoneClickHandler = (e) => {
       if (!this.selectedCard) {
-        alert("먼저 아래 각도 카드 중 하나를 선택한 뒤 빈 칸을 클릭해 주세요.");
+        alert("먼저 아래 각도 카드 중 하나를 선택한 뒤 빈칸을 클릭해 주세요.");
         return;
       }
 
@@ -1871,11 +1871,11 @@ const InputScene = {
         
         // 정규식: 학번 4~5자리 숫자 (예: 1011 또는 10101)
         if (!/^\d{4,5}$/.test(studentNo)) {
-          alert("학번은 4~5자리 숫자로 입력해주세요. (예: 1011 또는 10101)");
+          alert("학번은 4~5자리 숫자로 입력해 주세요. (예: 1011 또는 10101)");
           return;
         }
         if (!name) {
-          alert("이름을 입력해주세요.");
+          alert("이름을 입력해 주세요.");
           return;
         }
         
@@ -2013,11 +2013,11 @@ const PuzzleScene = {
         EventBus.publish("stateChange:puzzle", PuzzleState);
         
         let hintMsg = "도형의 정의를 찬찬히 살펴보세요.";
-        if (stageId === 1) hintMsg = "맞꼭지각은 두 직선이 만날 때 생기는 서로 마주보는 두 각이며, 크기가 항상 동일합니다.";
+        if (stageId === 1) hintMsg = "맞꼭지각은 두 직선이 만날 때 생기는 서로 마주 보는 두 각이며, 크기가 항상 동일합니다.";
         if (stageId === 2) hintMsg = "두 선이 평행할 때, 횡단선과의 위치가 동일한 동위각과 서로 지그재그 관계인 엇각의 크기는 같습니다.";
-        if (stageId === 3) hintMsg = "꺾임점을 가로지르는 제3의 평행 가상 보조선을 그리면 위아래 엇각 관계(45도와 30도)로 쪼개져 합이 75도가 됩니다.";
-        if (stageId === 4) hintMsg = "삼각형 내부의 세 내각의 총합은 언제나 180도입니다. 고정 50도를 제외한 나머지 두 칸의 각도 카드의 합이 130도가 되도록 매칭하세요.";
-        if (stageId === 5) hintMsg = "평행선 사이 엇각(45도)을 유추하여 삼각형 내부 내각(45도)을 얻고, 삼각형의 한 외각은 이웃하지 않는 두 내각의 합과 같으므로 x = 45 + 60 입니다.";
+        if (stageId === 3) hintMsg = "꺾인 점을 가로지르는 제3의 평행 가상 보조선을 그리면 위아래 엇각 관계(45도와 30도)로 쪼개져 합이 75도가 됩니다.";
+        if (stageId === 4) hintMsg = "삼각형 내부의 세 내각의 총합은 언제나 180도입니다. 고정 50도를 제외한 나머지 두 칸의 각도 카드의 합이 130도가 되도록 배치해 보세요.";
+        if (stageId === 5) hintMsg = "평행선 사이의 엇각(45도)을 유추하여 삼각형 내부의 내각(45도)을 얻고, 삼각형의 한 외각은 이웃하지 않는 두 내각의 합과 같으므로 x = 45 + 60 입니다.";
         
         alert(`[마도사의 힌트]\n${hintMsg} (누적 사용: ${PuzzleState.hintCount}회)`);
       };

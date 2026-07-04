@@ -14,7 +14,7 @@ class Stage4Puzzle extends PuzzleBase {
   init() {
     this.container.innerHTML = `
       <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
-        <p style="color: #d4af37; margin-bottom: 10px; font-size: 0.9rem;">각도 카드를 클릭한 뒤, 빈 칸(각 B 또는 각 C)을 클릭하여 채워 넣으세요.</p>
+        <p style="color: #d4af37; margin-bottom: 10px; font-size: 0.9rem;">각도 카드를 클릭한 뒤, 빈칸(각 B 또는 각 C)을 클릭하여 채워 넣으세요.</p>
         
         <!-- 삼각형 보드판 -->
         <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 1px solid #d4af37; border-radius: 8px;">
@@ -71,7 +71,7 @@ class Stage4Puzzle extends PuzzleBase {
 
     this.zoneClickHandler = (e) => {
       if (!this.selectedCard) {
-        alert("먼저 아래 각도 카드 중 하나를 선택한 뒤 빈 칸을 클릭해 주세요.");
+        alert("먼저 아래 각도 카드 중 하나를 선택한 뒤 빈칸을 클릭해 주세요.");
         return;
       }
 
