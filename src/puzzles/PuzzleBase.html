@@ -51,5 +51,35 @@ class PuzzleBase {
   destroy() {
     throw new Error("destroy() 메서드가 구현되지 않았습니다.");
   }
+
+  /**
+   * 단계별 힌트 텍스트를 반환합니다.
+   * @param {Number} count - 힌트 버튼 클릭 횟수 (1, 2, 3...)
+   */
+  getHint(count) {
+    return "도형을 잘 관찰하며 천천히 풀어보세요!";
+  }
+
+  /**
+   * 상세 풀이 비책 텍스트를 반환합니다.
+   */
+  getSolution() {
+    return "풀이 준비 중입니다.";
+  }
+
+  /**
+   * 클리어 직후 개념 정리 카드에 출력할 핵심 개념 텍스트를 반환합니다.
+   */
+  getConceptText() {
+    return "기하학 기본 개념 정리";
+  }
+
+  /**
+   * 다음 하위 단계(Substage)로 넘어갈 수 있는지 시도하고 여부를 반환합니다.
+   * @returns {Boolean} 다음 하위 단계 전환 성공 여부
+   */
+  goNextSubstage() {
+    return false;
+  }
 }
 </script>

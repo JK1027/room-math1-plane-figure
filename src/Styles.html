@@ -77,6 +77,16 @@ body {
   transform: translateY(0);
 }
 
+/* 크리스탈 조각 펄스 애니메이션 */
+@keyframes crystalPulse {
+  0% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.15) rotate(5deg); opacity: 0.95; }
+  100% { transform: scale(1); opacity: 0.6; }
+}
+.crystal-fragment {
+  animation: crystalPulse 2s ease-in-out infinite !important;
+}
+
 /* 글래스모피즘 패널 */
 .card {
   background: var(--panel-bg);

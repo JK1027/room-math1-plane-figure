@@ -19,14 +19,32 @@ const PuzzleScene = {
     const currentPuzzle = PuzzleManager.loadPuzzle(stageId, "puzzle-board-container");
     if (currentPuzzle) {
       currentPuzzle.onClearCallback = () => {
-        // 정답 연출
+        // 하위 스테이지 완료 또는 최종 스테이지 완료 판단
+        let hasNextSub = false;
+        if (currentPuzzle && typeof currentPuzzle.goNextSubstage === "function") {
+          hasNextSub = currentPuzzle.goNextSubstage();
+        }
+        
+        if (hasNextSub) {
+          // 크리스탈 조각을 획득했다는 연출
+          PuzzleState.currentSubstage += 1;
+          EventBus.publish("stateChange:puzzle", PuzzleState);
+          this.updateCrystalInventory();
+          if (typeof FeedbackSystem !== "undefined") {
+            FeedbackSystem.showSuccess("1단계 주문 분석 성공! 다음 심화 퍼즐이 활성화되었습니다. 크리스탈 조각을 획득했습니다!");
+          }
+          return;
+        }
+
+        // 최종 정답 연출
         const puzzleArea = document.getElementById("puzzle-board-container");
         if (typeof AnimationManager !== "undefined" && puzzleArea) {
           AnimationManager.playSolved(puzzleArea);
         }
         
-        // 정답 수 및 획득한 수정 갱신
+        // 정답 수 갱신 (스테이지 클리어 완료)
         PuzzleState.correctCount = stageId;
+        PuzzleState.currentSubstage = 1; // 다음 스테이지를 위해 초기화
         EventBus.publish("stateChange:puzzle", PuzzleState);
         
         // 인벤토리 상태 한 번 더 갱신
@@ -34,7 +52,7 @@ const PuzzleScene = {
         
         const DELAY_AFTER_SOLVE = 1000;
         setTimeout(() => {
-          // 마법 수정 획득 연출 모달 기동
+          // 마법 수정 획득 연출 모달 기동 (개념 정리 모달 기능 포함)
           this.showCrystalModal(stageId, () => {
             if (stageId < 5) {
               // 다음 스테이지 이동
@@ -78,49 +96,29 @@ const PuzzleScene = {
       }
     }
     
-    // 2. 힌트 버튼 리스너 바인딩
+    // 2. 3단계 힌트 버튼 리스너 바인딩
     const hintBtn = document.getElementById("puzzle-hint-btn");
     if (hintBtn) {
       this.hintHandler = () => {
         let npcName = "엘리안";
         if (stageId === 5) npcName = "모르간"; // 5스테이지 보스는 조롱 메시지
 
-        let hintMsg = "";
+        PuzzleState.hintCount += 1;
         
-        if (stageId === 5) {
-          if (PuzzleState.hintCount >= 3) {
-            if (typeof FeedbackSystem !== "undefined") {
-              FeedbackSystem.showWarning("이미 마지막 조롱(힌트)까지 보았습니다!");
-            }
-            return;
-          }
-          
-          PuzzleState.hintCount += 1;
-          
-          const PENALTIES = [5, 10, 15]; // 누적 차감량
-          const currentPenalty = PENALTIES[PuzzleState.hintCount - 1];
-          PuzzleState.hintPenalty += currentPenalty;
-          
-          EventBus.publish("stateChange:puzzle", PuzzleState);
-          
-          if (PuzzleState.hintCount === 1) {
-            hintMsg = `\"후후... 네 녀석은 평행선의 엇각조차 잊어버린 것이냐? L선과 만나는 저 45°가 어디로 흐르는지 잘 보아라.\"`;
-          } else if (PuzzleState.hintCount === 2) {
-            hintMsg = `\"삼각형의 외각 규칙을 떠올려 보거라! 외각 x는 이웃하지 않는 두 내각의 합과 같다는 것을 알고나 있느냐? 크큭...\"`;
-          } else {
-            hintMsg = `\"불쌍해서 마지막 단서를 던져주지! x = 45 + 60 이다. 이 얕은 녀석아, 더이상 내 조롱을 견딜 수 있겠느냐?\"`;
-          }
-          
-          EventBus.publish("puzzle:showHint", PuzzleState.hintCount);
-          
+        // 페널티 누적
+        const PENALTIES = [3, 5, 10]; // 힌트 1, 2, 3회차 페널티
+        const currentPenalty = PENALTIES[Math.min(PuzzleState.hintCount, 3) - 1] || 10;
+        PuzzleState.hintPenalty += currentPenalty;
+        EventBus.publish("stateChange:puzzle", PuzzleState);
+        
+        let hintMsg = "";
+        const activePuzzle = PuzzleManager.getActivePuzzle();
+        if (activePuzzle && typeof activePuzzle.getHint === "function") {
+          hintMsg = activePuzzle.getHint(PuzzleState.hintCount);
         } else {
-          PuzzleState.hintCount += 1;
-          EventBus.publish("stateChange:puzzle", PuzzleState);
-          
-          if (stageId === 1) hintMsg = "맞꼭지각은 마주 보는 두 각으로 크기가 같습니다. 그리고 일직선(평각)은 항상 180°가 되지요. 180°에서 135°를 뺀 각도를 찾아보세요!";
-          if (stageId === 2) hintMsg = "두 선이 평행할 때, 같은 위치의 동위각과 지그재그 관계인 엇각의 크기는 같습니다. 기준각이 60°이니 엇각과 동위각의 성질을 기억하세요!";
-          if (stageId === 3) hintMsg = "꺾인 점(★)을 좌우로 드래그해서 가로 보조선을 만들어 보세요. 엇각 관계(45도와 30도)가 보조선 위아래로 나누어 표시될 것입니다!";
-          if (stageId === 4) hintMsg = "삼각형의 세 내각의 총합은 항상 180°입니다. 주어진 50°를 제외한 나머지 B와 C의 합이 130°가 되도록 알맞게 카드를 드롭해보세요!";
+          // Fallback (레거시/기본값)
+          if (stageId === 1) hintMsg = "맞꼭지각은 서로 교차하는 두 직선에 의해 마주 보는 두 각입니다. 크기가 항상 같지요!";
+          else hintMsg = "도형의 성질을 천천히 짚어보며 차분히 다시 풀어보세요.";
         }
         
         if (typeof FeedbackSystem !== "undefined") {
@@ -132,23 +130,19 @@ const PuzzleScene = {
       hintBtn.addEventListener("click", this.hintHandler);
     }
 
-    // 3. 오답 누적에 따른 "풀이 보기" 버튼 활성화 및 동작 연동
+    // 3. 오답 누적에 따른 "풀이 보기" 버튼 활성화 및 동작 연동 (힌트 3회 사용 시에도 노출)
     const solutionBtn = document.getElementById("puzzle-solution-btn");
     if (solutionBtn) {
       solutionBtn.style.display = "none"; // 기본 감춤
       
       this.solutionHandler = () => {
         let solutionText = "";
-        if (stageId === 1) {
-          solutionText = "빛의 다이얼을 135°(우측 하단 점선)에 맞추면, 마주 보는 맞꼭지각 x의 값도 동일해야 하지만, 180° 일직선에서 135°를 제외한 예각 크기는 180° - 135° = 45°가 됩니다.";
-        } else if (stageId === 2) {
-          solutionText = "두 직선이 평행할 때, 동위각과 엇각은 기준각(60°)과 크기가 동일합니다. 따라서 동위각 A는 60°이고, 엇각 B도 60°가 됩니다.";
-        } else if (stageId === 3) {
-          solutionText = "꺾임점(★)에 두 평행선과 일치하는 수평 보조선을 그리면, 위쪽의 엇각 45°와 아래쪽의 엇각 30°로 나누어집니다. 따라서 거울 각도 x는 이 두 엇각의 합인 45° + 30° = 75°가 됩니다.";
-        } else if (stageId === 4) {
-          solutionText = "삼각형 내각의 총합은 180°입니다. 각 A = 50°이므로 B + C = 130°여야 합니다. 예각삼각형 형태에 일치하도록 각 B = 60°(또는 70°), 각 C = 70°(또는 60°) 카드를 배치해야 합니다.";
-        } else if (stageId === 5) {
-          solutionText = "1) 평행선 L과 AB선이 이루는 45°는 엇각 성질에 의해 아래 내각 B = 45°가 됩니다.\n2) 삼각형 한 외각 x는 이웃하지 않는 두 내각의 합과 같습니다.\n3) 따라서 x = 60°(내각 A) + 45°(엇각 B) = 105°가 됩니다.";
+        const activePuzzle = PuzzleManager.getActivePuzzle();
+        if (activePuzzle && typeof activePuzzle.getSolution === "function") {
+          solutionText = activePuzzle.getSolution();
+        } else {
+          // Fallback
+          solutionText = "차분히 문제를 해결해보세요.";
         }
 
         if (typeof FeedbackSystem !== "undefined") {
@@ -160,7 +154,7 @@ const PuzzleScene = {
       solutionBtn.addEventListener("click", this.solutionHandler);
 
       this.puzzleStateSub = (state) => {
-        if (state && state.wrongCount >= 3) {
+        if (state && (state.wrongCount >= 3 || state.hintCount >= 3)) {
           solutionBtn.style.display = "inline-block";
         } else {
           solutionBtn.style.display = "none";
@@ -168,33 +162,47 @@ const PuzzleScene = {
       };
       EventBus.subscribe("stateChange:puzzle", this.puzzleStateSub);
 
-      if (typeof PuzzleState !== "undefined" && PuzzleState.wrongCount >= 3) {
+      if (typeof PuzzleState !== "undefined" && (PuzzleState.wrongCount >= 3 || PuzzleState.hintCount >= 3)) {
         solutionBtn.style.display = "inline-block";
       }
     }
   },
 
   updateCrystalInventory: function() {
-    if (typeof PuzzleState === "undefined") return;
+    if (typeof PuzzleState === "undefined" || typeof GameState === "undefined") return;
     for (let i = 1; i <= 5; i++) {
       const crystalEl = document.getElementById(`crystal-${i}`);
       if (crystalEl) {
-        if (i <= PuzzleState.correctCount) {
+        if (i < GameState.currentStage || (i === GameState.currentStage && GameState.cleared)) {
+          // 완전히 클리어하여 획득한 크리스탈
           crystalEl.style.opacity = "1";
           crystalEl.style.filter = "none";
-          let glowColor = "#54a0ff";
-          if (i === 1) glowColor = "#54a0ff"; // 청색
-          if (i === 2) glowColor = "#2ecc71"; // 녹색
-          if (i === 3) glowColor = "#f1c40f"; // 황색
-          if (i === 4) glowColor = "#ff7675"; // 적색
-          if (i === 5) glowColor = "#9b59b6"; // 자색
-          crystalEl.style.filter = `drop-shadow(0 0 6px ${glowColor})`;
+          let glowColor = this.getCrystalColor(i);
+          crystalEl.style.filter = `drop-shadow(0 0 8px ${glowColor})`;
+          crystalEl.classList.remove("crystal-fragment");
+        } else if (i === GameState.currentStage && PuzzleState.currentSubstage > 1) {
+          // 현재 스테이지 진행 중이며 1단계를 클리어하여 조각을 얻은 상태
+          crystalEl.style.opacity = "0.5";
+          crystalEl.style.filter = "grayscale(30%)";
+          let glowColor = this.getCrystalColor(i);
+          crystalEl.style.filter = `drop-shadow(0 0 3px ${glowColor})`;
+          crystalEl.classList.add("crystal-fragment"); // Styles.html에 선언된 펄스 연출 적용
         } else {
-          crystalEl.style.opacity = "0.2";
+          // 아직 획득하지 못한 크리스탈
+          crystalEl.style.opacity = "0.15";
           crystalEl.style.filter = "grayscale(100%)";
+          crystalEl.classList.remove("crystal-fragment");
         }
       }
     }
+  },
+
+  getCrystalColor: function(i) {
+    if (i === 1) return "#54a0ff"; // 청색
+    if (i === 2) return "#2ecc71"; // 녹색
+    if (i === 3) return "#f1c40f"; // 황색
+    if (i === 4) return "#ff7675"; // 적색
+    return "#9b59b6"; // 자색
   },
 
   showCrystalModal: function(stageId, onProceed) {
@@ -203,6 +211,8 @@ const PuzzleScene = {
     const title = document.getElementById("crystal-modal-title");
     const desc = document.getElementById("crystal-modal-desc");
     const btn = document.getElementById("crystal-modal-btn");
+    const conceptCard = document.getElementById("crystal-concept-card");
+    const conceptTextEl = document.getElementById("crystal-concept-text");
 
     if (!modal || !icon || !title || !desc || !btn) {
       if (onProceed) onProceed();
@@ -213,6 +223,23 @@ const PuzzleScene = {
     let color = "#54a0ff";
     let titleText = "수정 획득!";
     let descText = "";
+    let conceptText = "";
+
+    // 3초 요약용 개념 텍스트 매핑
+    const conceptDict = {
+      1: "맞꼭지각은 항상 크기가 같습니다.",
+      2: "평행선이 다른 한 직선과 만날 때, 동위각과 엇각의 크기는 서로 같습니다.",
+      3: "평행선 사이의 꺾인 선 문제는 꺾인 점을 지나고 평행한 보조선을 그어 동위각/엇각으로 해결합니다.",
+      4: "삼각형의 한 외각의 크기는 이웃하지 않는 두 내각의 크기의 합과 같습니다.",
+      5: "도형의 마법이 모두 풀렸습니다! 당신은 이제 기하학의 수호자입니다!"
+    };
+
+    const activePuzzle = PuzzleManager.getActivePuzzle();
+    if (activePuzzle && typeof activePuzzle.getConceptText === "function") {
+      conceptText = activePuzzle.getConceptText();
+    } else {
+      conceptText = conceptDict[stageId] || "";
+    }
 
     if (stageId === 1) {
       emoji = "🔷"; color = "#54a0ff"; titleText = "청색 수정 획득!";
@@ -236,9 +263,38 @@ const PuzzleScene = {
     title.textContent = titleText;
     desc.textContent = descText;
 
+    // 개념 카드 노출
+    if (conceptCard && conceptTextEl && conceptText) {
+      conceptTextEl.textContent = conceptText;
+      conceptCard.style.display = "block";
+    } else if (conceptCard) {
+      conceptCard.style.display = "none";
+    }
+
     modal.classList.add("show");
 
+    // 3초 카운트다운 타이머 시작 (버튼 비활성화)
+    let countdown = 3;
+    btn.disabled = true;
+    btn.textContent = `주문 분석 중 (${countdown}초)...`;
+    btn.style.opacity = "0.6";
+    btn.style.cursor = "not-allowed";
+
+    const countdownInterval = setInterval(() => {
+      countdown--;
+      if (countdown > 0) {
+        btn.textContent = `주문 분석 중 (${countdown}초)...`;
+      } else {
+        clearInterval(countdownInterval);
+        btn.disabled = false;
+        btn.textContent = "계속하기";
+        btn.style.opacity = "1";
+        btn.style.cursor = "pointer";
+      }
+    }, 1000);
+
     const handler = () => {
+      if (btn.disabled) return;
       modal.classList.remove("show");
       btn.removeEventListener("click", handler);
       if (typeof onProceed === "function") {

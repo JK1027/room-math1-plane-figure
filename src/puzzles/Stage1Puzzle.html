@@ -218,6 +218,23 @@ class Stage1Puzzle extends PuzzleBase {
     return isAngleCorrect && isInputCorrect;
   }
 
+  getHint(count) {
+    if (count === 1) {
+      return "맞꼭지각은 서로 교차하는 두 직선에 의해 마주 보는 두 각을 뜻합니다. 크기가 항상 서로 같습니다.";
+    } else if (count === 2) {
+      return "일직선(평각)은 항상 180°입니다. 다이얼 각도가 135°이므로, 그 옆의 각도는 180° - 135° = 45°가 되며, 이 각이 바로 맞꼭지각 x와 마주 봅니다!";
+    }
+    return this.getSolution();
+  }
+
+  getSolution() {
+    return "빛의 다이얼을 135°(우측 하단 점선)에 맞추면, 마주 보는 맞꼭지각 x의 값도 동일해야 하지만, 180° 일직선에서 135°를 제외한 예각 크기는 180° - 135° = 45°가 됩니다. 따라서 맞꼭지각 x = 45°입니다.";
+  }
+
+  getConceptText() {
+    return "두 직선이 교차하여 생기는 맞꼭지각의 크기는 항상 서로 같습니다.";
+  }
+
   reset() {
     this.currentAngle = 90;
     this.userInput = "";

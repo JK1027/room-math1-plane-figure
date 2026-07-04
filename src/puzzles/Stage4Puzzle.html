@@ -1,56 +1,62 @@
 <script>
 /**
- * 4스테이지 삼각형 내각의 합 퍼즐 클래스.
- * 대형 드롭존(64x38px), 6선택지, 꼭짓점 밀착 정렬, 중앙 실시간 합계(glow) 가이드 적용.
+ * 4스테이지 삼각형의 성질 퍼즐 클래스.
+ * Substage 1: 삼각형 내각의 합(180도) 카드 드롭 퍼즐
+ * Substage 2: 삼각형의 외각 성질을 이용한 각도 x 계산 퍼즐
  */
 class Stage4Puzzle extends PuzzleBase {
   constructor(containerId) {
     super(containerId);
+    this.substage = 1;
     this.fixedAngle = 50;
-    // 정답 조합: B=60, C=70 (도형의 비대칭 예각 형태에 정밀 매칭)
-    this.solved = { zoneB: null, zoneC: null };
+    this.solved = { zoneB: null, zoneC: null }; // Substage 1용
+    this.inputX = ""; // Substage 2용
+    this.targetX = 110; // 50 + 60 = 110
     this.onClearCallback = null;
     this.selectedCard = null;
+    
+    this.cardClickHandler = null;
+    this.zoneClickHandler = null;
+    this.sub2InputHandler = null;
+    this.sub2SubmitHandler = null;
   }
 
   init() {
+    if (this.substage === 1) {
+      this.initSubstage1();
+    } else {
+      this.initSubstage2();
+    }
+  }
+
+  initSubstage1() {
     this.container.innerHTML = `
       <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
         <p style="color: var(--gold-primary); margin-bottom: 12px; font-size: 0.9rem;">
-          각도 카드를 선택한 뒤, 빈칸(각 B 또는 각 C)을 클릭하여 채워 넣으세요.
+          [Part 1] 각도 카드를 선택한 뒤, 빈칸(각 B 또는 각 C)을 클릭하여 채워 넣으세요.
         </p>
         
-        <!-- 삼각형 보드판 -->
         <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
-          <!-- SVG 삼각형 외곽선 및 호 데코 (수학적 50-60-70 예각삼각형 비례 구현) -->
           <svg width="280" height="180" style="position: absolute; top:0; left:0; pointer-events: none;">
             <polygon points="152,30 83,150 196,150" fill="none" stroke="var(--gold-primary)" stroke-width="3" />
-            <!-- 각 A(50) 가이드 호 (확대 및 선명화) -->
             <path d="M 137,56 A 30,30 0 0,0 162.3,58.2" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.8" />
-            <!-- 각 B(60) 가이드 호 (확대 및 선명화) -->
             <path d="M 113,150 A 30,30 0 0,0 98,124" fill="none" stroke="var(--gold-light)" stroke-width="2.5" />
-            <!-- 각 C(70) 가이드 호 (확대 및 선명화) -->
             <path d="M 166,150 A 30,30 0 0,1 185.7,121.8" fill="none" stroke="var(--gold-light)" stroke-width="2.5" />
           </svg>
           
-          <!-- 각 A (고정 50도) -->
           <div style="position: absolute; top: 62px; left: 140px; font-size: 0.9rem; color: #fff; font-weight: bold;">50°</div>
           
-          <!-- 각 B 드롭존 (꼭짓점 B 주변 배치) -->
           <div id="drop-zone-B" class="dropzone" style="position: absolute; top: 106px; left: 22px; width: 56px; height: 34px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-align: center; line-height: 30px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">B</div>
           <div style="position: absolute; top: 142px; left: 34px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">각 B</div>
           
-          <!-- 각 C 드롭존 (꼭짓점 C 주변 배치) -->
           <div id="drop-zone-C" class="dropzone" style="position: absolute; top: 106px; left: 202px; width: 56px; height: 34px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-align: center; line-height: 30px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">C</div>
           <div style="position: absolute; top: 142px; left: 214px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">각 C</div>
           
-          <!-- 중앙 실시간 합계 디스플레이 (Glow 효과 추가) -->
           <div id="sum-formula" style="position: absolute; top: 62px; left: 0; width: 100%; text-align: center; font-size: 0.85rem; font-weight: bold;">
             식: 50° + B + C = 0°
           </div>
         </div>
         
-        <!-- 카드 후보 (6종으로 확대) -->
         <div style="margin-top: 15px; display: flex; justify-content: center; gap: 8px;">
           <div class="drag-card" data-value="40" style="width: 42px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s; font-size: 0.85rem;">40°</div>
           <div class="drag-card" data-value="60" style="width: 42px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s; font-size: 0.85rem;">60°</div>
@@ -65,11 +71,62 @@ class Stage4Puzzle extends PuzzleBase {
     this.zones = this.container.querySelectorAll(".dropzone");
     this.formula = document.getElementById("sum-formula");
     this.selectedCard = null;
-    
     this.render();
   }
 
+  initSubstage2() {
+    this.container.innerHTML = `
+      <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
+        <p style="color: var(--gold-primary); margin-bottom: 12px; font-size: 0.9rem;">
+          [Part 2] 밑변의 연장선 끝에 생성된 <strong>외각 x</strong>의 크기를 계산하여 입력하세요.
+        </p>
+        
+        <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
+          <svg width="280" height="180" style="position: absolute; top:0; left:0; pointer-events: none;">
+            <!-- 삼각형 ABC 와 BC 연장선 D -->
+            <polygon points="120,30 50,140 180,140" fill="none" stroke="var(--gold-primary)" stroke-width="3" />
+            <line x1="180" y1="140" x2="250" y2="140" stroke="rgba(255, 71, 87, 0.7)" stroke-width="3" stroke-dasharray="3 2" />
+            
+            <!-- 각 A(50), 각 B(60) 가이드 호 -->
+            <path d="M 110,48 A 20,20 0 0,0 128,48" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+            <path d="M 70,140 A 20,20 0 0,0 60,121" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+            
+            <!-- 외각 ACD 호 (C=180, D=250 연장선 방향) -->
+            <path d="M 197,133 A 20,20 0 0,1 200,140" fill="none" stroke="rgba(255, 71, 87, 0.9)" stroke-width="2" />
+          </svg>
+          
+          <div style="position: absolute; top: 58px; left: 112px; font-size: 0.85rem; color: #fff; font-weight: bold;">50°</div>
+          <div style="position: absolute; top: 116px; left: 70px; font-size: 0.85rem; color: #fff; font-weight: bold;">60°</div>
+          
+          <!-- 외각 x 라벨 -->
+          <div style="position: absolute; top: 112px; left: 202px; font-size: 1rem; color: #ff4757; font-weight: bold;">x</div>
+          
+          <div style="position: absolute; top: 78px; left: 0; width: 100%; text-align: center; font-size: 0.75rem; color: var(--text-muted); font-weight: bold;">
+            외각 성질: x = 이웃하지 않는 두 내각의 합
+          </div>
+        </div>
+
+        <div style="margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 8px;">
+          <span style="font-size: 0.95rem; color: #fff;">외각 x = </span>
+          <input type="number" id="stage4-input-x" placeholder="x의 값" style="width: 80px; padding: 8px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none;">
+          <span style="font-size: 0.95rem; color: #fff;">°</span>
+          <button id="stage4-submit-btn" class="btn" style="width: 70px; padding: 9px; font-size: 0.85rem; margin: 0;">확인</button>
+        </div>
+      </div>
+    `;
+    this.sub2Input = document.getElementById("stage4-input-x");
+    this.sub2Submit = document.getElementById("stage4-submit-btn");
+  }
+
   bindEvents() {
+    if (this.substage === 1) {
+      this.bindEventsSubstage1();
+    } else {
+      this.bindEventsSubstage2();
+    }
+  }
+
+  bindEventsSubstage1() {
     this.cardClickHandler = (e) => {
       this.cards.forEach(c => {
         c.style.borderColor = "var(--gold-primary)";
@@ -106,31 +163,20 @@ class Stage4Puzzle extends PuzzleBase {
 
       if (this.checkAnswer()) {
         this.zones.forEach(z => z.style.borderColor = "#2ecc71");
-        
         setTimeout(() => {
-          if (typeof FeedbackSystem !== "undefined") {
-            FeedbackSystem.showSuccess(`정답입니다! 삼각형 세 내각의 크기의 합은 언제나 180°입니다! (+5점)`);
-          }
           if (this.onClearCallback) {
             this.onClearCallback();
-          } else {
-            const clearBtn = document.getElementById("mock-puzzle-clear-btn");
-            if (clearBtn) clearBtn.click();
           }
         }, 300);
       } else {
-        // 둘 다 값이 찼을 때 오답인 경우 판정 안내
         if (this.solved.zoneB && this.solved.zoneC) {
           if (typeof PuzzleState !== "undefined") {
             PuzzleState.wrongCount += 1;
             EventBus.publish("stateChange:puzzle", PuzzleState);
           }
-
           const sum = 50 + this.solved.zoneB + this.solved.zoneC;
-          
           if (typeof FeedbackSystem !== "undefined") {
             if (sum === 180) {
-              // 40 + 90과 같이 180은 맞지만 도형 형태(비대칭 예각삼각형)상 안 맞는 함정
               FeedbackSystem.showError(`세 각의 합(${sum}°)은 맞으나, 도형의 생김새(예각삼각형)를 보세요. 직각(90°)이나 둔각 카드는 각 B나 C에 적합하지 않습니다. 다시 조합해 보세요.`);
             } else {
               FeedbackSystem.showError(`틀렸습니다! 세 각의 합이 ${sum}°입니다. 삼각형 내각의 합은 항상 180°가 되어야 합니다.`);
@@ -149,8 +195,37 @@ class Stage4Puzzle extends PuzzleBase {
     });
   }
 
+  bindEventsSubstage2() {
+    this.sub2InputHandler = (e) => {
+      this.inputX = e.target.value;
+    };
+
+    this.sub2SubmitHandler = () => {
+      const val = parseInt(this.inputX);
+      if (val === this.targetX) {
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showSuccess("정답입니다! 삼각형의 한 외각은 이웃하지 않는 두 내각의 합과 같으므로 x = 50° + 60° = 110°가 맞습니다! (+5점)");
+        }
+        if (this.onClearCallback) {
+          this.onClearCallback();
+        }
+      } else {
+        if (typeof PuzzleState !== "undefined") {
+          PuzzleState.wrongCount += 1;
+          EventBus.publish("stateChange:puzzle", PuzzleState);
+        }
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showError("틀렸습니다! 연장선 위의 외각 x는 삼각형 내부의 이웃하지 않는 두 각(50°, 60°)의 합과 같아야 합니다.");
+        }
+      }
+    };
+
+    if (this.sub2Input) this.sub2Input.addEventListener("input", this.sub2InputHandler);
+    if (this.sub2Submit) this.sub2Submit.addEventListener("click", this.sub2SubmitHandler);
+  }
+
   render() {
-    if (this.formula) {
+    if (this.substage === 1 && this.formula) {
       const bStr = this.solved.zoneB ? `${this.solved.zoneB}°` : "B";
       const cStr = this.solved.zoneC ? `${this.solved.zoneC}°` : "C";
       const total = 50 + (this.solved.zoneB || 0) + (this.solved.zoneC || 0);
@@ -159,9 +234,8 @@ class Stage4Puzzle extends PuzzleBase {
       let glow = "none";
       if (this.solved.zoneB && this.solved.zoneC) {
         if (total === 180) {
-          // B=60, C=70 일 때만 최종 녹색 처리
           const isValidShape = (this.solved.zoneB === 60 && this.solved.zoneC === 70) || (this.solved.zoneB === 70 && this.solved.zoneC === 60);
-          color = isValidShape ? "#2ecc71" : "#f1c40f"; // 합만 맞으면 주황, 형태도 맞으면 초록
+          color = isValidShape ? "#2ecc71" : "#f1c40f";
           glow = isValidShape ? "0 0 10px rgba(46,204,113,0.5)" : "none";
         } else {
           color = "#ff4757";
@@ -180,15 +254,60 @@ class Stage4Puzzle extends PuzzleBase {
   }
 
   checkAnswer() {
-    if (!this.solved.zoneB || !this.solved.zoneC) return false;
-    // 50 + B + C = 180 이면서, 예각삼각형 형태 제약 (B=60, C=70 또는 B=70, C=60)
-    const isSumCorrect = (50 + this.solved.zoneB + this.solved.zoneC) === 180;
-    const isShapeCorrect = (this.solved.zoneB === 60 && this.solved.zoneC === 70) || (this.solved.zoneB === 70 && this.solved.zoneC === 60);
-    return isSumCorrect && isShapeCorrect;
+    if (this.substage === 1) {
+      if (!this.solved.zoneB || !this.solved.zoneC) return false;
+      const isSumCorrect = (50 + this.solved.zoneB + this.solved.zoneC) === 180;
+      const isShapeCorrect = (this.solved.zoneB === 60 && this.solved.zoneC === 70) || (this.solved.zoneB === 70 && this.solved.zoneC === 60);
+      return isSumCorrect && isShapeCorrect;
+    } else {
+      return parseInt(this.inputX) === this.targetX;
+    }
+  }
+
+  goNextSubstage() {
+    if (this.substage === 1) {
+      this.destroy();
+      this.substage = 2;
+      this.inputX = "";
+      
+      if (typeof SceneManager !== "undefined") {
+        SceneManager.showScene("story", { stageId: "4_mid" });
+      } else {
+        this.init();
+        this.bindEvents();
+      }
+      return true;
+    }
+    return false;
+  }
+
+  getHint(count) {
+    if (this.substage === 1) {
+      if (count === 1) return "삼각형의 가장 기초적인 성질인 세 내각의 총합을 기억해 보세요.";
+      if (count === 2) return "삼각형 내부의 각들의 합은 언제나 180°입니다. 주어진 각이 50°이니 B + C = 130°가 되도록 채우되 예각 비율에 알맞게 각각 60°와 70°를 넣어보세요.";
+      return this.getSolution();
+    } else {
+      if (count === 1) return "삼각형 밑변을 연장하여 생긴 외각 x는, 바로 이웃한 안쪽 각을 뺀 나머지 두 내각의 합과 같습니다.";
+      if (count === 2) return "즉, x는 안쪽의 50°와 60°를 합친 크기와 완벽하게 같습니다. 이 성질을 수식으로 정리하면 x = 50 + 60 이 됩니다!";
+      return this.getSolution();
+    }
+  }
+
+  getSolution() {
+    if (this.substage === 1) {
+      return "삼각형 내각의 총합은 180°입니다. 각 A = 50°이므로 B + C = 130°여야 합니다. 예각삼각형 형태에 일치하도록 각 B = 60°(또는 70°), 각 C = 70°(또는 60°) 카드를 배치해야 합니다.";
+    } else {
+      return "삼각형의 외각 성질에 의해 외각 x는 이웃하지 않는 두 내각의 합인 50° + 60° = 110°가 됩니다.";
+    }
+  }
+
+  getConceptText() {
+    return "삼각형의 한 외각의 크기는 이웃하지 않는 두 내각의 크기의 합과 같습니다.";
   }
 
   reset() {
     this.solved = { zoneB: null, zoneC: null };
+    this.inputX = "";
     this.init();
     this.bindEvents();
   }
@@ -203,6 +322,12 @@ class Stage4Puzzle extends PuzzleBase {
       this.zones.forEach(zone => {
         zone.removeEventListener("click", this.zoneClickHandler);
       });
+    }
+    if (this.sub2Input && this.sub2InputHandler) {
+      this.sub2Input.removeEventListener("input", this.sub2InputHandler);
+    }
+    if (this.sub2Submit && this.sub2SubmitHandler) {
+      this.sub2Submit.removeEventListener("click", this.sub2SubmitHandler);
     }
     this.container.innerHTML = "";
   }

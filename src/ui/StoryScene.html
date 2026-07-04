@@ -7,9 +7,14 @@ const StoryScene = {
     const stageId = data ? data.stageId : 1;
     console.log(`[StoryScene] 진입 - 스테이지 ${stageId}`);
     
+    let bgStageId = stageId;
+    if (typeof stageId === "string" && stageId.includes("_mid")) {
+      bgStageId = parseInt(stageId.split("_mid")[0]);
+    }
+
     // 0. 스테이지별 배경 레이어 적용
     if (typeof AnimationManager !== "undefined") {
-      AnimationManager.playStoryBg(stageId);
+      AnimationManager.playStoryBg(bgStageId);
     }
     
     // 1. 스토리 영역 클릭 리스너 정의 (StoryManager.next() 호출)
@@ -27,7 +32,11 @@ const StoryScene = {
       if (typeof AnimationManager !== "undefined") {
         AnimationManager.playTypingEnd();
       }
-      SceneManager.showScene("puzzle", { stageId: stageId });
+      let targetStageId = stageId;
+      if (typeof stageId === "string" && stageId.includes("_mid")) {
+        targetStageId = parseInt(stageId.split("_mid")[0]);
+      }
+      SceneManager.showScene("puzzle", { stageId: targetStageId });
     });
   },
   

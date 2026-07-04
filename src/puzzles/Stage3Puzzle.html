@@ -1,14 +1,15 @@
 <script>
 /**
  * 3스테이지 평행선 성질 레이저 프리즘 퍼즐 클래스.
- * 꺾임점 드래그 보조선 생성 시스템, 확인 입력방식 적용.
+ * Substage 1: 1번 꺾인 선 보조선 드래그 매칭
+ * Substage 2: W자형 2번 꺾인 선 (1개 보조선 자동 쳐짐, 2번째 드래그 매칭)
  */
 class Stage3Puzzle extends PuzzleBase {
   constructor(containerId) {
     super(containerId);
-    this.targetAngle = 75; // 45 + 30 = 75
+    this.substage = 1;
     this.userInput = "";
-    this.hasGuideLine = false; // 보조선 생성 여부
+    this.hasGuideLine = false; // 보조선 생성 여부 (각 substage별)
     
     // 드래그 조작 관련 변수
     this.isDragging = false;
@@ -16,47 +17,48 @@ class Stage3Puzzle extends PuzzleBase {
     
     this.inputHandler = null;
     this.submitHandler = null;
-    
     this.dragStartHandler = null;
     this.dragMoveHandler = null;
     this.dragEndHandler = null;
-    
     this.onClearCallback = null;
   }
 
   init() {
+    if (this.substage === 1) {
+      this.initSubstage1();
+    } else {
+      this.initSubstage2();
+    }
+  }
+
+  initSubstage1() {
+    this.targetAngle = 75; // 45 + 30 = 75
     this.container.innerHTML = `
       <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
         <p style="color: var(--gold-primary); margin-bottom: 10px; font-size: 0.9rem;">
-          꺾임점(★)을 <strong>좌우로 드래그</strong>하여 보조선을 그리고, 거울의 반사각(x)을 계산하세요.
+          [Part 1] 꺾임점(★)을 <strong>좌우로 드래그</strong>하여 보조선을 그리고, 거울의 반사각(x)을 계산하세요.
         </p>
         
         <div style="position: relative; display: inline-block; margin-bottom: 10px;">
           <svg id="stage3-svg" width="260" height="200" style="background:#0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow); cursor: crosshair;">
-            <!-- 상단 평행 레일 L -->
             <line x1="20" y1="40" x2="240" y2="40" stroke="#a5a5a5" stroke-width="4" stroke-dasharray="3" />
-            <!-- 하단 평행 레일 M -->
             <line x1="20" y1="160" x2="240" y2="160" stroke="#a5a5a5" stroke-width="4" stroke-dasharray="3" />
             
-            <!-- 보조 가이드 평행선 (드래그 시 등장, y=100 수평선) -->
+            <!-- 보조 가이드 평행선 (y=100 수평선) -->
             <line id="stage3-guide-line" x1="20" y1="100" x2="240" y2="100" stroke="#2ecc71" stroke-width="2" stroke-dasharray="3" style="opacity: 0; transition: opacity 0.4s ease;" />
             
-            <!-- 레이저 발사대 및 수신 보석 (수평선 정렬) -->
             <circle cx="40" cy="40" r="8" fill="var(--gold-primary)" />
             <polygon points="204,152 212,160 204,168 196,160" fill="#00d2d3" id="stage3-target-gem" />
             
-            <!-- 꺾임점의 조작 거울 (중심 100, 100) -->
             <line id="stage3-mirror" x1="90" y1="100" x2="110" y2="100" stroke="var(--gold-primary)" stroke-width="5" stroke-linecap="round" />
             <circle cx="100" cy="100" r="6" fill="#ff4757" style="cursor: pointer;" id="stage3-pivot" />
             
-            <!-- 레이저 빔 (성공 경로, 45도 및 30도 꺾임 완벽 매칭) -->
+            <!-- 레이저 빔 -->
             <polyline id="stage3-laser" points="40,40 100,100 204,160" stroke="#ff4757" stroke-width="3.5" stroke-dasharray="2" style="display:none;" />
             
-            <!-- 기본 엇각 정보 텍스트 (수평선 각도 매칭) -->
             <text x="65" y="55" fill="#fff" font-size="10" font-weight="bold">45°</text>
             <text x="170" y="153" fill="#fff" font-size="10" font-weight="bold">30°</text>
             
-            <!-- 보조선 상의 엇각 가이드 텍스트 (보조선 등장 시 노출) -->
             <g id="stage3-hint-angles" style="opacity: 0; transition: opacity 0.5s ease;">
               <text x="70" y="93" fill="#2ecc71" font-size="9" font-weight="bold">45°(엇각)</text>
               <text x="120" y="113" fill="#2ecc71" font-size="9" font-weight="bold">30°(엇각)</text>
@@ -64,7 +66,72 @@ class Stage3Puzzle extends PuzzleBase {
           </svg>
         </div>
         
-        <!-- 입력 확인 영역 -->
+        <div style="margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 8px;">
+          <span style="font-size: 0.95rem; color: #fff;">거울 각도 x = </span>
+          <input type="number" id="stage3-input" placeholder="각도" style="width: 80px; padding: 8px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none;">
+          <span style="font-size: 0.95rem; color: #fff;">°</span>
+          <button id="stage3-submit-btn" class="btn" style="width: 70px; padding: 9px; font-size: 0.85rem; margin: 0;">확인</button>
+        </div>
+      </div>
+    `;
+    this.input = document.getElementById("stage3-input");
+    this.submitBtn = document.getElementById("stage3-submit-btn");
+    this.guideLine = document.getElementById("stage3-guide-line");
+    this.hintAngles = document.getElementById("stage3-hint-angles");
+    this.laser = document.getElementById("stage3-laser");
+    this.mirror = document.getElementById("stage3-mirror");
+    this.pivot = document.getElementById("stage3-pivot");
+    this.svg = document.getElementById("stage3-svg");
+    this.gem = document.getElementById("stage3-target-gem");
+  }
+
+  initSubstage2() {
+    this.targetAngle = 65; // 30 + 35 = 65
+    this.container.innerHTML = `
+      <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
+        <p style="color: var(--gold-primary); margin-bottom: 10px; font-size: 0.9rem;">
+          [Part 2] 아래 꺾임점(★)을 <strong>드래그</strong>하여 두 번째 보조선을 긋고, 반사각(x)을 구하세요.
+        </p>
+        
+        <div style="position: relative; display: inline-block; margin-bottom: 10px;">
+          <svg id="stage3-svg" width="260" height="200" style="background:#0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow); cursor: crosshair;">
+            <!-- 레일 2선 -->
+            <line x1="20" y1="30" x2="240" y2="30" stroke="#a5a5a5" stroke-width="4" stroke-dasharray="3" />
+            <line x1="20" y1="170" x2="240" y2="170" stroke="#a5a5a5" stroke-width="4" stroke-dasharray="3" />
+            
+            <!-- [안전 보조선 1] (y=80 수평선, 자동 렌더링) -->
+            <line x1="20" y1="80" x2="240" y2="80" stroke="rgba(100, 180, 255, 0.6)" stroke-width="2" stroke-dasharray="3" />
+            
+            <!-- [가이드 보조선 2] (y=130 수평선, 드래그 시 생성) -->
+            <line id="stage3-guide-line" x1="20" y1="130" x2="240" y2="130" stroke="#2ecc71" stroke-width="2" stroke-dasharray="3" style="opacity: 0; transition: opacity 0.4s ease;" />
+            
+            <circle cx="40" cy="30" r="8" fill="var(--gold-primary)" />
+            <polygon points="214,162 222,170 214,178 206,170" fill="#00d2d3" id="stage3-target-gem" />
+            
+            <!-- 꺾인 거울 P1 (y=80) 및 P2 (y=130) -->
+            <circle cx="90" cy="80" r="4" fill="#a5a5a5" />
+            <line id="stage3-mirror" x1="140" y1="130" x2="160" y2="130" stroke="var(--gold-primary)" stroke-width="5" stroke-linecap="round" />
+            <circle cx="150" cy="130" r="6" fill="#ff4757" style="cursor: pointer;" id="stage3-pivot" />
+            
+            <!-- 레이저 빔 (지그재그 W) -->
+            <polyline id="stage3-laser" points="40,30 90,80 150,130 214,170" stroke="#ff4757" stroke-width="3.5" stroke-dasharray="2" style="display:none;" />
+            
+            <!-- 기준 각도들 -->
+            <text x="60" y="43" fill="#fff" font-size="9" font-weight="bold">40°</text>
+            <text x="180" y="163" fill="#fff" font-size="9" font-weight="bold">35°</text>
+            
+            <!-- 안전 가이드 엇각 표시 -->
+            <text x="50" y="75" fill="#54a0ff" font-size="9" font-weight="bold">40°(엇각)</text>
+            <text x="105" y="93" fill="#54a0ff" font-size="9" font-weight="bold">30°</text>
+            
+            <!-- 두 번째 드래그 성공 시 노출되는 엇각들 -->
+            <g id="stage3-hint-angles" style="opacity: 0; transition: opacity 0.5s ease;">
+              <text x="110" y="125" fill="#2ecc71" font-size="9" font-weight="bold">30°(엇각)</text>
+              <text x="175" y="145" fill="#2ecc71" font-size="9" font-weight="bold">35°(엇각)</text>
+            </g>
+          </svg>
+        </div>
+        
         <div style="margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 8px;">
           <span style="font-size: 0.95rem; color: #fff;">거울 각도 x = </span>
           <input type="number" id="stage3-input" placeholder="각도" style="width: 80px; padding: 8px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none;">
@@ -85,7 +152,6 @@ class Stage3Puzzle extends PuzzleBase {
   }
 
   bindEvents() {
-    // 1. 드래그 이벤트 (보조선 생성)
     this.dragStartHandler = (e) => {
       this.isDragging = true;
       this.startX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
@@ -111,12 +177,10 @@ class Stage3Puzzle extends PuzzleBase {
       this.isDragging = false;
     };
 
-    // 2. 키보드 입력
     this.inputHandler = (e) => {
       this.userInput = e.target.value;
     };
 
-    // 3. 정답 제출
     this.submitHandler = () => {
       if (!this.hasGuideLine) {
         if (typeof FeedbackSystem !== "undefined") {
@@ -129,7 +193,6 @@ class Stage3Puzzle extends PuzzleBase {
       if (val === this.targetAngle) {
         this.input.disabled = true;
         this.submitBtn.disabled = true;
-
         this.playCorrectAnimation();
       } else {
         if (typeof PuzzleState !== "undefined") {
@@ -142,14 +205,11 @@ class Stage3Puzzle extends PuzzleBase {
       }
     };
 
-    // SVG 혹은 피벗에 드래그 이벤트 연결
     if (this.svg) {
       this.svg.addEventListener("mousedown",  this.dragStartHandler);
       this.svg.addEventListener("touchstart", this.dragStartHandler, { passive: true });
-
       this.svg.addEventListener("mousemove",  this.dragMoveHandler);
       this.svg.addEventListener("touchmove",  this.dragMoveHandler, { passive: true });
-
       window.addEventListener("mouseup",    this.dragEndHandler);
       window.addEventListener("touchend",   this.dragEndHandler);
     }
@@ -159,24 +219,23 @@ class Stage3Puzzle extends PuzzleBase {
   }
 
   playCorrectAnimation() {
-    // 거울 회전 연출 (기준 피벗 100 100으로 변경)
     if (this.mirror) {
       this.mirror.setAttribute("transform", `rotate(30 100 100)`);
     }
-
-    // 레이저 발사
     if (this.laser) {
       this.laser.style.display = "block";
     }
-
-    // 보석 파랗게 발광
     if (this.gem) {
       this.gem.setAttribute("fill", "#54a0ff");
       this.gem.style.filter = "drop-shadow(0 0 10px #54a0ff)";
     }
 
     if (typeof FeedbackSystem !== "undefined") {
-      FeedbackSystem.showSuccess("정답입니다! 평행 보조선을 그리면 엇각의 성질에 의해 두 엇각의 합 x = 45° + 30° = 75°가 됩니다! (+5점)");
+      if (this.substage === 1) {
+        FeedbackSystem.showSuccess("정답입니다! 엇각의 성질에 의해 두 엇각의 합 x = 45° + 30° = 75°가 됩니다! (+5점)");
+      } else {
+        FeedbackSystem.showSuccess("정답입니다! 2차 보조선을 긋자 두 번째 엇각 35°가 전파되어 x = 30° + 35° = 65°가 됩니다! (+5점)");
+      }
     }
 
     if (typeof AnimationManager !== "undefined" && this.svg) {
@@ -188,15 +247,54 @@ class Stage3Puzzle extends PuzzleBase {
     setTimeout(() => {
       if (this.onClearCallback) {
         this.onClearCallback();
-      } else {
-        const clearBtn = document.getElementById("mock-puzzle-clear-btn");
-        if (clearBtn) clearBtn.click();
       }
     }, 1500);
   }
 
   checkAnswer() {
     return parseInt(this.userInput) === this.targetAngle;
+  }
+
+  goNextSubstage() {
+    if (this.substage === 1) {
+      this.destroy();
+      this.substage = 2;
+      this.hasGuideLine = false;
+      this.userInput = "";
+      
+      if (typeof SceneManager !== "undefined") {
+        SceneManager.showScene("story", { stageId: "3_mid" });
+      } else {
+        this.init();
+        this.bindEvents();
+      }
+      return true;
+    }
+    return false;
+  }
+
+  getHint(count) {
+    if (this.substage === 1) {
+      if (count === 1) return "꺾인 점(★)을 가로지르는 평행선을 머릿속으로 그려보는 것이 꺾인 선 문제의 시작입니다.";
+      if (count === 2) return "보조선 위쪽은 L선에 엇갈리는 45° 엇각, 아래쪽은 M선에 엇갈리는 30° 엇각으로 나뉩니다. 이 두 크기를 합쳐보세요!";
+      return this.getSolution();
+    } else {
+      if (count === 1) return "윗부분에 쳐진 파란색 안전 보조선을 기준 삼아, 아래 빨간색 꺾인 점(★)에도 동일한 평행 보조선을 그려보세요.";
+      if (count === 2) return "두 보조선 사이는 Z 모양 엇각에 의해 30°가 되고, 하단 보조선과 M선 사이는 35°의 엇각이 됩니다. 두 크기를 더해보세요!";
+      return this.getSolution();
+    }
+  }
+
+  getSolution() {
+    if (this.substage === 1) {
+      return "꺾인 점에 평행선을 그으면 위쪽 엇각 45°와 아래쪽 엇각 30°로 나누어집니다. 따라서 거울 각도 x는 이 두 엇각의 합인 45° + 30° = 75°가 됩니다.";
+    } else {
+      return "P1 지점 보조선 아래 각도 30°가 P2 지점 보조선 위로 엇각 전파(30°)됩니다. P2 지점 보조선 아래는 M선과의 엇각으로 35°입니다. 따라서 x = 30° + 35° = 65°입니다.";
+    }
+  }
+
+  getConceptText() {
+    return "평행선 사이의 꺾인 선은 각 꺾인 점을 지나는 평행한 보조선을 그어 동위각과 엇각으로 해결합니다.";
   }
 
   reset() {
@@ -218,7 +316,6 @@ class Stage3Puzzle extends PuzzleBase {
 
     if (this.input && this.inputHandler) this.input.removeEventListener("input", this.inputHandler);
     if (this.submitBtn && this.submitHandler) this.submitBtn.removeEventListener("click", this.submitHandler);
-    
     this.container.innerHTML = "";
   }
 }

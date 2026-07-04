@@ -23,7 +23,8 @@ const PuzzleState = {
   wrongCount: 0,
   hintCount: 0,
   score: 0,
-  hintPenalty: 0
+  hintPenalty: 0,
+  currentSubstage: 1
 };
 
 const UiState = {
@@ -54,6 +55,9 @@ const StateStore = {
         Object.assign(UserState, JSON.parse(user));
         Object.assign(GameState, JSON.parse(game));
         Object.assign(PuzzleState, JSON.parse(puzzle));
+        if (PuzzleState.currentSubstage === undefined) {
+          PuzzleState.currentSubstage = 1;
+        }
         
         console.log("로컬스토리지로부터 이전 게임 상태가 복구되었습니다.");
         return true;

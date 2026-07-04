@@ -1,56 +1,58 @@
 <script>
 /**
- * 2스테이지 동위각·엇각 매칭 퍼즐 클래스.
- * SVG 평행도판 정렬, 헷갈리는 4선택지 도입, 드롭존 확대 적용.
+ * 2스테이지 동위각·엇각 하이브리드 퍼즐 클래스.
+ * Substage 1: 기본 동위각/엇각 카드 드래그 매칭
+ * Substage 2: 엇각의 크기가 같음을 이용한 미지수 x 계산
  */
 class Stage2Puzzle extends PuzzleBase {
   constructor(containerId) {
     super(containerId);
-    this.solved = { zoneA: false, zoneB: false };
+    this.substage = 1;
+    this.solved = { zoneA: false, zoneB: false }; // Substage 1용
+    this.inputX = ""; // Substage 2용
+    this.targetX = 30; // 2x + 10 = 70 => 2x = 60 => x = 30
     this.onClearCallback = null;
+    
+    this.cardClickHandler = null;
+    this.zoneClickHandler = null;
+    this.sub2InputHandler = null;
+    this.sub2SubmitHandler = null;
   }
 
   init() {
+    if (this.substage === 1) {
+      this.initSubstage1();
+    } else {
+      this.initSubstage2();
+    }
+  }
+
+  initSubstage1() {
     this.container.innerHTML = `
       <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
         <p style="color: var(--gold-primary); margin-bottom: 12px; font-size: 0.9rem;">
-          각도 카드를 선택한 뒤, 알맞은 <strong>동위각(A)</strong>과 <strong>엇각(B)</strong>의 빈칸에 배치하세요.
+          [Part 1] 각도 카드를 선택한 뒤, 알맞은 <strong>동위각(A)</strong>과 <strong>엇각(B)</strong>의 빈칸에 배치하세요.
         </p>
         
-        <!-- 게임판 (SVG 중심 설계) -->
         <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow); overflow: hidden;">
           <svg width="280" height="180" style="position: absolute; inset: 0; pointer-events: none;">
-            <!-- 평행선 레일 2선 -->
             <line x1="20" y1="50" x2="260" y2="50" stroke="#a5a5a5" stroke-width="3" />
             <line x1="20" y1="130" x2="260" y2="130" stroke="#a5a5a5" stroke-width="3" />
-            
-            <!-- 횡단 빗선 (60도 각도 경사 - top-left에서 bottom-right로 수정) -->
-            <!-- L선 교차점: (115, 50), M선 교차점: (161, 130) -->
             <line x1="95" y1="15" x2="180" y2="162" stroke="#ff4757" stroke-width="3.5" />
-            
-            <!-- 기준각 60도 데코 호 및 라벨 -->
             <path d="M 95,50 A 20,20 0 0,1 105,33" fill="none" stroke="#ff4757" stroke-width="2" />
-            
-            <!-- A(동위각) 안내 가이드 호 -->
             <path d="M 141,130 A 20,20 0 0,1 151,113" fill="none" stroke="rgba(212,175,55,0.4)" stroke-width="1.5" stroke-dasharray="2" />
-            
-            <!-- B(엇각) 안내 가이드 호 -->
             <path d="M 181,130 A 20,20 0 0,0 171,147" fill="none" stroke="rgba(212,175,55,0.4)" stroke-width="1.5" stroke-dasharray="2" />
           </svg>
 
-          <!-- 기준각 라벨 (L선 교차점 115의 좌상단 배치) -->
           <div style="position: absolute; top: 22px; left: 70px; font-size: 0.85rem; color: #ff4757; font-weight: bold;">60°</div>
           
-          <!-- 드롭존 A (동위각 자리: M선 교차점 161의 좌상단) -->
           <div id="drop-zone-A" class="dropzone" style="position: absolute; top: 82px; left: 105px; width: 56px; height: 34px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-align: center; line-height: 30px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">A</div>
           <div style="position: absolute; top: 120px; left: 118px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">동위각</div>
           
-          <!-- 드롭존 B (엇각 자리: M선 교차점 161의 우하단) -->
           <div id="drop-zone-B" class="dropzone" style="position: absolute; top: 136px; left: 161px; width: 56px; height: 34px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-align: center; line-height: 30px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">B</div>
           <div style="position: absolute; top: 120px; left: 177px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">엇각</div>
         </div>
         
-        <!-- 선택 카드들 (헷갈리는 4선택지 적용) -->
         <div style="margin-top: 15px; display: flex; justify-content: center; gap: 10px;">
           <div class="drag-card" data-value="55" style="width: 50px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">55°</div>
           <div class="drag-card" data-value="60" style="width: 50px; height: 35px; background: #1b263b; border: 2px solid var(--gold-primary); border-radius: 6px; color: #fff; font-weight: bold; text-align: center; line-height: 31px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;">60°</div>
@@ -64,7 +66,47 @@ class Stage2Puzzle extends PuzzleBase {
     this.selectedCard = null;
   }
 
+  initSubstage2() {
+    this.container.innerHTML = `
+      <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
+        <p style="color: var(--gold-primary); margin-bottom: 12px; font-size: 0.9rem;">
+          [Part 2] 엇각의 마법 관계를 증명하여 식을 풀고, 미지수 <strong>x</strong>의 크기를 구하세요.
+        </p>
+        
+        <div style="position: relative; width: 280px; height: 180px; margin: 0 auto; background: #0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow); overflow: hidden;">
+          <svg width="280" height="180" style="position: absolute; inset: 0; pointer-events: none;">
+            <line x1="20" y1="50" x2="260" y2="50" stroke="#a5a5a5" stroke-width="3" />
+            <line x1="20" y1="130" x2="260" y2="130" stroke="#a5a5a5" stroke-width="3" />
+            <line x1="95" y1="15" x2="180" y2="162" stroke="#ff4757" stroke-width="3.5" />
+            <path d="M 95,50 A 20,20 0 0,1 105,33" fill="none" stroke="#ff4757" stroke-width="2" />
+            <path d="M 181,130 A 20,20 0 0,0 171,147" fill="none" stroke="var(--gold-primary)" stroke-width="2" />
+          </svg>
+
+          <!-- 엇각 수식 표시 -->
+          <div style="position: absolute; top: 12px; left: 78px; font-size: 0.85rem; color: #ff4757; font-weight: bold;">(2x + 10)°</div>
+          <div style="position: absolute; top: 136px; left: 165px; font-size: 0.85rem; color: var(--gold-primary); font-weight: bold;">70°</div>
+        </div>
+
+        <div style="margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 8px;">
+          <span style="font-size: 0.95rem; color: #fff;">미지수 x = </span>
+          <input type="number" id="stage2-input-x" placeholder="x의 값" style="width: 80px; padding: 8px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none;">
+          <button id="stage2-submit-btn" class="btn" style="width: 70px; padding: 9px; font-size: 0.85rem; margin: 0;">확인</button>
+        </div>
+      </div>
+    `;
+    this.sub2Input = document.getElementById("stage2-input-x");
+    this.sub2Submit = document.getElementById("stage2-submit-btn");
+  }
+
   bindEvents() {
+    if (this.substage === 1) {
+      this.bindEventsSubstage1();
+    } else {
+      this.bindEventsSubstage2();
+    }
+  }
+
+  bindEventsSubstage1() {
     this.cardClickHandler = (e) => {
       this.cards.forEach(c => {
         c.style.borderColor = "var(--gold-primary)";
@@ -117,14 +159,8 @@ class Stage2Puzzle extends PuzzleBase {
 
       if (this.checkAnswer()) {
         setTimeout(() => {
-          if (typeof FeedbackSystem !== "undefined") {
-            FeedbackSystem.showSuccess("정답입니다! 두 평행선이 다른 한 직선과 만날 때, 동위각과 엇각의 크기는 항상 서로 같습니다! (+5점)");
-          }
           if (this.onClearCallback) {
-            this.onClearCallback();
-          } else {
-            const clearBtn = document.getElementById("mock-puzzle-clear-btn");
-            if (clearBtn) clearBtn.click();
+            this.onClearCallback(); // PuzzleScene에서 goNextSubstage()를 트리거하게 됨
           }
         }, 300);
       }
@@ -139,12 +175,89 @@ class Stage2Puzzle extends PuzzleBase {
     });
   }
 
+  bindEventsSubstage2() {
+    this.sub2InputHandler = (e) => {
+      this.inputX = e.target.value;
+    };
+
+    this.sub2SubmitHandler = () => {
+      const val = parseInt(this.inputX);
+      if (val === this.targetX) {
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showSuccess("정답입니다! 2x + 10 = 70 방정식을 풀어 x = 30 임을 완벽히 유도했습니다! (+5점)");
+        }
+        // 최종 클리어 처리
+        if (this.onClearCallback) {
+          this.onClearCallback();
+        }
+      } else {
+        if (typeof PuzzleState !== "undefined") {
+          PuzzleState.wrongCount += 1;
+          EventBus.publish("stateChange:puzzle", PuzzleState);
+        }
+        if (typeof FeedbackSystem !== "undefined") {
+          FeedbackSystem.showError("틀렸습니다! 엇각의 크기가 같으므로 2x + 10 = 70 식을 만족해야 합니다. x의 값을 다시 계산해보세요.");
+        }
+      }
+    };
+
+    if (this.sub2Input) this.sub2Input.addEventListener("input", this.sub2InputHandler);
+    if (this.sub2Submit) this.sub2Submit.addEventListener("click", this.sub2SubmitHandler);
+  }
+
   checkAnswer() {
-    return this.solved.zoneA && this.solved.zoneB;
+    if (this.substage === 1) {
+      return this.solved.zoneA && this.solved.zoneB;
+    } else {
+      return parseInt(this.inputX) === this.targetX;
+    }
+  }
+
+  goNextSubstage() {
+    if (this.substage === 1) {
+      this.destroy(); // Substage 1 리스너 해제
+      this.substage = 2;
+      
+      // 씬 전환 후 로직 재호출
+      if (typeof SceneManager !== "undefined") {
+        // mid 스토리를 띄우고 다시 퍼즐로 돌아오게 함
+        SceneManager.showScene("story", { stageId: "2_mid" });
+      } else {
+        this.init();
+        this.bindEvents();
+      }
+      return true;
+    }
+    return false;
+  }
+
+  getHint(count) {
+    if (this.substage === 1) {
+      if (count === 1) return "동위각은 두 직선이 다른 한 직선과 만날 때 서로 같은 상대적 위치에 놓여 있는 각을 가리칩니다.";
+      if (count === 2) return "두 직선이 평행할 때 동위각과 엇각은 항상 크기가 기준각(60°)과 동일합니다! 알맞게 매칭해 보세요.";
+      return this.getSolution();
+    } else {
+      if (count === 1) return "두 직선이 평행하므로 마주 보는 엇각인 (2x + 10)°와 70°는 크기가 서로 같습니다.";
+      if (count === 2) return "즉, 2x + 10 = 70 이라는 1차 방정식을 세울 수 있습니다. 양변에서 10을 빼면 2x = 60 이 됩니다!";
+      return this.getSolution();
+    }
+  }
+
+  getSolution() {
+    if (this.substage === 1) {
+      return "두 직선이 평행하면 동위각과 엇각의 크기는 서로 같습니다. 따라서 기준각 60°와 동일한 위치인 A(동위각)도 60°이며, 엇갈린 위치인 B(엇각)도 60°가 됩니다.";
+    } else {
+      return "평행선 조건에서 엇각의 크기는 같으므로 2x + 10 = 70이 성립합니다. 2x = 60 이 되며, 따라서 미지수 x의 값은 30입니다.";
+    }
+  }
+
+  getConceptText() {
+    return "평행한 두 직선이 다른 한 직선과 만날 때, 동위각과 엇각의 크기는 서로 같습니다.";
   }
 
   reset() {
     this.solved = { zoneA: false, zoneB: false };
+    this.inputX = "";
     this.init();
     this.bindEvents();
   }
@@ -159,6 +272,12 @@ class Stage2Puzzle extends PuzzleBase {
       this.zones.forEach(zone => {
         zone.removeEventListener("click", this.zoneClickHandler);
       });
+    }
+    if (this.sub2Input && this.sub2InputHandler) {
+      this.sub2Input.removeEventListener("input", this.sub2InputHandler);
+    }
+    if (this.sub2Submit && this.sub2SubmitHandler) {
+      this.sub2Submit.removeEventListener("click", this.sub2SubmitHandler);
     }
     this.container.innerHTML = "";
   }

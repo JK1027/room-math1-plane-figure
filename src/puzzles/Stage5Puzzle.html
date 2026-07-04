@@ -1,84 +1,154 @@
 <script>
 /**
  * 5스테이지 종합 문제 (그림자 마도사) 퍼즐 클래스.
- * SVG 문제도 시각 개선 및 단계별 힌트 시각 가이드(EventBus) 연계.
+ * Substage 1: 맞꼭지각 + 평행선 동위각 조합 배리어
+ * Substage 2: 평행선 엇각 + 삼각형 외각 성질 조합 배리어
+ * Substage 3: 맞꼭지각 + 평행선 + 삼각형의 최종 종합 융합 마법진
  */
 class Stage5Puzzle extends PuzzleBase {
   constructor(containerId) {
     super(containerId);
-    this.targetAnswer = 105; // 45 (엇각) + 60 (내각) = 105
+    this.substage = 1;
     this.userAnswer = "";
+    this.targetAnswer = 45; // Substage 1 기본 정답
+    this.onClearCallback = null;
     
     this.inputHandler = null;
     this.submitHandler = null;
-    this.hintSubscription = null;
-    this.onClearCallback = null;
   }
 
   init() {
+    if (this.substage === 1) {
+      this.initSubstage1();
+    } else if (this.substage === 2) {
+      this.initSubstage2();
+    } else {
+      this.initSubstage3();
+    }
+  }
+
+  initSubstage1() {
+    this.targetAnswer = 45;
     this.container.innerHTML = `
       <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
         <p style="color: var(--gold-primary); margin-bottom: 10px; font-size: 0.9rem;">
-          모르간의 마지막 결계입니다. 기하학 법칙을 연계하여 최종 각도 <strong>x</strong>를 구하세요.
+          [Part 1] 맞꼭지각과 동위각의 성질을 연계하여 1차 결계 각도 <strong>x</strong>를 구하세요.
         </p>
         
-        <!-- 보드판 (SVG) -->
         <div style="position: relative; display: inline-block; margin-bottom: 10px;">
           <svg id="stage5-svg" width="280" height="190" style="background:#0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
-            <!-- 평행선 L, M -->
+            <line x1="20" y1="50" x2="260" y2="50" stroke="#a5a5a5" stroke-width="2" />
+            <line x1="20" y1="130" x2="260" y2="130" stroke="#a5a5a5" stroke-width="2" />
+            <text x="30" y="32" fill="var(--gold-primary)" font-size="9" font-weight="bold">L // M (평행)</text>
+            <text x="245" y="45" fill="#a5a5a5" font-size="9">L</text>
+            <text x="245" y="125" fill="#a5a5a5" font-size="9">M</text>
+            
+            <!-- 교차선 -->
+            <line x1="70" y1="20" x2="210" y2="160" stroke="#ff4757" stroke-width="2" />
+            
+            <!-- 위쪽 교차점 (100, 50) 맞꼭지각 표시 -->
+            <path d="M 90,50 A 15,15 0 0,1 100,30" fill="none" stroke="var(--gold-primary)" stroke-width="1.5" />
+            <text x="75" y="40" fill="#fff" font-size="10" font-weight="bold">45°</text>
+            
+            <path d="M 110,50 A 15,15 0 0,1 100,70" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+            <text x="110" y="68" fill="rgba(255,255,255,0.7)" font-size="10" font-weight="bold">y</text>
+            
+            <!-- 아래쪽 교차점 (180, 130) 동위각 x 표시 -->
+            <path d="M 190,130 A 15,15 0 0,1 180,150" fill="none" stroke="#ff4757" stroke-width="2.5" />
+            <text x="195" y="152" fill="#ff4757" font-size="12" font-weight="bold">x</text>
+          </svg>
+        </div>
+        
+        <div style="margin-top: 10px;">
+          <input type="number" id="stage5-input" placeholder="x의 각도" style="width: 120px; padding: 9px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none; vertical-align: middle;">
+          <button id="stage5-submit-btn" class="btn" style="width: 80px; padding: 10px; display: inline-block; vertical-align: middle; margin-left: 10px; font-size: 0.9rem;">입력</button>
+        </div>
+      </div>
+    `;
+    this.input = document.getElementById("stage5-input");
+    this.submitBtn = document.getElementById("stage5-submit-btn");
+  }
+
+  initSubstage2() {
+    this.targetAnswer = 105;
+    this.container.innerHTML = `
+      <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
+        <p style="color: var(--gold-primary); margin-bottom: 10px; font-size: 0.9rem;">
+          [Part 2] 평행선 엇각과 삼각형 외각 성질을 결합하여 2차 결계 각도 <strong>x</strong>를 구하세요.
+        </p>
+        
+        <div style="position: relative; display: inline-block; margin-bottom: 10px;">
+          <svg id="stage5-svg" width="280" height="190" style="background:#0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
             <line x1="20" y1="40" x2="260" y2="40" stroke="#a5a5a5" stroke-width="2" />
             <line x1="20" y1="140" x2="260" y2="140" stroke="#a5a5a5" stroke-width="2" />
-            
-            <!-- 평행 라벨 -->
             <text x="30" y="25" fill="var(--gold-primary)" font-size="9" font-weight="bold">L // M (평행)</text>
             <text x="245" y="35" fill="#a5a5a5" font-size="9">L</text>
             <text x="245" y="135" fill="#a5a5a5" font-size="9">M</text>
             
-            <!-- 삼각형 ABC 구성선 -->
-            <!-- A: (180, 40), B: (80, 140), C: (207, 140) -->
             <polygon points="180,40 80,140 207,140" fill="none" stroke="#e0e1dd" stroke-width="2" />
-            
-            <!-- 외각선 (AC 연장선) -->
             <line x1="207" y1="140" x2="218" y2="180" stroke="#ff4757" stroke-width="2" stroke-dasharray="2" />
             
-            <!-- 기본 고정 각도 표시 -->
-            <!-- 1) A의 왼쪽 각도 (L선과 AB선 사이) = 45° -->
             <path d="M 155,40 A 25,25 0 0,0 162.3,57.7" fill="none" stroke="var(--gold-primary)" stroke-width="1.5" />
             <text x="135" y="55" fill="#fff" font-size="10" font-weight="bold">45°</text>
             
-            <!-- 2) A의 내각 (삼각형 내부 상단 꼭지각) = 60° -->
             <path d="M 165.9,54.1 A 20,20 0 0,0 185.2,59.3" fill="none" stroke="var(--gold-primary)" stroke-width="1.5" />
             <text x="173" y="68" fill="#fff" font-size="10" font-weight="bold">60°</text>
             
-            <!-- 3) 외각 x 표시 (M선과 AC연장선 사이 - 105° 시각 비례) -->
-            <path d="M 187,140 A 20,20 0 0,1 212.2,159.2" fill="none" stroke="#ff4757" stroke-width="3" filter="drop-shadow(0 0 5px #ff4757)" />
+            <path d="M 187,140 A 20,20 0 0,1 212.2,159.2" fill="none" stroke="#ff4757" stroke-width="3" />
             <text x="195" y="165" fill="#ff4757" font-size="13" font-weight="bold">x</text>
-            
-            <!-- ── 실시간 힌트/풀이 가이드 레이어 (기본 display: none) ── -->
-            <!-- 힌트 1단계: B 내각 엇각 표시 -->
-            <g id="h5-step1" style="display: none; transition: opacity 0.5s;">
-              <path d="M 100,140 A 20,20 0 0,0 94.1,125.9" fill="none" stroke="#2ecc71" stroke-width="2.5" />
-              <text x="92" y="132" fill="#2ecc71" font-size="9" font-weight="bold">45°(엇각)</text>
-              <!-- 엇각 점선 가이드 -->
-              <path d="M 162,57 L 94,126" stroke="#2ecc71" stroke-width="2" stroke-dasharray="3" fill="none" />
-            </g>
-            
-            <!-- 힌트 2단계: 외각 공식 가이드 -->
-            <g id="h5-step2" style="display: none; transition: opacity 0.5s;">
-              <rect x="40" y="85" width="200" height="22" rx="4" fill="rgba(13,27,42,0.95)" stroke="var(--gold-primary)" stroke-width="1" />
-              <text x="140" y="100" fill="var(--gold-light)" font-size="9" text-anchor="middle" font-weight="bold">외각 x = 이웃하지 않는 두 내각의 합</text>
-            </g>
           </svg>
         </div>
         
-        <!-- 힌트 3단계 안내선 박스 -->
-        <div id="h5-step3-text" style="font-size: 0.85rem; color: #2ecc71; font-weight: bold; margin-bottom: 8px; display: none; transition: opacity 0.5s;">
-          해법 수식: x = 45° + 60° = 105°
-        </div>
-        
-        <!-- 입력창 영역 -->
         <div style="margin-top: 10px;">
           <input type="number" id="stage5-input" placeholder="x의 각도" style="width: 120px; padding: 9px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none; vertical-align: middle;">
+          <button id="stage5-submit-btn" class="btn" style="width: 80px; padding: 10px; display: inline-block; vertical-align: middle; margin-left: 10px; font-size: 0.9rem;">입력</button>
+        </div>
+      </div>
+    `;
+    this.input = document.getElementById("stage5-input");
+    this.submitBtn = document.getElementById("stage5-submit-btn");
+  }
+
+  initSubstage3() {
+    this.targetAnswer = 115;
+    this.container.innerHTML = `
+      <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
+        <p style="color: var(--gold-primary); margin-bottom: 10px; font-size: 0.9rem;">
+          [Part 3] 모든 기하학 법칙(맞꼭지각, 평행선, 삼각형)이 융합된 최종 각도 <strong>x</strong>를 구하세요!
+        </p>
+        
+        <div style="position: relative; display: inline-block; margin-bottom: 10px;">
+          <svg id="stage5-svg" width="280" height="200" style="background:#0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow);">
+            <line x1="20" y1="40" x2="260" y2="40" stroke="#a5a5a5" stroke-width="2" />
+            <line x1="20" y1="140" x2="260" y2="140" stroke="#a5a5a5" stroke-width="2" />
+            <text x="30" y="25" fill="var(--gold-primary)" font-size="9" font-weight="bold">L // M (평행)</text>
+            <text x="245" y="35" fill="#a5a5a5" font-size="9">L</text>
+            <text x="245" y="135" fill="#a5a5a5" font-size="9">M</text>
+            
+            <!-- 꺾인 선 경로 -->
+            <!-- L선 교차점: (90, 40), 꺾임점 P: (140, 90), M선 교차점: (110, 140) -->
+            <!-- 윗선 연장하여 맞꼭지각용 빗선 형성 -->
+            <line x1="75" y1="25" x2="140" y2="90" stroke="#fff" stroke-width="2" />
+            <line x1="140" y1="90" x2="110" y2="140" stroke="#fff" stroke-width="2" />
+            
+            <!-- L선 위쪽 맞꼭지각 표시 = 55° -->
+            <path d="M 78,30 A 15,15 0 0,1 90,40" fill="none" stroke="var(--gold-primary)" stroke-width="1.5" />
+            <text x="65" y="28" fill="#fff" font-size="9" font-weight="bold">55°</text>
+            
+            <!-- 꺾인각 x 표시 -->
+            <path d="M 125,75 A 20,20 0 0,0 120,105" fill="none" stroke="#ff4757" stroke-width="3" />
+            <text x="110" y="93" fill="#ff4757" font-size="12" font-weight="bold">x</text>
+            
+            <!-- 하단 꼭짓점 (110, 140)에 붙은 M선 아래 삼각형 -->
+            <!-- 꼭짓점: (110, 140), (70, 185), (150, 185) -->
+            <polygon points="110,140 70,185 150,185" fill="none" stroke="#e0e1dd" stroke-width="1.8" />
+            <text x="63" y="196" fill="#fff" font-size="9" font-weight="bold">50°</text>
+            <text x="145" y="196" fill="#fff" font-size="9" font-weight="bold">70°</text>
+          </svg>
+        </div>
+        
+        <div style="margin-top: 10px;">
+          <input type="number" id="stage5-input" placeholder="최종 각도 x" style="width: 120px; padding: 9px; text-align: center; font-size: 1rem; border: 1px solid var(--gold-primary); border-radius: 6px; background: rgba(0,0,0,0.5); color: #fff; outline:none; vertical-align: middle;">
           <button id="stage5-submit-btn" class="btn" style="width: 80px; padding: 10px; display: inline-block; vertical-align: middle; margin-left: 10px; font-size: 0.9rem;">입력</button>
         </div>
       </div>
@@ -97,11 +167,14 @@ class Stage5Puzzle extends PuzzleBase {
         this.input.disabled = true;
         this.submitBtn.disabled = true;
         
-        // 정답 시 풀이 보기 시각 애니메이션 즉시 구동
-        this.playSolveAnimation();
-        
         if (typeof FeedbackSystem !== "undefined") {
-          FeedbackSystem.showSuccess("성공! 삼각형 외각 정리(x = 60° + 45° = 105°)로 모르간의 마지막 봉인을 깨뜨렸습니다! (+5점)");
+          if (this.substage === 1) {
+            FeedbackSystem.showSuccess("1차 배리어가 해제되었습니다! 맞꼭지각(y=45°)과 동위각(x=y=45°)의 연계가 훌륭합니다! (+5점)");
+          } else if (this.substage === 2) {
+            FeedbackSystem.showSuccess("2차 배리어가 해제되었습니다! 엇각(45°)과 삼각형 외각(45°+60°)이 완벽히 조화되었습니다! (+5점)");
+          } else {
+            FeedbackSystem.showSuccess("마도사 모르간의 융합 장막을 최종 격파했습니다! 당신은 이제 기하학의 진정한 수호자입니다! (+10점)");
+          }
         }
 
         const svg = document.getElementById("stage5-svg");
@@ -114,11 +187,8 @@ class Stage5Puzzle extends PuzzleBase {
         setTimeout(() => {
           if (this.onClearCallback) {
             this.onClearCallback();
-          } else {
-            const clearBtn = document.getElementById("mock-puzzle-clear-btn");
-            if (clearBtn) clearBtn.click();
           }
-        }, 2200);
+        }, 1800);
       } else {
         if (typeof FeedbackSystem !== "undefined") {
           FeedbackSystem.showError("모르간이 비웃습니다!\n\"흐하하! 그런 엉터리 계산으로 나를 넘어설 수 있을 것 같으냐!\"");
@@ -133,78 +203,67 @@ class Stage5Puzzle extends PuzzleBase {
     
     if (this.input) this.input.addEventListener("input", this.inputHandler);
     if (this.submitBtn) this.submitBtn.addEventListener("click", this.submitHandler);
-
-    // 힌트 수신 이벤트 구독 (실시간 SVG 가이드 반영)
-    if (typeof EventBus !== "undefined") {
-      this.hintSubscription = (step) => {
-        this.showSvgHint(step);
-      };
-      EventBus.subscribe("puzzle:showHint", this.hintSubscription);
-      
-      // 풀이 보기 클릭 시 애니메이션 트리거 구독
-      this.solutionSubscription = () => {
-        this.playSolveAnimation();
-      };
-      EventBus.subscribe("puzzle:showSolution", this.solutionSubscription);
-      
-      if (typeof PuzzleState !== "undefined" && PuzzleState.hintCount > 0) {
-        this.showSvgHint(PuzzleState.hintCount);
-      }
-    }
-  }
-
-  showSvgHint(step) {
-    const s1 = document.getElementById("h5-step1");
-    const s2 = document.getElementById("h5-step2");
-    const s3 = document.getElementById("h5-step3-text");
-    
-    if (step >= 1 && s1) {
-      s1.style.display = "block";
-      s1.style.opacity = "1";
-    }
-    if (step >= 2 && s2) {
-      s2.style.display = "block";
-      s2.style.opacity = "1";
-    }
-    if (step >= 3 && s3) {
-      s3.style.display = "block";
-      s3.style.opacity = "1";
-    }
-  }
-
-  playSolveAnimation() {
-    const s1 = document.getElementById("h5-step1");
-    const s2 = document.getElementById("h5-step2");
-    const s3 = document.getElementById("h5-step3-text");
-    
-    // 1단계: 엇각 45° 표시
-    if (s1) {
-      s1.style.display = "block";
-      s1.style.opacity = "0";
-      setTimeout(() => { s1.style.opacity = "1"; }, 100);
-    }
-    
-    // 2단계: 외각 공식 가이드 표시 (1초 뒤)
-    setTimeout(() => {
-      if (s2) {
-        s2.style.display = "block";
-        s2.style.opacity = "0";
-        setTimeout(() => { s2.style.opacity = "1"; }, 100);
-      }
-    }, 1000);
-
-    // 3단계: 최종 수식 정답 표시 (2초 뒤)
-    setTimeout(() => {
-      if (s3) {
-        s3.style.display = "block";
-        s3.style.opacity = "0";
-        setTimeout(() => { s3.style.opacity = "1"; }, 100);
-      }
-    }, 2000);
   }
 
   checkAnswer() {
     return parseInt(this.userAnswer) === this.targetAnswer;
+  }
+
+  goNextSubstage() {
+    if (this.substage === 1) {
+      this.substage = 2;
+      this.userAnswer = "";
+      
+      if (typeof SceneManager !== "undefined") {
+        SceneManager.showScene("story", { stageId: "5_mid1" });
+      } else {
+        this.init();
+        this.bindEvents();
+      }
+      return true;
+    } else if (this.substage === 2) {
+      this.substage = 3;
+      this.userAnswer = "";
+      
+      if (typeof SceneManager !== "undefined") {
+        SceneManager.showScene("story", { stageId: "5_mid2" });
+      } else {
+        this.init();
+        this.bindEvents();
+      }
+      return true;
+    }
+    return false;
+  }
+
+  getHint(count) {
+    if (this.substage === 1) {
+      if (count === 1) return "교차하는 두 선에 의해 마주 보는 두 각인 45°와 y는 맞꼭지각 관계입니다. 따라서 y의 크기를 먼저 알 수 있습니다.";
+      if (count === 2) return "L선과 M선이 평행하므로, y°와 x°는 서로 같은 상대적 위치에 존재합니다. 즉 동위각 성질에 의해 y = x 입니다!";
+      return this.getSolution();
+    } else if (this.substage === 2) {
+      if (count === 1) return "평행선 L과 M 사이의 엇각 관계를 통해 삼각형 ABC의 왼쪽 아래 내각 B의 크기를 구해보세요.";
+      if (count === 2) return "엇각 성질에 의해 내각 B는 45°가 됩니다. 그리고 구하려는 외각 x는 이웃하지 않는 두 내각(A=60°, B=45°)의 합과 같습니다!";
+      return this.getSolution();
+    } else {
+      if (count === 1) return "꺾인 점 P를 지나는 수평 평행선을 상상해 보고, 위아래 엇각 크기들을 유도해 나갑시다.";
+      if (count === 2) return "P의 윗각은 맞꼭지각 55°의 엇각이므로 55°가 됩니다. P의 아랫각은 M선 아래 삼각형의 나머지 한 내각(180 - (50 + 70) = 60°)과 엇각이므로 60°가 됩니다!";
+      return this.getSolution();
+    }
+  }
+
+  getSolution() {
+    if (this.substage === 1) {
+      return "맞꼭지각 성질에 의해 y = 45°가 성립합니다. 또한 평행선에서 동위각의 크기는 같으므로 x = y = 45°가 됩니다.";
+    } else if (this.substage === 2) {
+      return "평행선 L과 AB선 사이의 엇각에 의해 삼각형 내각 B = 45°입니다. 외각의 정리로 x = 60° + 45° = 105°가 됩니다.";
+    } else {
+      return "L선 위쪽 맞꼭지각이 55°이므로 꺾인 점 P의 윗부분 엇각은 55°입니다. 하단 삼각형 내각의 합은 180°이므로 꼭짓점의 남은 한 각은 180° - 50° - 70° = 60°입니다. 이 각과 꺾인 점 P의 아랫부분 엇각은 60°로 동일합니다. 따라서 x = 55° + 60° = 115°가 됩니다.";
+    }
+  }
+
+  getConceptText() {
+    return "맞꼭지각, 평행선(동위각·엇각), 삼각형(내각·외각)의 모든 성질을 유기적으로 연계하면 아무리 복합적인 기하 문제도 해결할 수 있습니다.";
   }
 
   reset() {
@@ -214,22 +273,13 @@ class Stage5Puzzle extends PuzzleBase {
     }
     if (this.submitBtn) this.submitBtn.disabled = false;
     this.userAnswer = "";
-    
-    const s1 = document.getElementById("h5-step1");
-    const s2 = document.getElementById("h5-step2");
-    const s3 = document.getElementById("h5-step3-text");
-    if (s1) s1.style.display = "none";
-    if (s2) s2.style.display = "none";
-    if (s3) s3.style.display = "none";
+    this.init();
+    this.bindEvents();
   }
 
   destroy() {
     if (this.input && this.inputHandler) this.input.removeEventListener("input", this.inputHandler);
     if (this.submitBtn && this.submitHandler) this.submitBtn.removeEventListener("click", this.submitHandler);
-    if (typeof EventBus !== "undefined") {
-      if (this.hintSubscription) EventBus.unsubscribe("puzzle:showHint", this.hintSubscription);
-      if (this.solutionSubscription) EventBus.unsubscribe("puzzle:showSolution", this.solutionSubscription);
-    }
     this.container.innerHTML = "";
   }
 }
