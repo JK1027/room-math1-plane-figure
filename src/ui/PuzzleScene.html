@@ -86,7 +86,7 @@ const PuzzleScene = {
                 StateStore.saveToLocalStorage();
               }
               
-              SceneManager.showScene("ending");
+              SceneManager.showScene("story", { stageId: "7_end" });
             }
           });
         }, DELAY_AFTER_SOLVE);
@@ -182,7 +182,7 @@ const PuzzleScene = {
 
   updateCrystalInventory: function() {
     if (typeof PuzzleState === "undefined" || typeof GameState === "undefined") return;
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 7; i++) {
       const crystalEl = document.getElementById(`crystal-${i}`);
       if (crystalEl) {
         if (i < GameState.currentStage || (i === GameState.currentStage && GameState.cleared)) {
@@ -210,11 +210,13 @@ const PuzzleScene = {
   },
 
   getCrystalColor: function(i) {
-    if (i === 1) return "#54a0ff"; // 청색
-    if (i === 2) return "#2ecc71"; // 녹색
-    if (i === 3) return "#f1c40f"; // 황색
-    if (i === 4) return "#ff7675"; // 적색
-    return "#9b59b6"; // 자색
+    if (i === 1) return "#54a0ff"; // 푸른색
+    if (i === 2) return "#2ecc71"; // 초록색
+    if (i === 3) return "#f1c40f"; // 노란색
+    if (i === 4) return "#9b59b6"; // 보라색
+    if (i === 5) return "#ff7675"; // 붉은색
+    if (i === 6) return "#dfe6e9"; // 은빛
+    return "#fdcb6e"; // 금빛/최종
   },
 
   showCrystalModal: function(stageId, onProceed) {
@@ -256,26 +258,26 @@ const PuzzleScene = {
     }
 
     if (stageId === 1) {
-      emoji = "🔷"; color = "#54a0ff"; titleText = "청색 기하 수정 획득!";
-      descText = "맞꼭지각의 대칭성을 증명하여 기하의 성검에 청색 수정을 채웠습니다! 식어가던 성검의 힘이 일깨워집니다.";
+      emoji = "🔷"; color = "#54a0ff"; titleText = "푸른 수정 획득!";
+      descText = "맞꼭지각의 대칭성을 성공적으로 증명하여 거울의 숲에 빛의 질서를 되돌리고 푸른 수정을 일깨웠습니다!";
     } else if (stageId === 2) {
-      emoji = "🟢"; color = "#2ecc71"; titleText = "녹색 기하 수정 획득!";
-      descText = "평행선 사이의 동위각과 엇각 관계를 해결하여 녹색 수정을 획득했습니다! 마왕성의 거대한 '평행의 성문'이 개방됩니다.";
+      emoji = "🟢"; color = "#2ecc71"; titleText = "초록 수정 획득!";
+      descText = "평행선 사이의 동위각과 엇각 위치 및 수식 방정식을 해결하여 초록 수정을 되찾고 평행의 회랑을 돌파했습니다!";
     } else if (stageId === 3) {
-      emoji = "🟡"; color = "#f1c40f"; titleText = "황색 기하 수정 획득!";
-      descText = "꺾임점에 평행 보조선 거울을 설치하여 레이저 함정을 역조준하고 황색 수정을 되찾았습니다!";
+      emoji = "🟡"; color = "#f1c40f"; titleText = "노란 수정 획득!";
+      descText = "꺾임점에 평행 보조선 가이드라인을 이끌어내어 W자 레이저 장막을 굴절시키고 노란 수정을 회수했습니다!";
     } else if (stageId === 4) {
-      emoji = "🔴"; color = "#ff7675"; titleText = "적색 기하 수정 획득!";
-      descText = "육각형 마법 문양에 직접 대각선 9개를 모두 그어 대각선의 덫을 완전히 해제하고 적색 수정을 회수했습니다!";
+      emoji = "🟣"; color = "#9b59b6"; titleText = "보라 수정 획득!";
+      descText = "육각형의 대각선 9개를 모두 잇고 팔각형의 대각선 총수를 연산하여 보라 수정을 손에 넣고 대각선 감옥을 파괴했습니다!";
     } else if (stageId === 5) {
-      emoji = "🔵"; color = "#1abc9c"; titleText = "청록색 기하 수정 획득!";
-      descText = "삼각형의 내각 합과 외각 성질의 수식을 정확하게 조율하여 청록색 수정을 획득, 삼각 파수꾼을 정화했습니다!";
+      emoji = "🔴"; color = "#ff7675"; titleText = "붉은 수정 획득!";
+      descText = "삼각형 내각의 합 180°와 외각 성질의 수식을 정렬하여 붉은 수정을 획득하고 삼각의 제단을 정화했습니다!";
     } else if (stageId === 6) {
-      emoji = "🟠"; color = "#e67e22"; titleText = "남색 기하 수정 획득!";
-      descText = "정다각형 석판의 한 내각과 외각 대칭 비밀을 모두 밝혀내 남색 수정을 손에 넣고 5층을 돌파합니다!";
+      emoji = "⚪"; color = "#dfe6e9"; titleText = "은빛 수정 획득!";
+      descText = "정다각형의 한 내각과 외각 총합 360°의 아름다운 대칭 비율을 연역하여 은빛 수정을 얻고 성소를 밝혔습니다!";
     } else if (stageId === 7) {
-      emoji = "🟣"; color = "#9b59b6"; titleText = "자색 기하 수정 획득!";
-      descText = "기하를 왜곡하는 마왕 발록의 모든 배리어를 격퇴하고 최종 자색 기하 수정을 완성해 세상을 구원했습니다!";
+      emoji = "🌈"; color = "#fdcb6e"; titleText = "7개의 기하 수정 완벽 복원!";
+      descText = "마왕 발록의 모든 결계를 깨부수고 마지막 수정의 조화를 되찾아, 뒤틀렸던 기하 세계를 아름답게 복원해 냈습니다!";
     }
 
     icon.textContent = emoji;

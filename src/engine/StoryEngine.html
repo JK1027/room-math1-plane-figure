@@ -158,14 +158,28 @@ const StoryManager = (function() {
         }
 
         // 아이콘 매칭
-        if (speakerName === "모르간") {
-          speakerIcon = "🔮";
-        } else if (speakerName === "엘리안") {
+        if (speakerName === "실리아") {
           speakerIcon = "🧚";
+        } else if (speakerName === "아이온") {
+          speakerIcon = "👁️";
+        } else if (speakerName === "레크로스") {
+          speakerIcon = "⚡";
+        } else if (speakerName === "루멘") {
+          speakerIcon = "🔆";
+        } else if (speakerName === "모르타스") {
+          speakerIcon = "💀";
+        } else if (speakerName === "트리가") {
+          speakerIcon = "🔺";
+        } else if (speakerName === "폴리곤 골렘") {
+          speakerIcon = "🗿";
+        } else if (speakerName === "발록" || speakerName === "마왕 발록") {
+          speakerIcon = "😈";
         } else if (typeof UserState !== "undefined" && speakerName === UserState.name) {
           speakerIcon = "⚔️";
         } else if (speakerName === "시스템") {
           speakerIcon = "⚙️";
+        } else if (speakerName === "나레이션") {
+          speakerIcon = "📖";
         } else {
           speakerIcon = "💬";
         }

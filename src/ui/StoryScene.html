@@ -32,6 +32,10 @@ const StoryScene = {
       if (typeof AnimationManager !== "undefined") {
         AnimationManager.playTypingEnd();
       }
+      if (stageId === "7_end") {
+        SceneManager.showScene("ending");
+        return;
+      }
       let targetStageId = stageId;
       if (typeof stageId === "string" && stageId.includes("_mid")) {
         targetStageId = parseInt(stageId.split("_mid")[0]);
