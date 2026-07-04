@@ -55,12 +55,12 @@ const StoryManager = (function() {
         choiceHandled = true;
         
         // 내 대사 + 마도사 대사 주입
-        dialogueQueue.unshift(opt.reply);
+        dialogueQueue.unshift(_replaceHeroName(opt.reply));
         dialogueQueue.unshift(UserState.name + ": " + opt.text);
         
         // 엔딩 대사들 대기열에 병합
         if (currentStoryData.ending) {
-          dialogueQueue = dialogueQueue.concat(currentStoryData.ending);
+          dialogueQueue = dialogueQueue.concat(currentStoryData.ending.map(_replaceHeroName));
         }
         
         StoryManager.next();
@@ -69,6 +69,12 @@ const StoryManager = (function() {
     });
 
     clickArea.appendChild(container);
+  }
+
+  // 대사 문자열에서 '아르스'를 현재 플레이어 이름으로 치환합니다.
+  function _replaceHeroName(text) {
+    const heroName = (typeof UserState !== "undefined" && UserState.name) ? UserState.name : "아르스";
+    return text.replace(/아르스/g, heroName);
   }
 
   return {
@@ -91,11 +97,11 @@ const StoryManager = (function() {
       // 1. 단일 배열 구조 호환 처리
       if (Array.isArray(rawData)) {
         currentStoryData = null;
-        dialogueQueue = [...rawData];
+        dialogueQueue = rawData.map(_replaceHeroName);
       } else {
         // 2. 객체 구조 (lines + choice + ending)
         currentStoryData = rawData;
-        dialogueQueue = [...rawData.lines];
+        dialogueQueue = rawData.lines.map(_replaceHeroName);
       }
       
       this.next();
