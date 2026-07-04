@@ -2402,10 +2402,13 @@ const PuzzleManager = (function() {
 
       try {
         activePuzzle = new TargetPuzzleClass(containerId);
+        if (typeof PuzzleState !== "undefined" && PuzzleState.currentSubstage) {
+          activePuzzle.substage = PuzzleState.currentSubstage;
+        }
         activePuzzle.init();
         activePuzzle.bindEvents();
         activePuzzle.render();
-        console.log(`[PuzzleManager] 스테이지 ${stageId} 퍼즐 기동 완료.`);
+        console.log(`[PuzzleManager] 스테이지 ${stageId} 퍼즐 기동 완료. (Substage: ${activePuzzle.substage})`);
         return activePuzzle;
       } catch (e) {
         console.error(`퍼즐 로딩 예외 (Stage ${stageId}):`, e);
