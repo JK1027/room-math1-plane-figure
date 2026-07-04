@@ -33,33 +33,33 @@ class Stage3Puzzle extends PuzzleBase {
         
         <div style="position: relative; display: inline-block; margin-bottom: 10px;">
           <svg id="stage3-svg" width="260" height="200" style="background:#0b131f; border: 2px solid var(--gold-primary); border-radius: 8px; box-shadow: 0 0 15px var(--gold-glow); cursor: crosshair;">
-            <!-- 좌측 평행 기둥 -->
-            <line x1="40" y1="20" x2="40" y2="180" stroke="#a5a5a5" stroke-width="4" stroke-dasharray="3" />
-            <!-- 우측 평행 기둥 -->
-            <line x1="220" y1="20" x2="220" y2="180" stroke="#a5a5a5" stroke-width="4" stroke-dasharray="3" />
+            <!-- 상단 평행 레일 L -->
+            <line x1="20" y1="40" x2="240" y2="40" stroke="#a5a5a5" stroke-width="4" stroke-dasharray="3" />
+            <!-- 하단 평행 레일 M -->
+            <line x1="20" y1="160" x2="240" y2="160" stroke="#a5a5a5" stroke-width="4" stroke-dasharray="3" />
             
-            <!-- 보조 가이드 평행선 (드래그 시 등장) -->
-            <line id="stage3-guide-line" x1="40" y1="100" x2="220" y2="100" stroke="#2ecc71" stroke-width="2" stroke-dasharray="3" style="opacity: 0; transition: opacity 0.4s ease;" />
+            <!-- 보조 가이드 평행선 (드래그 시 등장, y=100 수평선) -->
+            <line id="stage3-guide-line" x1="20" y1="100" x2="240" y2="100" stroke="#2ecc71" stroke-width="2" stroke-dasharray="3" style="opacity: 0; transition: opacity 0.4s ease;" />
             
-            <!-- 레이저 발사대 및 수신 보석 -->
+            <!-- 레이저 발사대 및 수신 보석 (수평선 정렬) -->
             <circle cx="40" cy="40" r="8" fill="var(--gold-primary)" />
-            <polygon points="220,150 228,158 220,166 212,158" fill="#00d2d3" id="stage3-target-gem" />
+            <polygon points="204,152 212,160 204,168 196,160" fill="#00d2d3" id="stage3-target-gem" />
             
-            <!-- 꺾임점의 조작 거울 -->
-            <line id="stage3-mirror" x1="120" y1="100" x2="140" y2="100" stroke="var(--gold-primary)" stroke-width="5" stroke-linecap="round" />
-            <circle cx="130" cy="100" r="6" fill="#ff4757" style="cursor: pointer;" id="stage3-pivot" />
+            <!-- 꺾임점의 조작 거울 (중심 100, 100) -->
+            <line id="stage3-mirror" x1="90" y1="100" x2="110" y2="100" stroke="var(--gold-primary)" stroke-width="5" stroke-linecap="round" />
+            <circle cx="100" cy="100" r="6" fill="#ff4757" style="cursor: pointer;" id="stage3-pivot" />
             
-            <!-- 레이저 빔 (성공 경로) -->
-            <polyline id="stage3-laser" points="40,40 130,100 220,160" stroke="#ff4757" stroke-width="3.5" stroke-dasharray="2" style="display:none;" />
+            <!-- 레이저 빔 (성공 경로, 45도 및 30도 꺾임 완벽 매칭) -->
+            <polyline id="stage3-laser" points="40,40 100,100 204,160" stroke="#ff4757" stroke-width="3.5" stroke-dasharray="2" style="display:none;" />
             
-            <!-- 기본 엇각 정보 텍스트 -->
-            <text x="50" y="36" fill="#fff" font-size="10" font-weight="bold">45°</text>
-            <text x="182" y="146" fill="#fff" font-size="10" font-weight="bold">30°</text>
+            <!-- 기본 엇각 정보 텍스트 (수평선 각도 매칭) -->
+            <text x="65" y="55" fill="#fff" font-size="10" font-weight="bold">45°</text>
+            <text x="170" y="153" fill="#fff" font-size="10" font-weight="bold">30°</text>
             
             <!-- 보조선 상의 엇각 가이드 텍스트 (보조선 등장 시 노출) -->
             <g id="stage3-hint-angles" style="opacity: 0; transition: opacity 0.5s ease;">
-              <text x="80" y="93" fill="#2ecc71" font-size="9" font-weight="bold">45°(엇각)</text>
-              <text x="145" y="113" fill="#2ecc71" font-size="9" font-weight="bold">30°(엇각)</text>
+              <text x="70" y="93" fill="#2ecc71" font-size="9" font-weight="bold">45°(엇각)</text>
+              <text x="120" y="113" fill="#2ecc71" font-size="9" font-weight="bold">30°(엇각)</text>
             </g>
           </svg>
         </div>
@@ -159,9 +159,9 @@ class Stage3Puzzle extends PuzzleBase {
   }
 
   playCorrectAnimation() {
-    // 거울 회전 연출
+    // 거울 회전 연출 (기준 피벗 100 100으로 변경)
     if (this.mirror) {
-      this.mirror.setAttribute("transform", `rotate(30 130 100)`);
+      this.mirror.setAttribute("transform", `rotate(30 100 100)`);
     }
 
     // 레이저 발사

@@ -24,30 +24,30 @@ class Stage2Puzzle extends PuzzleBase {
             <line x1="20" y1="50" x2="260" y2="50" stroke="#a5a5a5" stroke-width="3" />
             <line x1="20" y1="130" x2="260" y2="130" stroke="#a5a5a5" stroke-width="3" />
             
-            <!-- 횡단 빗선 (60도 각도 경사) -->
-            <!-- L선 교차점: (160, 50), M선 교차점: (114, 130) -->
-            <line x1="180" y1="15" x2="95" y2="162" stroke="#ff4757" stroke-width="3.5" />
+            <!-- 횡단 빗선 (60도 각도 경사 - top-left에서 bottom-right로 수정) -->
+            <!-- L선 교차점: (115, 50), M선 교차점: (161, 130) -->
+            <line x1="95" y1="15" x2="180" y2="162" stroke="#ff4757" stroke-width="3.5" />
             
             <!-- 기준각 60도 데코 호 및 라벨 -->
-            <path d="M 140,50 A 20,20 0 0,1 150,33" fill="none" stroke="#ff4757" stroke-width="2" />
+            <path d="M 95,50 A 20,20 0 0,1 105,33" fill="none" stroke="#ff4757" stroke-width="2" />
             
             <!-- A(동위각) 안내 가이드 호 -->
-            <path d="M 94,130 A 20,20 0 0,1 104,113" fill="none" stroke="rgba(212,175,55,0.4)" stroke-width="1.5" stroke-dasharray="2" />
+            <path d="M 141,130 A 20,20 0 0,1 151,113" fill="none" stroke="rgba(212,175,55,0.4)" stroke-width="1.5" stroke-dasharray="2" />
             
             <!-- B(엇각) 안내 가이드 호 -->
-            <path d="M 124,130 A 20,20 0 0,0 134,147" fill="none" stroke="rgba(212,175,55,0.4)" stroke-width="1.5" stroke-dasharray="2" />
+            <path d="M 181,130 A 20,20 0 0,0 171,147" fill="none" stroke="rgba(212,175,55,0.4)" stroke-width="1.5" stroke-dasharray="2" />
           </svg>
 
-          <!-- 기준각 라벨 -->
-          <div style="position: absolute; top: 22px; left: 115px; font-size: 0.85rem; color: #ff4757; font-weight: bold;">60°</div>
+          <!-- 기준각 라벨 (L선 교차점 115의 좌상단 배치) -->
+          <div style="position: absolute; top: 22px; left: 70px; font-size: 0.85rem; color: #ff4757; font-weight: bold;">60°</div>
           
-          <!-- 드롭존 A (동위각 자리: M선 좌상단) -->
-          <div id="drop-zone-A" class="dropzone" style="position: absolute; top: 82px; left: 55px; width: 56px; height: 34px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-align: center; line-height: 30px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">A</div>
-          <div style="position: absolute; top: 120px; left: 58px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">동위각</div>
+          <!-- 드롭존 A (동위각 자리: M선 교차점 161의 좌상단) -->
+          <div id="drop-zone-A" class="dropzone" style="position: absolute; top: 82px; left: 105px; width: 56px; height: 34px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-align: center; line-height: 30px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">A</div>
+          <div style="position: absolute; top: 120px; left: 118px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">동위각</div>
           
-          <!-- 드롭존 B (엇각 자리: M선 우하단) -->
-          <div id="drop-zone-B" class="dropzone" style="position: absolute; top: 136px; left: 135px; width: 56px; height: 34px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-align: center; line-height: 30px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">B</div>
-          <div style="position: absolute; top: 120px; left: 151px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">엇각</div>
+          <!-- 드롭존 B (엇각 자리: M선 교차점 161의 우하단) -->
+          <div id="drop-zone-B" class="dropzone" style="position: absolute; top: 136px; left: 161px; width: 56px; height: 34px; border: 2px dashed var(--gold-primary); border-radius: 6px; font-size: 0.85rem; font-weight: bold; text-align: center; line-height: 30px; color: var(--gold-primary); background: rgba(0,0,0,0.65); cursor: pointer; transition: all 0.2s;">B</div>
+          <div style="position: absolute; top: 120px; left: 177px; font-size: 0.65rem; color: var(--gold-primary); font-weight:bold;">엇각</div>
         </div>
         
         <!-- 선택 카드들 (헷갈리는 4선택지 적용) -->
