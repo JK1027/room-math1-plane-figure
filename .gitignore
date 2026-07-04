@@ -1,2 +1,3 @@
-.clasp.json
 node_modules/
+.clasptmp/
+# .clasp.json # Local clasp config can be ignored if desired, but keeping it depends on project setup.

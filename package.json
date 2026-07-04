@@ -1,0 +1,13 @@
+{
+  "name": "room-math1-plane-figure",
+  "version": "1.0.0",
+  "description": "Geometry Escape: 기하의 성 - GAS based escape room game",
+  "scripts": {
+    "pull": "clasp pull",
+    "push": "clasp push",
+    "watch": "clasp push --watch"
+  },
+  "devDependencies": {
+    "@google/clasp": "^2.4.2"
+  }
+}
