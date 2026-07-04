@@ -850,6 +850,17 @@
             box-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
         }
 
+        /* ZONE 2 알파벳 가독성 패치 */
+        .m2-char-label {
+            font-family: var(--font-main), system-ui, -apple-system, sans-serif;
+            font-size: 14px;
+            font-weight: 900;
+            fill: #00f0ff !important;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            text-shadow: 0 0 2px rgba(0, 240, 255, 0.4);
+        }
+
         /* NPC 대화 클릭 지시자 및 호흡 애니메이션 */
         @keyframes dialog-blink {
             0%, 100% { opacity: 0.2; }
@@ -2852,23 +2863,20 @@
                     
                     // Small neon background box for character legibility
                     const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-                    bg.setAttribute("x", tx - 10);
-                    bg.setAttribute("y", ty - 10);
-                    bg.setAttribute("width", 20);
-                    bg.setAttribute("height", 20);
-                    bg.setAttribute("rx", 3);
+                    bg.setAttribute("x", tx - 11);
+                    bg.setAttribute("y", ty - 11);
+                    bg.setAttribute("width", 22);
+                    bg.setAttribute("height", 22);
+                    bg.setAttribute("rx", 4);
                     bg.setAttribute("fill", "rgba(7, 10, 19, 0.95)");
-                    bg.setAttribute("stroke", "rgba(0, 240, 255, 0.3)");
-                    bg.setAttribute("stroke-width", "0.8");
+                    bg.setAttribute("stroke", "rgba(0, 240, 255, 0.6)");
+                    bg.setAttribute("stroke-width", "1.0");
                     group.appendChild(bg);
 
                     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
                     text.setAttribute("x", tx);
                     text.setAttribute("y", ty);
-                    text.setAttribute("class", "tick-label");
-                    text.setAttribute("style", "font-weight: bold; fill: #00f0ff; font-size: 11px; text-shadow: 0 0 3px rgba(0,240,255,0.8);");
-                    text.setAttribute("text-anchor", "middle");
-                    text.setAttribute("dominant-baseline", "middle");
+                    text.setAttribute("class", "m2-char-label");
                     text.textContent = p.char;
                     group.appendChild(text);
 
