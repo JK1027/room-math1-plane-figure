@@ -21,12 +21,16 @@ class Stage1Puzzle extends PuzzleBase {
     this.container.innerHTML = `
       <div style="text-align: center; width: 100%; padding: 15px; user-select: none;">
         <p style="color: var(--gold-primary); margin-bottom: 12px; font-size: 0.9rem;">
-          빛의 다이얼을 돌려 각도를 맞추고, 마주 보는 <strong>맞꼭지각(x)</strong>을 계산해 봉인을 해제하세요.
+          빛의 다이얼을 돌려 <strong>목표 점선(135°)</strong>에 맞추고, 마주 보는 <strong>맞꼭지각(x)</strong>을 계산하세요.
         </p>
         
         <!-- SVG 교차 도판 -->
         <div style="position: relative; display: inline-block; margin-bottom: 10px;">
           <svg id="stage1-svg" width="220" height="220" style="background:#0b131f; border-radius: 50%; border: 2px solid var(--gold-primary); box-shadow: 0 0 15px var(--gold-glow);">
+            <!-- 목표 각도 가이드 점선 (135° 방향) -->
+            <line x1="110" y1="20" x2="110" y2="200" stroke="#ff9f43" stroke-width="2.5" stroke-dasharray="4 4" opacity="0.5" transform="rotate(45 110 110)" />
+            <text x="150" y="45" fill="#ff9f43" font-size="8" font-weight="bold" opacity="0.8">목표선 (135°)</text>
+
             <!-- 빛의 호 (기본 노출되도록 은은한 반투명, 정답 시 밝게 전이) -->
             <path id="stage1-arc-top" d="M 145,110 A 35,35 0 0,0 110,75" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2.5" style="transition: stroke 0.5s ease;" />
             <path id="stage1-arc-bottom" d="M 75,110 A 35,35 0 0,0 110,145" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2.5" style="transition: stroke 0.5s ease;" />
