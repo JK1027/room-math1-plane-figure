@@ -1788,6 +1788,13 @@
                 this.isGameActive = true;
                 this.session.currentRoundScore = { wrongCount: 0, hintCount: 0 };
                 this.saveSettings();
+                
+                // 플레이 화면 활성화
+                const playScreen = document.getElementById('play-screen');
+                if (playScreen) {
+                    playScreen.classList.add('active');
+                }
+                
                 this.loadActiveMission();
             }
 
