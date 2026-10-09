@@ -30,7 +30,6 @@ room-math1-plane figure/
 ├── STATUS.md             # 프로젝트 진행 상태 기록 문서
 ├── docs/                 # 요구사항 및 규칙 문서
 │   ├── prd.md
-│   ├── RULES_v4.0.md
 │   └── KNOWLEDGE_v4_FINAL.md
 └── src/                  # 소스 코드 폴더
     ├── appsscript.json   # GAS 매니페스트 파일
